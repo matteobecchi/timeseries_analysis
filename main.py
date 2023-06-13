@@ -5,6 +5,7 @@ import os
 import scipy.optimize
 import scipy.stats
 from scipy.signal import argrelextrema
+import pycwt as wavelet
 from functions import *
 
 ### Parameters to set
@@ -23,6 +24,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 tSOAP_lim = [0.014, 0.046]	# Lower and upper limits of the y axes when plotting the raw signal
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
+replot = False
 
 def gauss_fit_n(M, n_bins, filename):
 	flat_M = M.flatten()
@@ -85,7 +87,8 @@ def gauss_fit_n(M, n_bins, filename):
 	for th in list_th:
 		plt.vlines(th[0], 0, 100, linestyle='--', color='black')
 		plt.vlines(th[1], 0, 100, linestyle='--', color='black')
-	plt.show()
+	if replot:
+		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 
 	return list_popt, list_th
@@ -125,7 +128,8 @@ def plot_and_save_trajectories(M, T, all_the_labels, filename):
 	ax.set_xlabel(r'Time ' + t_units)
 	ax.set_ylabel(r'$t$SOAP signal ' + y_units)
 	ax.set_ylim(tSOAP_lim)
-	plt.show()
+	if replot:
+		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -168,11 +172,56 @@ def amplitude_vs_time(M, all_the_labels, number_of_windows, filename):
 	fig3.savefig(filename + 'c.png', dpi=600)
 	plt.show()
 
+def alpha_sigma(M, all_the_labels, number_of_windows, filename):
+	data = []
+	labels = []
+	wc = 0
+	for i, x in enumerate(M):
+		current_label = all_the_labels[i][0]
+		x_w = x[0:tau_window]
+		for w in range(1, number_of_windows):
+			 if all_the_labels[i][w] == current_label:
+			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+			 else:
+			 	if x_w.size < tau_window*10:
+			 		continue
+			 	### Lag-1 autocorrelation for colored noise
+				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n gaussian white noise
+			 	x_smean = x_w - np.mean(x_w)
+			 	alpha = 0.0
+			 	var = 1.0
+			 	try:
+			 		alpha, var, _ = wavelet.ar1(x_smean)
+			 		data.append([alpha, np.sqrt(var)])
+			 		labels.append(current_label)
+			 	except Warning:
+			 		wc += 1
+			 	x_w = x[tau_window*w:tau_window*(w + 1)]
+			 	current_label = all_the_labels[i][w]
+
+	print('\t-- ' + str(wc) + ' warnings generated --')
+	data = np.array(data).T
+
+	fig, ax = plt.subplots(figsize=(7.5, 4.8))
+	ax.scatter(data[0], data[1], c='xkcd:black', s=1.0)
+	ax.set_xlabel(r'Autocorrelation $\alpha$')
+	ax.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
+	fig.savefig(filename + 'a.png', dpi=600)
+
+	fig, ax = plt.subplots(figsize=(7.5, 4.8))
+	ax.scatter(data[0], data[1], c=labels, s=1.0)
+	ax.set_xlabel(r'Autocorrelation $\alpha$')
+	ax.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
+	# ax.legend()
+	fig.savefig(filename + 'b.png', dpi=600)
+	
+	plt.show()
+
 def main():
 	### Read and clean the data points
-	M = read_data('/Users/mattebecchi/00_signal_analysis/tSOAP_data/time_dSOAP_coexistence.npz')
-	M = remove_first_points(M, tau_delay)
-	M = Savgol_filter(M, tau_smooth, poly_order)
+	M_raw = read_data('/Users/mattebecchi/00_signal_analysis/tSOAP_data/time_dSOAP_coexistence.npz')
+	M_raw = remove_first_points(M_raw, tau_delay)
+	M = Savgol_filter(M_raw, tau_smooth, poly_order)
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
@@ -203,8 +252,9 @@ def main():
 	### Plot an example trajectory with the different colors
 	plot_and_save_trajectories(M, T, all_the_labels, my_path + '/output_figures/Fig' + str(iteration_id + 1))
 
-	### Amplitude vs duration of the windows scatter plot
-	amplitude_vs_time(M, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
+	### Amplitude vs time of the windows scatter plot
+	# amplitude_vs_time(M, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
+	alpha_sigma(M_raw, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
 
 	### Print the file to color the MD trajectory on ovito
 	# print_mol_labels1(all_the_labels, tau_window, my_path + 'all_cluster_IDs.dat')
