@@ -80,16 +80,16 @@ def gauss_fit_n(M, n_bins, filename):
 			list_th[n][1] = middle_th
 			list_th[n + 1][0] = middle_th
 
-	fig, ax = plt.subplots()
-	plot_histo(ax, counts, bins)
-	for popt in list_popt:
-		ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *popt))
-	for th in list_th:
-		plt.vlines(th[0], 0, 100, linestyle='--', color='black')
-		plt.vlines(th[1], 0, 100, linestyle='--', color='black')
 	if replot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
+		fig, ax = plt.subplots()
+		plot_histo(ax, counts, bins)
+		for popt in list_popt:
+			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *popt))
+		for th in list_th:
+			plt.vlines(th[0], 0, 100, linestyle='--', color='black')
+			plt.vlines(th[1], 0, 100, linestyle='--', color='black')
+			plt.show()
+		fig.savefig(filename + '.png', dpi=600)
 
 	return list_popt, list_th
 
@@ -173,6 +173,7 @@ def amplitude_vs_time(M, all_the_labels, number_of_windows, filename):
 	plt.show()
 
 def alpha_sigma(M, all_the_labels, number_of_windows, filename):
+	print('* Computing the amplitude - correlation diagram...')
 	data = []
 	labels = []
 	wc = 0
@@ -201,19 +202,20 @@ def alpha_sigma(M, all_the_labels, number_of_windows, filename):
 
 	print('\t-- ' + str(wc) + ' warnings generated --')
 	data = np.array(data).T
+	tau_c = 1/(1 - data[0])
 
-	fig, ax = plt.subplots(figsize=(7.5, 4.8))
-	ax.scatter(data[0], data[1], c='xkcd:black', s=1.0)
-	ax.set_xlabel(r'Autocorrelation $\alpha$')
-	ax.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
-	fig.savefig(filename + 'a.png', dpi=600)
+	figa, axa = plt.subplots(figsize=(7.5, 4.8))
+	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
+	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
+	axa.set_ylabel(r'Gaussian noise amplitude $\sigma_n$ ' + y_units)
+	figa.savefig(filename + 'a.png', dpi=600)
 
-	fig, ax = plt.subplots(figsize=(7.5, 4.8))
-	ax.scatter(data[0], data[1], c=labels, s=1.0)
-	ax.set_xlabel(r'Autocorrelation $\alpha$')
-	ax.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
-	# ax.legend()
-	fig.savefig(filename + 'b.png', dpi=600)
+	figb, axb = plt.subplots(figsize=(7.5, 4.8))
+	axb.scatter(tau_c, data[1], c=labels, s=1.0)
+	axb.set_xlabel(r'Correlation time $\tau_c$ [ps]')
+	axb.set_ylabel(r'Gaussian noise amplitude $\sigma_n$ ' + y_units)
+	# axb.legend()
+	figb.savefig(filename + 'b.png', dpi=600)
 	
 	plt.show()
 
@@ -247,13 +249,13 @@ def main():
 			M1 = M2
 
 	### Plot the histogram of the singnal remaining after the "onion" analysis
-	plot_and_save_histogram(M2, n_bins, my_path + '/output_figures/Fig' + str(iteration_id))
+	if replot:
+		plot_and_save_histogram(M2, n_bins, my_path + '/output_figures/Fig' + str(iteration_id))
 
 	### Plot an example trajectory with the different colors
 	plot_and_save_trajectories(M, T, all_the_labels, my_path + '/output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
-	# amplitude_vs_time(M, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
 	alpha_sigma(M_raw, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
 
 	### Print the file to color the MD trajectory on ovito
