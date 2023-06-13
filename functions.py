@@ -68,3 +68,10 @@ def print_mol_labels2(all_the_labels, tau_window, filename):
 			for t in range(tau_window):
 				for i in range(all_the_labels.shape[0]):
 					print(all_the_labels[i][w], file=f)
+
+def read_input_parameters():
+	filename = np.loadtxt('data_directory.txt', dtype=str)
+	if filename.shape == (2,):
+		return filename
+	else:
+		return str(filename)
