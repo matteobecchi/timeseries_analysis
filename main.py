@@ -13,7 +13,7 @@ tau_smooth = 300			# Set the smoothing window # 300
 tau_delay = 20000			# Remove the first tau_delay frames
 tau_window = tau_smooth		# Size of the window for the "frame by frame" analysis.
 number_of_sigmas = 1.0		# Set the treshold on the gaussian fit
-my_path = '/Users/mattebecchi/00_signal_analysis/03_ONION/window_1ps_coex/'
+# my_path = '/Users/mattebecchi/00_signal_analysis/03_ONION/window_1ps_coex/'
 
 ### Other stuff, usually no need to changhe these ###
 poly_order = 2 				# Savgol filter polynomial order
@@ -77,7 +77,6 @@ def gauss_fit_n(M, n_bins, filename):
 			mu1 = list_popt[n + 1][0]
 			sigma1 = list_popt[n + 1][1]
 			middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
-			# middle_th = bins[min_ID[1]]	### TO CHANGE
 			list_th[n][1] = middle_th
 			list_th[n + 1][0] = middle_th
 
@@ -88,9 +87,8 @@ def gauss_fit_n(M, n_bins, filename):
 		for popt in list_popt:
 			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *popt))
 		for th in list_th:
-			plt.vlines(th[0], 0, 100, linestyle='--', color='black')
-			plt.vlines(th[1], 0, 100, linestyle='--', color='black')
-			plt.show()
+			ax.vlines(th, 0, 100, linestyle='--', color='black')
+		plt.show()
 		fig.savefig(filename + '.png', dpi=600)
 
 	return list_popt, list_th
@@ -238,8 +236,7 @@ def main():
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, my_path + '/output_figures/Fig' + str(iteration_id))
-		# list_popt, list_th = gauss_fit_n(M1, n_bins, os.path.join(my_path, '/output_figures/Fig' + str(iteration_id) + '.png'))
+		list_popt, list_th = gauss_fit_n(M1, n_bins, 'output_figures/Fig' + str(iteration_id))
 
 		### Find the windows in which the trajectories are stable in one maxima
 		M2, c = find_stable_trj(M, list_th, number_of_windows, all_the_labels, states_counter)
@@ -254,16 +251,16 @@ def main():
 
 	### Plot the histogram of the singnal remaining after the "onion" analysis
 	if replot:
-		plot_and_save_histogram(M2, n_bins, my_path + '/output_figures/Fig' + str(iteration_id))
+		plot_and_save_histogram(M2, n_bins, 'output_figures/Fig' + str(iteration_id))
 
 	### Plot an example trajectory with the different colors
-	plot_trajectories(M, T, all_the_labels, my_path + '/output_figures/Fig' + str(iteration_id + 1))
+	# plot_trajectories(M, T, all_the_labels, 'output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
-	# tau_sigma(M_raw, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, 'output_figures/Fig' + str(iteration_id + 2))
 
 	### Print the file to color the MD trajectory on ovito
-	# print_mol_labels1(all_the_labels, tau_window, my_path + 'all_cluster_IDs.dat')
+	print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
