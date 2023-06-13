@@ -48,7 +48,7 @@ def plot_and_save_histogram(M, n_bins, filename):
 	fig, ax = plt.subplots()
 	plot_histo(ax, counts, bins)
 	plt.show()
-	fig.savefig(filename, dpi=600)
+	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
 def print_mol_labels1(all_the_labels, tau_window, filename):
