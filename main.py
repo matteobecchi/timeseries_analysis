@@ -13,17 +13,28 @@ tau_smooth = 300			# Set the smoothing window # 300
 tau_delay = 20000			# Remove the first tau_delay frames
 tau_window = tau_smooth		# Size of the window for the "frame by frame" analysis.
 number_of_sigmas = 1.0		# Set the treshold on the gaussian fit
-# my_path = '/Users/mattebecchi/00_signal_analysis/03_ONION/window_1ps_coex/'
 
 ### Other stuff, usually no need to changhe these ###
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
-# IDs_to_plot = [800]
 t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
-replot = False				# Plot all the data distribution during the maxima search
+replot = True				# Plot all the data distribution during the maxima search
+
+def all_the_input_stuff():
+	### Read and clean the data points
+	data_directory = read_input_parameters()
+	if type(data_directory) == str:
+		M_raw = read_data(data_directory)
+	else:
+		M0 = read_data(data_directory[0])
+		M1 = read_data(data_directory[1])
+		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
+	M_raw = remove_first_points(M_raw, tau_delay)
+	M = Savgol_filter(M_raw, tau_smooth, poly_order)
+	return M_raw, M
 
 def gauss_fit_n(M, n_bins, filename):
 	flat_M = M.flatten()
@@ -45,7 +56,10 @@ def gauss_fit_n(M, n_bins, filename):
 			continue
 		B = bins[min_ID[n]:min_ID[n + 1]]
 		C = counts[min_ID[n]:min_ID[n + 1]]
-		popt, pcov = scipy.optimize.curve_fit(gaussian, B, C)
+		try:
+			popt, pcov = scipy.optimize.curve_fit(gaussian, B, C)
+		except RuntimeError:
+			continue
 		if popt[1] < 0:
 			popt[1] = -popt[1]
 		flag = 1
@@ -222,10 +236,7 @@ def tau_sigma(M, all_the_labels, number_of_windows, filename):
 	plt.show()
 
 def main():
-	### Read and clean the data points
-	M_raw = read_data('/Users/mattebecchi/00_signal_analysis/tSOAP_data/time_dSOAP_coexistence.npz')
-	M_raw = remove_first_points(M_raw, tau_delay)
-	M = Savgol_filter(M_raw, tau_smooth, poly_order)
+	M_raw, M = all_the_input_stuff()
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
@@ -254,7 +265,7 @@ def main():
 		plot_and_save_histogram(M2, n_bins, 'output_figures/Fig' + str(iteration_id))
 
 	### Plot an example trajectory with the different colors
-	# plot_trajectories(M, T, all_the_labels, 'output_figures/Fig' + str(iteration_id + 1))
+	plot_trajectories(M, T, all_the_labels, 'output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
 	tau_sigma(M_raw, all_the_labels, number_of_windows, 'output_figures/Fig' + str(iteration_id + 2))
