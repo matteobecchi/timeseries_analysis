@@ -13,18 +13,18 @@ tau_smooth = 300			# Set the smoothing window # 100 # Prova 300
 tau_delay = 20000			# Remove the first tau_delay frames
 tau_window = tau_smooth		# Size of the window for the "frame by frame" analysis.
 number_of_sigmas = 1.0		# Set the treshold on the gaussian fit
-stop_th = 0.01
 my_path = '/Users/mattebecchi/00_signal_analysis/03_ONION/window_1ps_coex/'
 
 ### Other stuff, usually no need to changhe these
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
+stop_th = 0.01 				# Treshold to exit the maxima search
 IDs_to_plot = [800]
 t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
-tSOAP_lim = [0.014, 0.046]	# Lower and upper limits of the y axes when plotting the raw signal
+# tSOAP_lim = [0.014, 0.046]	# Lower and upper limits of the y axes when plotting the raw signal
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
-replot = False
+replot = False				# Plot all the data distribution during the maxima search
 
 def gauss_fit_n(M, n_bins, filename):
 	flat_M = M.flatten()
@@ -119,17 +119,18 @@ def find_stable_trj(M, list_th, number_of_windows, all_the_labels, offset):
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows)
 
 def plot_and_save_trajectories(M, T, all_the_labels, filename):
+	print('* Plotting colored trajectories...')
 	time = np.linspace(tau_delay*t_conv, (T + tau_delay)*t_conv, T)
 	fig, ax = plt.subplots()
-	for i in IDs_to_plot:
+	for i in range(len(M)):
+	# for i in IDs_to_plot:
 		c = np.repeat(all_the_labels[i].flatten(), tau_window)
 		T_max = c.size
-		ax.scatter(time[:T_max], M[i][:T_max], c=c, s=1.0)
+		ax.scatter(time[:T_max], M[i][:T_max], c=c, s=0.05, alpha=0.1, rasterized=True)
 	ax.set_xlabel(r'Time ' + t_units)
 	ax.set_ylabel(r'$t$SOAP signal ' + y_units)
-	ax.set_ylim(tSOAP_lim)
-	if replot:
-		plt.show()
+	# ax.set_ylim(tSOAP_lim)
+	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -256,7 +257,7 @@ def main():
 	plot_and_save_trajectories(M, T, all_the_labels, my_path + '/output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
-	alpha_sigma(M_raw, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
+	# alpha_sigma(M_raw, all_the_labels, number_of_windows, my_path + '/output_figures/Fig' + str(iteration_id + 2))
 
 	### Print the file to color the MD trajectory on ovito
 	# print_mol_labels1(all_the_labels, tau_window, my_path + 'all_cluster_IDs.dat')
