@@ -143,16 +143,15 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_d
 	flat_M = M1.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	time = np.linspace(tau_delay*t_conv, (T + tau_delay)*t_conv, T)
-	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(10, 4.8))
-	# for i in range(len(M)):
-	# 	if len(M) < 100 or i%50 == 0:
-	for i in [800]:
-		c = np.repeat(all_the_labels[i].flatten(), tau_window)
-		for t in range(len(c)):
-			if c[t] <= offset or c[t] > offset + len(list_popt):
-				c[t] = 0
-		T_max = c.size
-		ax[0].scatter(time[:T_max], M[i][:T_max], c=c, s=0.5)#, alpha=0.1, rasterized=True)
+	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+	for i in range(len(M)):
+		if len(M) < 100 or i%50 == 0:
+			c = np.repeat(all_the_labels[i].flatten(), tau_window)
+			for t in range(len(c)):
+				if c[t] <= offset or c[t] > offset + len(list_popt):
+					c[t] = 0
+			T_max = c.size
+			ax[0].scatter(time[:T_max], M[i][:T_max], c=c, vmin=0, vmax=offset+len(list_popt), s=0.1)#, alpha=0.1, rasterized=True)
 	ax[0].set_xlabel(r'Time ' + t_units)
 	ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
 
@@ -273,7 +272,7 @@ def main():
 
 		### Find the windows in which the trajectories are stable in one maxima
 		M2, c, list_of_states = find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, states_counter)
-		plot_partial_trajectories(M, M1, T, all_the_labels, states_counter, list_popt, tau_delay, tau_window, 'output_figures/Fig_partial' + str(iteration_id))
+		plot_partial_trajectories(M, M1, T, all_the_labels, states_counter, list_popt, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id) + '_partial')
 
 		states_counter += len(list_popt)
 		iteration_id += 1
@@ -292,13 +291,13 @@ def main():
 	if replot:
 		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
-	### Plot an example trajectory with the different colors
-	# plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 1))
-
 	### Amplitude vs time of the windows scatter plot
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 0, 'output_figures/Fig' + str(iteration_id + 2))
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 5, 'output_figures/Fig' + str(iteration_id + 3))
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 10, 'output_figures/Fig' + str(iteration_id + 4))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 0, 'output_figures/Fig' + str(iteration_id + 1))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 5, 'output_figures/Fig' + str(iteration_id + 2))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 10, 'output_figures/Fig' + str(iteration_id + 3))
+
+	### Plot an example trajectory with the different colors
+	# plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 4))
 
 	### Print the file to color the MD trajectory on ovito
 	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
