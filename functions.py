@@ -42,11 +42,12 @@ def find_nearest(array, value):
 	idx = (np.abs(array - value)).argmin()
 	return array[idx]
 
-def plot_and_save_histogram(M, n_bins, filename):
+def plot_and_save_histogram(M, n_bins, tSOAP_lim, filename):
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	fig, ax = plt.subplots()
 	plot_histo(ax, counts, bins)
+	ax.set_xlim(tSOAP_lim)
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
