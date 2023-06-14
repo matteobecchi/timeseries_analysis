@@ -17,7 +17,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-replot = False				# Plot all the data distribution during the maxima search
+replot = True				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -160,7 +160,7 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_d
 	for popt in list_popt:
 		ax[1].hlines(popt[0] - popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
 		ax[1].hlines(popt[0] + popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-		ax[1].plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *popt))
+		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt), np.linspace(bins[0], bins[-1], 1000))
 
 	ax[1].get_xaxis().set_visible(False)
 	ax[0].set_ylim(tSOAP_lim)
