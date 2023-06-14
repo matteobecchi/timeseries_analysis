@@ -6,5 +6,6 @@ Code for identify dynamic enviroinments and events from a time series
 ## Parameters
 
 tau_smooth          sets the time resolution (Savgol_filter window)<br>
-tau_delay           is for ignoring the first tau_delay frames of the trajectory
-number_of_sigmas    defines the width of the stable states
+tau_delay           is for ignoring the first tau_delay frames of the 
+trajectory<br>
+number_of_sigmas    defines the width of the stable states<br>
