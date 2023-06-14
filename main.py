@@ -16,8 +16,8 @@ stop_th = 0.01 				# Treshold to exit the maxima search
 t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
-tSOAP_lim = [0.014, 0.045]	# Limit of the x axes for the histograms
-replot = False				# Plot all the data distribution during the maxima search
+tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
+replot = True				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -112,8 +112,9 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	return list_popt, list_th
 
 def find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, offset):
-	list_th[0][0] = -np.inf
-	list_th[len(list_th) - 1][1] = np.inf
+	if len(list_th) > 1:
+		list_th[0][0] = -np.inf
+		list_th[len(list_th) - 1][1] = np.inf
 	M2 = []
 	counter = [ 0 for n in range(len(list_th)) ]
 	for i, x in enumerate(M):
@@ -228,7 +229,7 @@ def main():
 
 	### Plot the histogram of the singnal remaining after the "onion" analysis
 	if replot:
-		plot_and_save_histogram(M2, n_bins, 'output_figures/Fig' + str(iteration_id))
+		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
 	### Plot an example trajectory with the different colors
 	# plot_trajectories(M, T, all_the_labels, tau_window, 'output_figures/Fig' + str(iteration_id + 1))
