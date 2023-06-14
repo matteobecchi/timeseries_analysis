@@ -149,44 +149,44 @@ def plot_trajectories(M, T, all_the_labels, filename):
 	plt.close(fig)
 
 ### TO DELETE ###
-# def amplitude_vs_time(M, all_the_labels, number_of_windows, filename):
-# 	data = []
-# 	labels = []
-# 	for i, x in enumerate(M):
-# 		current_label = all_the_labels[i][0]
-# 		x_w = x[0:tau_window]
-# 		for w in range(1, number_of_windows):
-# 			 if all_the_labels[i][w] == current_label:
-# 			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
-# 			 else:
-# 			 	data.append([x_w.size, np.mean(x_w), np.std(x_w)])
-# 			 	labels.append(current_label)
-# 			 	x_w = x[tau_window*w:tau_window*(w + 1)]
-# 			 	current_label = all_the_labels[i][w]
+def amplitude_vs_time(M, all_the_labels, number_of_windows, filename):
+	data = []
+	labels = []
+	for i, x in enumerate(M):
+		current_label = all_the_labels[i][0]
+		x_w = x[0:tau_window]
+		for w in range(1, number_of_windows):
+			 if all_the_labels[i][w] == current_label:
+			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+			 else:
+			 	data.append([x_w.size, np.mean(x_w), np.std(x_w)])
+			 	labels.append(current_label)
+			 	x_w = x[tau_window*w:tau_window*(w + 1)]
+			 	current_label = all_the_labels[i][w]
 
-# 	data = np.array(data).T
+	data = np.array(data).T
 
-# 	fig1, ax1 = plt.subplots()
-# 	ax1.scatter(data[0]*t_conv, data[1], c=labels, s=1.0)
-# 	ax1.set_xlabel(r'Duration $T$ ' + t_units)
-# 	ax1.set_ylabel(r'Average amplitude ' + y_units)
-# 	# ax1.legend()
-# 	fig1.savefig(filename + 'a.png', dpi=600)
+	fig1, ax1 = plt.subplots()
+	ax1.scatter(data[0]*t_conv, data[1], c=labels, s=1.0)
+	ax1.set_xlabel(r'Duration $T$ ' + t_units)
+	ax1.set_ylabel(r'Average amplitude ' + y_units)
+	# ax1.legend()
+	fig1.savefig(filename + 'a.png', dpi=600)
 
-# 	fig2, ax2 = plt.subplots()
-# 	ax2.scatter(data[0]*t_conv, data[2], c=labels, s=1.0)
-# 	ax2.set_xlabel(r'Duration $T$ ' + t_units)
-# 	ax2.set_ylabel(r'Standard deviation ' + y_units)
-# 	# ax2.legend()
-# 	fig2.savefig(filename + 'b.png', dpi=600)
+	fig2, ax2 = plt.subplots()
+	ax2.scatter(data[0]*t_conv, data[2], c=labels, s=1.0)
+	ax2.set_xlabel(r'Duration $T$ ' + t_units)
+	ax2.set_ylabel(r'Standard deviation ' + y_units)
+	# ax2.legend()
+	fig2.savefig(filename + 'b.png', dpi=600)
 
-# 	fig3, ax3 = plt.subplots()
-# 	ax3.scatter(data[1], data[2], c=labels, s=1.0)
-# 	ax3.set_xlabel(r'Average amplitude ' + y_units)
-# 	ax3.set_ylabel(r'Standard deviation ' + y_units)
-# 	# ax3.legend()
-# 	fig3.savefig(filename + 'c.png', dpi=600)
-# 	plt.show()
+	fig3, ax3 = plt.subplots()
+	ax3.scatter(data[1], data[2], c=labels, s=1.0)
+	ax3.set_xlabel(r'Average amplitude ' + y_units)
+	ax3.set_ylabel(r'Standard deviation ' + y_units)
+	# ax3.legend()
+	fig3.savefig(filename + 'c.png', dpi=600)
+	plt.show()
 
 def tau_sigma(M, all_the_labels, number_of_windows, filename):
 	print('* Computing the amplitude - correlation diagram...')
