@@ -9,10 +9,10 @@ import pycwt as wavelet
 from functions import *
 
 ### Parameters to set
-tau_smooth = 300			# Set the smoothing window # 300
-tau_delay = 20000			# Remove the first tau_delay frames
-tau_window = tau_smooth		# Size of the window for the "frame by frame" analysis.
-number_of_sigmas = 1.0		# Set the treshold on the gaussian fit
+# tau_smooth = 300			# Set the smoothing window # 300
+# tau_delay = 20000			# Remove the first tau_delay frames
+# tau_window = tau_smooth		# Size of the window for the "frame by frame" analysis.
+# number_of_sigmas = 1.0		# Set the treshold on the gaussian fit
 
 ### Other stuff, usually no need to changhe these ###
 poly_order = 2 				# Savgol filter polynomial order
@@ -21,11 +21,12 @@ stop_th = 0.01 				# Treshold to exit the maxima search
 t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
-replot = True				# Plot all the data distribution during the maxima search
+tSOAP_lim = [0.014, 0.045]	# Limit of the x axes for the histograms
+replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
-	data_directory = read_input_parameters()
+	data_directory, tau_smooth, tau_delay, number_of_sigmas = read_input_parameters()
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
@@ -34,9 +35,9 @@ def all_the_input_stuff():
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 	M_raw = remove_first_points(M_raw, tau_delay)
 	M = Savgol_filter(M_raw, tau_smooth, poly_order)
-	return M_raw, M
+	return M_raw, M, tau_smooth, tau_delay, number_of_sigmas
 
-def gauss_fit_n(M, n_bins, filename):
+def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 
@@ -98,16 +99,18 @@ def gauss_fit_n(M, n_bins, filename):
 		### Plot the distribution and the fitted Gaussians
 		fig, ax = plt.subplots()
 		plot_histo(ax, counts, bins)
+		ax.set_xlim(tSOAP_lim)
 		for popt in list_popt:
 			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *popt))
 		for th in list_th:
 			ax.vlines(th, 0, 100, linestyle='--', color='black')
+		ax.set_xlim(tSOAP_lim)
 		plt.show()
 		fig.savefig(filename + '.png', dpi=600)
 
 	return list_popt, list_th
 
-def find_stable_trj(M, list_th, number_of_windows, all_the_labels, offset):
+def find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, offset):
 	list_th[0][0] = -np.inf
 	list_th[len(list_th) - 1][1] = np.inf
 	M2 = []
@@ -132,13 +135,12 @@ def find_stable_trj(M, list_th, number_of_windows, all_the_labels, offset):
 		print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}')
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows)
 
-def plot_trajectories(M, T, all_the_labels, filename):
+def plot_trajectories(M, T, all_the_labels, tau_window, filename):
 	print('* Plotting colored trajectories...')
 	time = np.linspace(tau_delay*t_conv, (T + tau_delay)*t_conv, T)
 	fig, ax = plt.subplots()
-	# for i in IDs_to_plot:
 	for i in range(len(M)):
-		if i%10 == 0:
+		if len(M) < 100 or i%10 == 0:
 			c = np.repeat(all_the_labels[i].flatten(), tau_window)
 			T_max = c.size
 			ax.scatter(time[:T_max], M[i][:T_max], c=c, s=0.05, alpha=0.1, rasterized=True)
@@ -148,47 +150,7 @@ def plot_trajectories(M, T, all_the_labels, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-### TO DELETE ###
-def amplitude_vs_time(M, all_the_labels, number_of_windows, filename):
-	data = []
-	labels = []
-	for i, x in enumerate(M):
-		current_label = all_the_labels[i][0]
-		x_w = x[0:tau_window]
-		for w in range(1, number_of_windows):
-			 if all_the_labels[i][w] == current_label:
-			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
-			 else:
-			 	data.append([x_w.size, np.mean(x_w), np.std(x_w)])
-			 	labels.append(current_label)
-			 	x_w = x[tau_window*w:tau_window*(w + 1)]
-			 	current_label = all_the_labels[i][w]
-
-	data = np.array(data).T
-
-	fig1, ax1 = plt.subplots()
-	ax1.scatter(data[0]*t_conv, data[1], c=labels, s=1.0)
-	ax1.set_xlabel(r'Duration $T$ ' + t_units)
-	ax1.set_ylabel(r'Average amplitude ' + y_units)
-	# ax1.legend()
-	fig1.savefig(filename + 'a.png', dpi=600)
-
-	fig2, ax2 = plt.subplots()
-	ax2.scatter(data[0]*t_conv, data[2], c=labels, s=1.0)
-	ax2.set_xlabel(r'Duration $T$ ' + t_units)
-	ax2.set_ylabel(r'Standard deviation ' + y_units)
-	# ax2.legend()
-	fig2.savefig(filename + 'b.png', dpi=600)
-
-	fig3, ax3 = plt.subplots()
-	ax3.scatter(data[1], data[2], c=labels, s=1.0)
-	ax3.set_xlabel(r'Average amplitude ' + y_units)
-	ax3.set_ylabel(r'Standard deviation ' + y_units)
-	# ax3.legend()
-	fig3.savefig(filename + 'c.png', dpi=600)
-	plt.show()
-
-def tau_sigma(M, all_the_labels, number_of_windows, filename):
+def tau_sigma(M, all_the_labels, number_of_windows, tau_window, filename):
 	print('* Computing the amplitude - correlation diagram...')
 	data = []
 	labels = []
@@ -236,7 +198,8 @@ def tau_sigma(M, all_the_labels, number_of_windows, filename):
 	plt.show()
 
 def main():
-	M_raw, M = all_the_input_stuff()
+	M_raw, M, tau_smooth, tau_delay, number_of_sigmas = all_the_input_stuff()
+	tau_window = tau_smooth
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
@@ -247,10 +210,10 @@ def main():
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, 'output_figures/Fig' + str(iteration_id))
+		list_popt, list_th = gauss_fit_n(M1, n_bins, number_of_sigmas, 'output_figures/Fig' + str(iteration_id))
 
 		### Find the windows in which the trajectories are stable in one maxima
-		M2, c = find_stable_trj(M, list_th, number_of_windows, all_the_labels, states_counter)
+		M2, c = find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, states_counter)
 
 		states_counter += len(list_popt)
 		iteration_id += 1
@@ -265,13 +228,13 @@ def main():
 		plot_and_save_histogram(M2, n_bins, 'output_figures/Fig' + str(iteration_id))
 
 	### Plot an example trajectory with the different colors
-	plot_trajectories(M, T, all_the_labels, 'output_figures/Fig' + str(iteration_id + 1))
+	# plot_trajectories(M, T, all_the_labels, tau_window, 'output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
-	tau_sigma(M_raw, all_the_labels, number_of_windows, 'output_figures/Fig' + str(iteration_id + 2))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 'output_figures/Fig' + str(iteration_id + 2))
 
 	### Print the file to color the MD trajectory on ovito
-	print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
+	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
