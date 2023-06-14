@@ -8,13 +8,8 @@ from scipy.signal import argrelextrema
 import pycwt as wavelet
 from functions import *
 
-### Parameters to set
-# tau_smooth = 300			# Set the smoothing window # 300
-# tau_delay = 20000			# Remove the first tau_delay frames
-# tau_window = tau_smooth		# Size of the window for the "frame by frame" analysis.
-# number_of_sigmas = 1.0		# Set the treshold on the gaussian fit
-
 ### Other stuff, usually no need to changhe these ###
+output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
@@ -27,6 +22,9 @@ replot = False				# Plot all the data distribution during the maxima search
 def all_the_input_stuff():
 	### Read and clean the data points
 	data_directory, tau_smooth, tau_delay, number_of_sigmas = read_input_parameters()
+	### Create file for output
+	with open(output_file, 'w') as f:
+		print('# ' + str(tau_smooth) + ', ' + str(tau_delay) + ', ' + str(number_of_sigmas), file=f)
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
@@ -74,8 +72,11 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			list_popt.append(popt)
 
 	print('* Gaussians parameters:')
-	for popt in list_popt:
-		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
+	with open(output_file, 'a') as f:
+		print('\n', file=f)
+		for popt in list_popt:
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}', file=f)
 
 	### Create the list of the trasholds for state identification
 	list_th = []
@@ -130,9 +131,11 @@ def find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, o
 				M2.append(x_w)
 
 	print('* Finding stable windows...')
-	for n, c in enumerate(counter):
-		fw = c/(len(M)*number_of_windows)
-		print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}')
+	with open(output_file, 'a') as f:
+		for n, c in enumerate(counter):
+			fw = c/(len(M)*number_of_windows)
+			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}')
+			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}', file=f)
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows)
 
 def plot_trajectories(M, T, all_the_labels, tau_window, filename):
