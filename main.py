@@ -154,7 +154,7 @@ def plot_trajectories(M, T, all_the_labels, tau_window, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def tau_sigma(M, all_the_labels, number_of_windows, tau_window, filename):
+def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
 	print('* Computing the amplitude - correlation diagram...')
 	data = []
 	labels = []
@@ -166,7 +166,7 @@ def tau_sigma(M, all_the_labels, number_of_windows, tau_window, filename):
 			 if all_the_labels[i][w] == current_label:
 			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
 			 else:
-			 	if x_w.size < tau_window*10:
+			 	if x_w.size < tau_window*resolution:
 			 		continue
 			 	### Lag-1 autocorrelation for colored noise
 				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n gaussian white noise
@@ -235,7 +235,9 @@ def main():
 	# plot_trajectories(M, T, all_the_labels, tau_window, 'output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 'output_figures/Fig' + str(iteration_id + 2))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 0, 'output_figures/Fig' + str(iteration_id + 2))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 5, 'output_figures/Fig' + str(iteration_id + 3))
+	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 10, 'output_figures/Fig' + str(iteration_id + 4))
 
 	### Print the file to color the MD trajectory on ovito
 	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
