@@ -17,7 +17,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-replot = True				# Plot all the data distribution during the maxima search
+replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -111,10 +111,12 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 
 	return list_popt, list_th
 
-def find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, offset):
+def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, offset):
 	if len(list_th) > 1:
 		list_th[0][0] = -np.inf
 		list_th[len(list_th) - 1][1] = np.inf
+	for th in list_th:
+		list_of_states.append([th[0], th[1], 0.0])
 	M2 = []
 	counter = [ 0 for n in range(len(list_th)) ]
 	for i, x in enumerate(M):
@@ -137,19 +139,35 @@ def find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, o
 			fw = c/(len(M)*number_of_windows)
 			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}')
 			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}', file=f)
-	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows)
+			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
+	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
 
-def plot_trajectories(M, T, all_the_labels, tau_window, filename):
+def plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, filename):
 	print('* Plotting colored trajectories...')
+	flat_M = M.flatten()
+	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	time = np.linspace(tau_delay*t_conv, (T + tau_delay)*t_conv, T)
-	fig, ax = plt.subplots()
+	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(10, 4.8))
 	for i in range(len(M)):
 		if len(M) < 100 or i%10 == 0:
 			c = np.repeat(all_the_labels[i].flatten(), tau_window)
 			T_max = c.size
-			ax.scatter(time[:T_max], M[i][:T_max], c=c, s=0.05, alpha=0.1, rasterized=True)
-	ax.set_xlabel(r'Time ' + t_units)
-	ax.set_ylabel(r'$t$SOAP signal ' + y_units)
+			ax[0].scatter(time[:T_max], M[i][:T_max], c=c, s=0.05, alpha=0.1, rasterized=True)
+	ax[0].set_xlabel(r'Time ' + t_units)
+	ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
+	for state in np.flip(list_of_states, axis=0):
+		id_inf = 0
+		id_sup = len(bins) - 1
+		for j in range(len(bins)):
+			if bins[j] >= state[0]:
+				id_inf = j
+				break
+		for j in range(len(bins)):
+			if bins[j] >= state[1]:
+				id_sup = j
+				break
+		ax[1].stairs(counts[id_inf+1:id_sup], bins[id_inf:id_sup], fill=True, orientation='horizontal', alpha=0.5)
+	ax[1].get_xaxis().set_visible(False)
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
@@ -208,6 +226,7 @@ def main():
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
 	all_the_labels = np.array([ np.zeros(number_of_windows) for _ in range(len(M)) ])
+	list_of_states = []
 
 	M1 = M
 	iteration_id = 1
@@ -217,7 +236,7 @@ def main():
 		list_popt, list_th = gauss_fit_n(M1, n_bins, number_of_sigmas, 'output_figures/Fig' + str(iteration_id))
 
 		### Find the windows in which the trajectories are stable in one maxima
-		M2, c = find_stable_trj(M, list_th, number_of_windows, tau_window, all_the_labels, states_counter)
+		M2, c, list_of_states = find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, states_counter)
 
 		states_counter += len(list_popt)
 		iteration_id += 1
@@ -227,17 +246,22 @@ def main():
 		else:
 			M1 = M2
 
+	### Clean the list_of_states
+	for state in list_of_states:
+		if state[2] == 0.0:
+			list_of_states.remove(state)
+
 	### Plot the histogram of the singnal remaining after the "onion" analysis
 	if replot:
 		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
 	### Plot an example trajectory with the different colors
-	# plot_trajectories(M, T, all_the_labels, tau_window, 'output_figures/Fig' + str(iteration_id + 1))
+	plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 1))
 
 	### Amplitude vs time of the windows scatter plot
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 0, 'output_figures/Fig' + str(iteration_id + 2))
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 5, 'output_figures/Fig' + str(iteration_id + 3))
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 10, 'output_figures/Fig' + str(iteration_id + 4))
+	# tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 0, 'output_figures/Fig' + str(iteration_id + 2))
+	# tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 5, 'output_figures/Fig' + str(iteration_id + 3))
+	# tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 10, 'output_figures/Fig' + str(iteration_id + 4))
 
 	### Print the file to color the MD trajectory on ovito
 	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
