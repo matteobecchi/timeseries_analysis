@@ -149,7 +149,7 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_d
 			c = np.repeat(all_the_labels[i].flatten(), tau_window)
 			for t in range(len(c)):
 				if c[t] <= offset or c[t] > offset + len(list_popt):
-					c[t] = 0
+					c[t] = -1
 			T_max = c.size
 			ax[0].scatter(time[:T_max], M[i][:T_max], c=c, vmin=0, vmax=offset+len(list_popt), s=0.1)#, alpha=0.1, rasterized=True)
 	ax[0].set_xlabel(r'Time ' + t_units)
