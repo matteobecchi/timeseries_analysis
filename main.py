@@ -17,7 +17,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-replot = True				# Plot all the data distribution during the maxima search
+replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -142,16 +142,33 @@ def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, a
 def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_delay, tau_window, filename):
 	flat_M = M1.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
-	time = np.linspace(tau_delay*t_conv, (T + tau_delay)*t_conv, T)
+	number_of_windows = int(T/tau_window)
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
-	for i in range(len(M)):
-		if len(M) < 100 or i%50 == 0:
-			c = np.repeat(all_the_labels[i].flatten(), tau_window)
-			for t in range(len(c)):
-				if c[t] <= offset or c[t] > offset + len(list_popt):
-					c[t] = -1
-			T_max = c.size
-			ax[0].scatter(time[:T_max], M[i][:T_max], c=c, vmin=0, vmax=offset+len(list_popt), s=0.1)#, alpha=0.1, rasterized=True)
+	
+	big_pile_of_everything = [ [] for _ in range(number_of_windows) ]
+	big_pile_of_labels = [ [] for _ in range(number_of_windows) ]
+	for i, l in enumerate(all_the_labels):
+		if i%50 == 0:
+			for w in range(len(l)):
+				if l[w] > offset and l[w] <= offset + len(list_popt):
+					x_w = M[i][w*tau_window:(w + 1)*tau_window]
+					big_pile_of_everything[w].append(x_w)
+					big_pile_of_labels[w].append(l[w])
+
+	THE_BIG_TIME_ARRAY = []
+	THE_BIG_SIGNAL_ARRAY = []
+	THE_BIG_COLOR_ARRAY = []
+	for w, t_slice in enumerate(big_pile_of_everything):
+		X = np.array(t_slice)
+		time = np.linspace((tau_delay + w*tau_window)*t_conv, (tau_delay + (w + 1)*tau_window)*t_conv, tau_window)
+		time = np.tile(time, len(X))
+		color = np.repeat(big_pile_of_labels[w], tau_window)
+		signal = X.flatten()
+		THE_BIG_TIME_ARRAY = np.concatenate((THE_BIG_TIME_ARRAY, time))
+		THE_BIG_SIGNAL_ARRAY = np.concatenate((THE_BIG_SIGNAL_ARRAY, signal))
+		THE_BIG_COLOR_ARRAY = np.concatenate((THE_BIG_COLOR_ARRAY, color))
+		# ax[0].scatter(time, signal, c=color, vmin=offset, vmax=offset+len(list_popt), s=0.1, rasterized=True)
+	ax[0].scatter(THE_BIG_TIME_ARRAY, THE_BIG_SIGNAL_ARRAY, c=THE_BIG_COLOR_ARRAY, vmin=offset, vmax=offset+len(list_popt), s=0.1, rasterized=True)
 	ax[0].set_xlabel(r'Time ' + t_units)
 	ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
 
