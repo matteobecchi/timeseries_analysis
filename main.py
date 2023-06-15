@@ -168,7 +168,7 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_d
 		THE_BIG_SIGNAL_ARRAY = np.concatenate((THE_BIG_SIGNAL_ARRAY, signal))
 		THE_BIG_COLOR_ARRAY = np.concatenate((THE_BIG_COLOR_ARRAY, color))
 		# ax[0].scatter(time, signal, c=color, vmin=offset, vmax=offset+len(list_popt), s=0.1, rasterized=True)
-	ax[0].scatter(THE_BIG_TIME_ARRAY, THE_BIG_SIGNAL_ARRAY, c=THE_BIG_COLOR_ARRAY, vmin=offset, vmax=offset+len(list_popt), s=0.1, rasterized=True)
+	ax[0].scatter(THE_BIG_TIME_ARRAY, THE_BIG_SIGNAL_ARRAY, c=THE_BIG_COLOR_ARRAY, vmin=offset+1, vmax=offset+len(list_popt), s=0.1, rasterized=True)
 	ax[0].set_xlabel(r'Time ' + t_units)
 	ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
 
@@ -309,9 +309,8 @@ def main():
 		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
 	### Amplitude vs time of the windows scatter plot
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 0, 'output_figures/Fig' + str(iteration_id + 1))
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 5, 'output_figures/Fig' + str(iteration_id + 2))
-	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, 10, 'output_figures/Fig' + str(iteration_id + 3))
+	for i, tmin in [0, 5, 10]:
+		tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
 
 	### Plot an example trajectory with the different colors
 	# plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 4))
