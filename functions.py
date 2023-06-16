@@ -6,17 +6,18 @@ import copy
 from scipy import stats
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
+from matplotlib.pyplot import imshow
+from matplotlib.colors import LogNorm
 
 def read_data(filename):
 	print('* Reading data...')
 	with np.load(filename) as data:
 		lst = data.files
 		M = np.array(data[lst[0]])
-		print('\tData shape:', M.T.shape)
 		if M.ndim == 3:
 			M = np.vstack(M)
 			M = M.T
-			print('\tData shape after reshaping:', M.shape)
+			print('\tData shape:', M.shape)
 		return M
 
 def plot_histo(ax, counts, bins):
@@ -80,3 +81,46 @@ def read_input_parameters():
 		return filename, tau_smooth, tau_delay, number_of_sigmas
 	else:
 		return str(filename), tau_smooth, tau_delay, number_of_sigmas
+
+def normalize_T_matrix(T):
+	N = np.empty(T.shape)
+	for i in range(len(T)):
+		S = np.sum(T[i])
+		if S != 0.0:
+			for j in range(len(T[i])):
+				N[i][j] = T[i][j]/S
+	return N
+
+def compute_transition_matrix(all_the_labels, filename):
+	unique_labels = np.unique(all_the_labels)
+	n_states = unique_labels.size
+	
+	def rename_index(ID, unique_labels):
+		for i, l in enumerate(unique_labels):
+			if ID == l:
+				return i
+	
+	T = np.zeros((n_states, n_states))
+	for lablist in all_the_labels:
+		for w in range(len(lablist) - 1):
+			ID0 = rename_index(lablist[w], unique_labels)
+			ID1 = rename_index(lablist[w + 1], unique_labels)
+			T[ID0][ID1] += 1
+	number_of_transitions = np.sum(T)
+	T /= number_of_transitions
+	# print(T)
+
+	fig, ax = plt.subplots(figsize=(10, 8))
+	im = ax.imshow(T, norm=LogNorm(vmin=0.000001, vmax=1))
+	fig.colorbar(im)
+	for (i, j),val in np.ndenumerate(T):
+		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
+	ax.set_xlabel('To...')
+	ax.set_ylabel('From...')
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+
+	return T
+

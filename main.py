@@ -17,7 +17,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-replot = True				# Plot all the data distribution during the maxima search
+replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -225,7 +225,6 @@ def plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_windo
 	plt.close(fig)
 
 def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
-	print('* Computing the amplitude - correlation diagram...')
 	data = []
 	labels = []
 	wc = 0
@@ -300,24 +299,27 @@ def main():
 		else:
 			M1 = M2
 
-	### Clean the list_of_states
-	for state in list_of_states:
-		if state[2] == 0.0:
-			list_of_states.remove(state)
-
 	### Plot the histogram of the singnal remaining after the "onion" analysis
 	if replot:
 		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
 	### Amplitude vs time of the windows scatter plot
-	for i, tmin in enumerate([0, 5, 10]):
-		tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
+	# print('* Computing the amplitude - correlation diagram...')
+	# for i, tmin in enumerate([0, 5, 10]):
+	# 	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
+
+	### Compute the trasition matrix
+	T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')
+	normalized_T_matrix = normalize_T_matrix(T_matrix)
 
 	### Plot an example trajectory with the different colors
+	# for state in list_of_states:
+	# 	if state[2] == 0.0:
+	# 		list_of_states.remove(state)
 	# plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 4))
 
 	### Print the file to color the MD trajectory on ovito
-	print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
+	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
