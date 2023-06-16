@@ -8,6 +8,7 @@ from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
 from matplotlib.pyplot import imshow
 from matplotlib.colors import LogNorm
+import hdbscan
 
 def read_data(filename):
 	print('* Reading data...')
@@ -19,6 +20,12 @@ def read_data(filename):
 			M = M.T
 			print('\tData shape:', M.shape)
 		return M
+
+def normalize_array(x):
+	mean = np.mean(x)
+	stddev = np.sqrt(np.var(x))
+	tmp = (x - mean)/stddev
+	return tmp, mean, stddev
 
 def plot_histo(ax, counts, bins):
 	ax.stairs(counts, bins, fill=True)
@@ -123,4 +130,21 @@ def compute_transition_matrix(all_the_labels, filename):
 	fig.savefig(filename + '.png', dpi=600)
 
 	return T
+
+def HDBSCAN_clustering(data):
+	norm_x, _, _ = normalize_array(data.T[0])
+	norm_y, _, _ = normalize_array(data.T[1])
+	data = np.array([norm_x, norm_y]).T
+
+	clusterer = hdbscan.HDBSCAN(algorithm='best', alpha=1.0, approx_min_span_tree=True, gen_min_span_tree=False, leaf_size=40,
+		metric='euclidean', min_cluster_size=25, min_samples=None, p=None).fit(data)
+
+	labels = clusterer.labels_
+	print(labels)
+	print(labels.max())
+
+	fig, ax = plt.subplots(figsize=(7.5, 4.8))
+	for n in np.unique(labels):
+		ax.scatter(data[labels == n, 0], data[labels == n, 1], s=2)
+	plt.show()
 
