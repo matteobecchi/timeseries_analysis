@@ -17,7 +17,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-replot = False				# Plot all the data distribution during the maxima search
+replot = True				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -139,7 +139,7 @@ def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, a
 			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
 
-def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_delay, tau_window, filename):
+def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_delay, tau_window, number_of_sigmas, filename):
 	flat_M = M1.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	number_of_windows = int(T/tau_window)
@@ -174,8 +174,8 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_d
 
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 	for popt in list_popt:
-		ax[1].hlines(popt[0] - popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-		ax[1].hlines(popt[0] + popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+		ax[1].hlines(popt[0] - number_of_sigmas*popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+		ax[1].hlines(popt[0] + number_of_sigmas*popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
 		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt), np.linspace(bins[0], bins[-1], 1000))
 
 	ax[1].get_xaxis().set_visible(False)
@@ -289,7 +289,8 @@ def main():
 
 		### Find the windows in which the trajectories are stable in one maxima
 		M2, c, list_of_states = find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, states_counter)
-		plot_partial_trajectories(M, M1, T, all_the_labels, states_counter, list_popt, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id) + '_partial')
+		if replot:
+			plot_partial_trajectories(M, M1, T, all_the_labels, states_counter, list_popt, tau_delay, tau_window, number_of_sigmas, 'output_figures/Fig' + str(iteration_id) + '_partial')
 
 		states_counter += len(list_popt)
 		iteration_id += 1
@@ -309,7 +310,7 @@ def main():
 		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
 	### Amplitude vs time of the windows scatter plot
-	for i, tmin in [0, 5, 10]:
+	for i, tmin in enumerate([0, 5, 10]):
 		tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
 
 	### Plot an example trajectory with the different colors
