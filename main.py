@@ -139,7 +139,7 @@ def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, a
 			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
 
-def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_delay, tau_window, number_of_sigmas, filename):
+def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, list_th, tau_delay, tau_window, filename):
 	flat_M = M1.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	number_of_windows = int(T/tau_window)
@@ -173,10 +173,10 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, tau_d
 	ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
 
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
-	for popt in list_popt:
-		ax[1].hlines(popt[0] - number_of_sigmas*popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-		ax[1].hlines(popt[0] + number_of_sigmas*popt[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt), np.linspace(bins[0], bins[-1], 1000))
+	for n, th in enumerate(list_th):
+		ax[1].hlines(th, xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+		# ax[1].hlines(th[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_popt[n]), np.linspace(bins[0], bins[-1], 1000))
 
 	ax[1].get_xaxis().set_visible(False)
 	ax[0].set_ylim(tSOAP_lim)
@@ -290,7 +290,7 @@ def main():
 		### Find the windows in which the trajectories are stable in one maxima
 		M2, c, list_of_states = find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, states_counter)
 		if replot:
-			plot_partial_trajectories(M, M1, T, all_the_labels, states_counter, list_popt, tau_delay, tau_window, number_of_sigmas, 'output_figures/Fig' + str(iteration_id) + '_partial')
+			plot_partial_trajectories(M, M1, T, all_the_labels, states_counter, list_popt, list_th, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id) + '_partial')
 
 		states_counter += len(list_popt)
 		iteration_id += 1
@@ -317,7 +317,7 @@ def main():
 	# plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 4))
 
 	### Print the file to color the MD trajectory on ovito
-	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
+	print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
