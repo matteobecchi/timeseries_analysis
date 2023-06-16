@@ -132,19 +132,17 @@ def compute_transition_matrix(all_the_labels, filename):
 	return T
 
 def HDBSCAN_clustering(data):
-	norm_x, _, _ = normalize_array(data.T[0])
-	norm_y, _, _ = normalize_array(data.T[1])
+	norm_x, mux, sigmax = normalize_array(data.T[0])
+	norm_y, muy, sigmay = normalize_array(data.T[1])
 	data = np.array([norm_x, norm_y]).T
 
 	clusterer = hdbscan.HDBSCAN(algorithm='best', alpha=1.0, approx_min_span_tree=True, gen_min_span_tree=False, leaf_size=40,
-		metric='euclidean', min_cluster_size=25, min_samples=None, p=None).fit(data)
+		metric='euclidean', min_cluster_size=50, min_samples=3 , p=None).fit(data)
 
 	labels = clusterer.labels_
-	print(labels)
-	print(labels.max())
 
 	fig, ax = plt.subplots(figsize=(7.5, 4.8))
 	for n in np.unique(labels):
-		ax.scatter(data[labels == n, 0], data[labels == n, 1], s=2)
+		ax.scatter(data[labels == n, 0]*sigmax + mux, data[labels == n, 1]*sigmay + muy, s=2)
 	plt.show()
 
