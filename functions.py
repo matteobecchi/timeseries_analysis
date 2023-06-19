@@ -81,13 +81,14 @@ def print_mol_labels2(all_the_labels, tau_window, filename):
 def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
 	param = np.loadtxt('input_parameters.txt')
-	tau_smooth = int(param[0])
+	tau_window = int(param[0])
+	tau_smooth = int(param[1])
 	tau_delay = int(param[1])
 	number_of_sigmas = param[2]
 	if filename.shape == (2,):
-		return filename, tau_smooth, tau_delay, number_of_sigmas
+		return filename, tau_window, tau_smooth, tau_delay, number_of_sigmas
 	else:
-		return str(filename), tau_smooth, tau_delay, number_of_sigmas
+		return str(filename), tau_window, tau_smooth, tau_delay, number_of_sigmas
 
 def normalize_T_matrix(T):
 	N = np.empty(T.shape)
