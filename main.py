@@ -17,11 +17,11 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-replot = False				# Plot all the data distribution during the maxima search
+replot = True				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
-	data_directory, tau_smooth, tau_delay, number_of_sigmas = read_input_parameters()
+	data_directory, tau_window, tau_smooth, tau_delay, number_of_sigmas = read_input_parameters()
 	### Create file for output
 	with open(output_file, 'w') as f:
 		print('# ' + str(tau_smooth) + ', ' + str(tau_delay) + ', ' + str(number_of_sigmas), file=f)
@@ -33,7 +33,7 @@ def all_the_input_stuff():
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 	M_raw = remove_first_points(M_raw, tau_delay)
 	M = Savgol_filter(M_raw, tau_smooth, poly_order)
-	return M_raw, M, tau_smooth, tau_delay, number_of_sigmas
+	return M_raw, M, tau_window, tau_delay, number_of_sigmas
 
 def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	flat_M = M.flatten()
@@ -255,6 +255,9 @@ def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, file
 	data = np.array(data).T
 	tau_c = 1/(1 - data[0])
 
+	data_for_clustering = np.array([tau_c, data[1]]).T
+	HDBSCAN_clustering(data_for_clustering)
+
 	figa, axa = plt.subplots(figsize=(7.5, 4.8))
 	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
 	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
@@ -271,8 +274,7 @@ def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, file
 	plt.show()
 
 def main():
-	M_raw, M, tau_smooth, tau_delay, number_of_sigmas = all_the_input_stuff()
-	tau_window = tau_smooth
+	M_raw, M, tau_window, tau_delay, number_of_sigmas = all_the_input_stuff()
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
@@ -304,9 +306,9 @@ def main():
 		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
 
 	### Amplitude vs time of the windows scatter plot
-	# print('* Computing the amplitude - correlation diagram...')
-	# for i, tmin in enumerate([0, 5, 10]):
-	# 	tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
+	print('* Computing the amplitude - correlation diagram...')
+	for i, tmin in enumerate([0, 5, 10]):
+		tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
 
 	### Compute the trasition matrix
 	T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')
