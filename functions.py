@@ -83,8 +83,8 @@ def read_input_parameters():
 	param = np.loadtxt('input_parameters.txt')
 	tau_window = int(param[0])
 	tau_smooth = int(param[1])
-	tau_delay = int(param[1])
-	number_of_sigmas = param[2]
+	tau_delay = int(param[2])
+	number_of_sigmas = param[3]
 	if filename.shape == (2,):
 		return filename, tau_window, tau_smooth, tau_delay, number_of_sigmas
 	else:
