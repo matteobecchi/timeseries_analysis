@@ -24,7 +24,7 @@ def all_the_input_stuff():
 	data_directory, tau_window, tau_smooth, tau_delay, number_of_sigmas = read_input_parameters()
 	### Create file for output
 	with open(output_file, 'w') as f:
-		print('# ' + str(tau_smooth) + ', ' + str(tau_delay) + ', ' + str(number_of_sigmas), file=f)
+		print('# ' + str(tau_window) + ', ' + str(tau_delay) + ', ' + str(number_of_sigmas), file=f)
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
@@ -58,6 +58,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		try:
 			popt, pcov = scipy.optimize.curve_fit(gaussian, B, C)
 		except RuntimeError:
+			print('gauss_fit_n: RuntimeError.')
 			continue
 		if popt[1] < 0:
 			popt[1] = -popt[1]
@@ -118,22 +119,24 @@ def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, a
 	counter = [ 0 for n in range(len(list_th)) ]
 	for i, x in enumerate(M):
 		for w in range(number_of_windows):
-			x_w = x[w*tau_window:(w + 1)*tau_window]
-			flag = 1
-			for l, th in enumerate(list_th):
-				if np.amin(x_w) > th[0] and np.amax(x_w) < th[1]:
-					if all_the_labels[i][w] < 0.5:
+			if all_the_labels[i][w] > 0.5:
+				continue
+			else:
+				x_w = x[w*tau_window:(w + 1)*tau_window]
+				flag = 1
+				for l, th in enumerate(list_th):
+					if np.amin(x_w) > th[0] and np.amax(x_w) < th[1]:
 						all_the_labels[i][w] = l + offset + 1
 						counter[l] += 1
 						flag = 0
 						break
-			if flag:
-				M2.append(x_w)
+				if flag:
+					M2.append(x_w)
 
 	print('* Finding stable windows...')
 	with open(output_file, 'a') as f:
 		for n, c in enumerate(counter):
-			fw = c/(len(M)*number_of_windows)
+			fw = c/(all_the_labels.size)
 			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}')
 			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}', file=f)
 			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
@@ -256,7 +259,7 @@ def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, file
 	tau_c = 1/(1 - data[0])
 
 	data_for_clustering = np.array([tau_c, data[1]]).T
-	HDBSCAN_clustering(data_for_clustering)
+	# HDBSCAN_clustering(data_for_clustering)
 
 	figa, axa = plt.subplots(figsize=(7.5, 4.8))
 	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
@@ -278,7 +281,7 @@ def main():
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
-	all_the_labels = np.array([ np.zeros(number_of_windows) for _ in range(len(M)) ])
+	all_the_labels = np.zeros((len(M), number_of_windows))
 	list_of_states = []
 
 	M1 = M
@@ -307,12 +310,12 @@ def main():
 
 	### Amplitude vs time of the windows scatter plot
 	print('* Computing the amplitude - correlation diagram...')
-	for i, tmin in enumerate([0, 5, 10]):
+	for i, tmin in enumerate([10]):
 		tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
 
 	### Compute the trasition matrix
-	T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')
-	normalized_T_matrix = normalize_T_matrix(T_matrix)
+	# T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')
+	# normalized_T_matrix = normalize_T_matrix(T_matrix)
 
 	### Plot an example trajectory with the different colors
 	# for state in list_of_states:
