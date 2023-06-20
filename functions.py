@@ -64,8 +64,15 @@ def find_nearest(array, value):
 
 def relabel_states(all_the_labels, list_of_states):
 	list1 = [ state for state in list_of_states if state[2] != 0.0 ]
+	list_unique = np.unique(all_the_labels)
+	tmp = all_the_labels
+	for i, l in enumerate(list_unique):
+		for a in range(len(all_the_labels)):
+			for b in range(len(all_the_labels[a])):
+				if all_the_labels[a][b] == l:
+					tmp[a][b] = i
 
-	return all_the_labels, list1
+	return tmp, list1
 
 # def plot_and_save_histogram(M, n_bins, tSOAP_lim, filename):
 # 	flat_M = M.flatten()
