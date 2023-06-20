@@ -104,7 +104,8 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		plot_histo(ax, counts, bins)
 		ax.set_xlim(tSOAP_lim)
 		for popt in list_popt:
-			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *popt))
+			tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
+			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 		for th in list_th:
 			ax.vlines(th, 0, 100, linestyle='--', color='black')
 		ax.set_xlim(tSOAP_lim)
@@ -141,7 +142,7 @@ def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, a
 			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
 
-def plot_trajectories_after(M, all_the_labels, list_of_states, tau_window, tau_delay):
+def plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, filename):
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
@@ -151,7 +152,7 @@ def plot_trajectories_after(M, all_the_labels, list_of_states, tau_window, tau_d
 		list_of_times = []
 		list_of_signals = []
 		for i, L in enumerate(all_the_labels):
-			if i%50!=0:
+			if i%10!=0:
 				continue
 			for w, l in enumerate(L):
 				if l == S:
@@ -166,7 +167,7 @@ def plot_trajectories_after(M, all_the_labels, list_of_states, tau_window, tau_d
 		flat_colors = c*np.ones(flat_times.size)
 
 		fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
-		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.1, rasterized=True)
+		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_xlabel(r'Time ' + t_units)
 		ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
 		ax[0].set_ylim(tSOAP_lim)
@@ -175,6 +176,34 @@ def plot_trajectories_after(M, all_the_labels, list_of_states, tau_window, tau_d
 			ax[1].hlines(list_of_states[c - 1][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
 			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c - 1][0]), np.linspace(bins[0], bins[-1], 1000))
 		plt.show()
+		fig.savefig(filename + str(c) + '.png', dpi=600)
+		plt.close(fig)
+
+def plot_one_trajectory(x, L, list_of_states, States, tau_window, tau_delay, filename):
+	fig, ax = plt.subplots()
+	for c, S in enumerate(States):
+		list_of_times = []
+		list_of_signals = []
+		for w, l in enumerate(L):
+			if l == S:
+				t0 = w*tau_window
+				t1 = (w + 1)*tau_window
+				list_of_times.append(np.linspace((tau_delay + t0)*t_conv, (tau_delay + t1)*t_conv, tau_window))
+				list_of_signals.append(x[t0:t1])
+		list_of_times = np.array(list_of_times)
+		list_of_signals = np.array(list_of_signals)
+		flat_times = list_of_times.flatten()
+		flat_signals = list_of_signals.flatten()
+		flat_colors = c*np.ones(flat_times.size)
+
+		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+	
+	ax.set_xlabel(r'Time ' + t_units)
+	ax.set_ylabel(r'$t$SOAP signal ' + y_units)
+	ax.set_ylim(tSOAP_lim)
+	plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
 
 def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
 	data = []
@@ -235,7 +264,7 @@ def main():
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, number_of_sigmas, 'output_figures/Fig' + str(iteration_id))
+		list_popt, list_th = gauss_fit_n(M1, n_bins, number_of_sigmas, 'output_figures/Fig1_' + str(iteration_id))
 
 		for n in range(len(list_th)):
 			list_of_states.append([list_popt[n], list_th[n], 0.0])
@@ -253,7 +282,9 @@ def main():
 
 	all_the_labels, list_of_states = relabel_states(all_the_labels, list_of_states)
 
-	plot_trajectories_after(M, all_the_labels, list_of_states, tau_window, tau_delay)
+	# plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
+	example_ID = 800
+	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
 
 	### Amplitude vs time of the windows scatter plot
 	# print('* Computing the amplitude - correlation diagram...')
