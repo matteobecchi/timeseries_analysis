@@ -172,7 +172,7 @@ def plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_del
 		ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
 		ax[0].set_ylim(tSOAP_lim)
 		ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
-		if c > 0:
+		if c < len(States) - 1:
 			ax[1].hlines(list_of_states[c - 1][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
 			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c - 1][0]), np.linspace(bins[0], bins[-1], 1000))
 		plt.show()
@@ -282,7 +282,7 @@ def main():
 
 	all_the_labels, list_of_states = relabel_states(all_the_labels, list_of_states)
 
-	# plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
+	plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
 	example_ID = 800
 	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
 

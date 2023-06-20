@@ -63,6 +63,7 @@ def find_nearest(array, value):
 	return array[idx]
 
 def relabel_states(all_the_labels, list_of_states):
+	### Remove empty states
 	list1 = [ state for state in list_of_states if state[2] != 0.0 ]
 	list_unique = np.unique(all_the_labels)
 	tmp = all_the_labels
@@ -72,17 +73,14 @@ def relabel_states(all_the_labels, list_of_states):
 				if all_the_labels[a][b] == l:
 					tmp[a][b] = i
 
-	return tmp, list1
+	### Swappino
+	list2 = list1[1:]
+	list2.append(list1[0])
+	for a in range(len(tmp)):
+		for b in range(len(tmp[a])):
+				tmp[a][b] = (tmp[a][b] - 1)%list_unique.size
 
-# def plot_and_save_histogram(M, n_bins, tSOAP_lim, filename):
-# 	flat_M = M.flatten()
-# 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
-# 	fig, ax = plt.subplots()
-# 	plot_histo(ax, counts, bins)
-# 	ax.set_xlim(tSOAP_lim)
-# 	plt.show()
-# 	fig.savefig(filename + '.png', dpi=600)
-# 	plt.close(fig)
+	return tmp, list2
 
 def print_mol_labels1(all_the_labels, tau_window, filename):
 	with open(filename, 'w') as f:
