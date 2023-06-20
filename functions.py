@@ -62,6 +62,11 @@ def find_nearest(array, value):
 	idx = (np.abs(array - value)).argmin()
 	return array[idx]
 
+def relabel_states(all_the_labels, list_of_states):
+	list1 = [ state for state in list_of_states if state[2] != 0.0 ]
+
+	return all_the_labels, list1
+
 # def plot_and_save_histogram(M, n_bins, tSOAP_lim, filename):
 # 	flat_M = M.flatten()
 # 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
