@@ -10,6 +10,18 @@ from matplotlib.pyplot import imshow
 from matplotlib.colors import LogNorm
 import hdbscan
 
+def read_input_parameters():
+	filename = np.loadtxt('data_directory.txt', dtype=str)
+	param = np.loadtxt('input_parameters.txt')
+	tau_window = int(param[0])
+	tau_smooth = int(param[1])
+	tau_delay = int(param[2])
+	number_of_sigmas = param[3]
+	if filename.shape == (2,):
+		return filename, tau_window, tau_smooth, tau_delay, number_of_sigmas
+	else:
+		return str(filename), tau_window, tau_smooth, tau_delay, number_of_sigmas
+
 def read_data(filename):
 	print('* Reading data...')
 	with np.load(filename) as data:
@@ -50,15 +62,15 @@ def find_nearest(array, value):
 	idx = (np.abs(array - value)).argmin()
 	return array[idx]
 
-def plot_and_save_histogram(M, n_bins, tSOAP_lim, filename):
-	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
-	fig, ax = plt.subplots()
-	plot_histo(ax, counts, bins)
-	ax.set_xlim(tSOAP_lim)
-	plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
+# def plot_and_save_histogram(M, n_bins, tSOAP_lim, filename):
+# 	flat_M = M.flatten()
+# 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+# 	fig, ax = plt.subplots()
+# 	plot_histo(ax, counts, bins)
+# 	ax.set_xlim(tSOAP_lim)
+# 	plt.show()
+# 	fig.savefig(filename + '.png', dpi=600)
+# 	plt.close(fig)
 
 def print_mol_labels1(all_the_labels, tau_window, filename):
 	with open(filename, 'w') as f:
@@ -77,18 +89,6 @@ def print_mol_labels2(all_the_labels, tau_window, filename):
 			for t in range(tau_window):
 				for i in range(all_the_labels.shape[0]):
 					print(all_the_labels[i][w], file=f)
-
-def read_input_parameters():
-	filename = np.loadtxt('data_directory.txt', dtype=str)
-	param = np.loadtxt('input_parameters.txt')
-	tau_window = int(param[0])
-	tau_smooth = int(param[1])
-	tau_delay = int(param[2])
-	number_of_sigmas = param[3]
-	if filename.shape == (2,):
-		return filename, tau_window, tau_smooth, tau_delay, number_of_sigmas
-	else:
-		return str(filename), tau_window, tau_smooth, tau_delay, number_of_sigmas
 
 def normalize_T_matrix(T):
 	N = np.empty(T.shape)
