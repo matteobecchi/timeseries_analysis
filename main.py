@@ -167,6 +167,7 @@ def plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_del
 		flat_colors = c*np.ones(flat_times.size)
 
 		fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+		fig.suptitle('State ' + str(c))
 		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_xlabel(r'Time ' + t_units)
 		ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
@@ -196,7 +197,7 @@ def plot_one_trajectory(x, L, list_of_states, States, tau_window, tau_delay, fil
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
 
-		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05)
 	
 	ax.set_xlabel(r'Time ' + t_units)
 	ax.set_ylabel(r'$t$SOAP signal ' + y_units)
@@ -251,8 +252,35 @@ def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, file
 	
 	plt.show()
 
+def state_statistics(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
+	data = []
+	labels = []
+	for i, x in enumerate(M):
+		current_label = all_the_labels[i][0]
+		x_w = x[0:tau_window]
+		for w in range(1, number_of_windows):
+			if all_the_labels[i][w] == current_label:
+				x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+			else:
+				if x_w.size < tau_window*resolution:
+			 		continue
+				data.append([x_w.size*t_conv, np.mean(x_w)])
+				labels.append(current_label)
+				x_w = x[tau_window*w:tau_window*(w + 1)]
+				current_label = all_the_labels[i][w]
+
+	data = np.array(data).T
+	fig, ax = plt.subplots()
+	ax.scatter(data[0], data[1], c=labels, s=1.0)
+	ax.set_xlabel(r'State duration $T$ ' + t_units)
+	ax.set_ylabel(r'State mean amplitude ' + y_units)
+	# ax.legend()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.show()
+
 def main():
 	M_raw, M, tau_window, tau_delay, number_of_sigmas = all_the_input_stuff()
+	print(tau_delay)
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
@@ -285,6 +313,7 @@ def main():
 	plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
 	example_ID = 800
 	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
+	state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
 
 	### Amplitude vs time of the windows scatter plot
 	# print('* Computing the amplitude - correlation diagram...')
