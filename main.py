@@ -170,7 +170,6 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, list_
 		THE_BIG_TIME_ARRAY = np.concatenate((THE_BIG_TIME_ARRAY, time))
 		THE_BIG_SIGNAL_ARRAY = np.concatenate((THE_BIG_SIGNAL_ARRAY, signal))
 		THE_BIG_COLOR_ARRAY = np.concatenate((THE_BIG_COLOR_ARRAY, color))
-		# ax[0].scatter(time, signal, c=color, vmin=offset, vmax=offset+len(list_popt), s=0.1, rasterized=True)
 	ax[0].scatter(THE_BIG_TIME_ARRAY, THE_BIG_SIGNAL_ARRAY, c=THE_BIG_COLOR_ARRAY, vmin=offset+1, vmax=offset+len(list_popt), s=0.1, rasterized=True)
 	ax[0].set_xlabel(r'Time ' + t_units)
 	ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
@@ -178,7 +177,6 @@ def plot_partial_trajectories(M, M1, T, all_the_labels, offset, list_popt, list_
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 	for n, th in enumerate(list_th):
 		ax[1].hlines(th, xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-		# ax[1].hlines(th[1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
 		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_popt[n]), np.linspace(bins[0], bins[-1], 1000))
 
 	ax[1].get_xaxis().set_visible(False)
@@ -258,9 +256,6 @@ def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, file
 	data = np.array(data).T
 	tau_c = 1/(1 - data[0])
 
-	data_for_clustering = np.array([tau_c, data[1]]).T
-	# HDBSCAN_clustering(data_for_clustering)
-
 	figa, axa = plt.subplots(figsize=(7.5, 4.8))
 	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
 	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
@@ -304,13 +299,9 @@ def main():
 		else:
 			M1 = M2
 
-	### Plot the histogram of the singnal remaining after the "onion" analysis
-	if replot:
-		plot_and_save_histogram(M2, n_bins, tSOAP_lim, 'output_figures/Fig' + str(iteration_id))
-
 	### Amplitude vs time of the windows scatter plot
 	print('* Computing the amplitude - correlation diagram...')
-	for i, tmin in enumerate([10]):
+	for i, tmin in enumerate([1, 5, 10]):
 		tau_sigma(M_raw, all_the_labels, number_of_windows, tau_window, tmin, 'output_figures/Fig' + str(iteration_id + i + 1))
 
 	### Compute the trasition matrix
@@ -324,7 +315,7 @@ def main():
 	# plot_trajectories(M, T, all_the_labels, list_of_states, tau_delay, tau_window, 'output_figures/Fig' + str(iteration_id + 4))
 
 	### Print the file to color the MD trajectory on ovito
-	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
+	print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
