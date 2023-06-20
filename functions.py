@@ -157,3 +157,14 @@ def HDBSCAN_clustering(data):
 		ax.scatter(data[labels == n, 0]*sigmax + mux, data[labels == n, 1]*sigmay + muy, s=2)
 	plt.show()
 
+
+
+def Sankey(all_the_labels, frame_list):
+	n_states = np.unique(all_the_labels).size
+	T_list = []
+	for t in range(len(frame_list) - 1):
+		T = np.zeros((n_states, n_states))
+		for L in all_the_labels:
+			T[int(L[frame_list[t]])][int(L[frame_list[t + 1]])] += 1
+		T_list.append(T)
+

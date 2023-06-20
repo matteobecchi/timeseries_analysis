@@ -17,6 +17,7 @@ t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
 tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
+example_ID = 800
 replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
@@ -206,52 +207,6 @@ def plot_one_trajectory(x, L, list_of_states, States, tau_window, tau_delay, fil
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def tau_sigma(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
-	data = []
-	labels = []
-	wc = 0
-	for i, x in enumerate(M):
-		current_label = all_the_labels[i][0]
-		x_w = x[0:tau_window]
-		for w in range(1, number_of_windows):
-			 if all_the_labels[i][w] == current_label:
-			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
-			 else:
-			 	if x_w.size < tau_window*resolution:
-			 		continue
-			 	### Lag-1 autocorrelation for colored noise
-				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n gaussian white noise
-			 	x_smean = x_w - np.mean(x_w)
-			 	alpha = 0.0
-			 	var = 1.0
-			 	try:
-			 		alpha, var, _ = wavelet.ar1(x_smean)
-			 		data.append([alpha, np.sqrt(var)])
-			 		labels.append(current_label)
-			 	except Warning:
-			 		wc += 1
-			 	x_w = x[tau_window*w:tau_window*(w + 1)]
-			 	current_label = all_the_labels[i][w]
-
-	print('\t-- ' + str(wc) + ' warnings generated --')
-	data = np.array(data).T
-	tau_c = 1/(1 - data[0])
-
-	figa, axa = plt.subplots(figsize=(7.5, 4.8))
-	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
-	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
-	axa.set_ylabel(r'Gaussian noise amplitude $\sigma_n$ ' + y_units)
-	figa.savefig(filename + 'a.png', dpi=600)
-
-	figb, axb = plt.subplots(figsize=(7.5, 4.8))
-	axb.scatter(tau_c, data[1], c=labels, s=1.0)
-	axb.set_xlabel(r'Correlation time $\tau_c$ [ps]')
-	axb.set_ylabel(r'Gaussian noise amplitude $\sigma_n$ ' + y_units)
-	# axb.legend()
-	figb.savefig(filename + 'b.png', dpi=600)
-	
-	plt.show()
-
 def state_statistics(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
 	data = []
 	labels = []
@@ -310,10 +265,10 @@ def main():
 
 	all_the_labels, list_of_states = relabel_states(all_the_labels, list_of_states)
 
-	plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
-	example_ID = 800
+	# plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
 	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
 	state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
+	Sankey(all_the_labels, [0, 1, 2])
 
 	### Amplitude vs time of the windows scatter plot
 	# print('* Computing the amplitude - correlation diagram...')
