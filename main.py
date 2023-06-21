@@ -206,8 +206,8 @@ def plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_del
 		ax[0].set_ylim(tSOAP_lim)
 		ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 		if c < len(States) - 1:
-			ax[1].hlines(list_of_states[c - 1][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c - 1][0]), np.linspace(bins[0], bins[-1], 1000))
+			ax[1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
 		plt.show()
 		fig.savefig(filename + str(c) + '.png', dpi=600)
 		plt.close(fig)
@@ -275,8 +275,8 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, number_of_sigmas, number_of_windows, tau_window, all_the_labels, list_of_states)
 
-	# plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
-	# plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
+	plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
+	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
 	# state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
 	for t_start in [0, 100]:
 		Sankey(all_the_labels, t_start, 10, 'output_figures/Fig5_' + str(t_start) + '_')
