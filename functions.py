@@ -70,29 +70,43 @@ def find_nearest(array, value):
 	return array[idx]
 
 def relabel_states(all_the_labels, list_of_states):
-	### Remove empty states
+	### Remove empty states and relabel from 0 to n_states-1
 	list1 = [ state for state in list_of_states if state[2] != 0.0 ]
 	list_unique = np.unique(all_the_labels)
-	tmp = all_the_labels
+	tmp1 = all_the_labels
 	for i, l in enumerate(list_unique):
 		for a in range(len(all_the_labels)):
 			for b in range(len(all_the_labels[a])):
 				if all_the_labels[a][b] == l:
-					tmp[a][b] = i
+					tmp1[a][b] = i
 
-	### Swappino
-	list2 = list1[1:]
-	list2.append(list1[0])
-	for a in range(len(tmp)):
-		for b in range(len(tmp[a])):
-				tmp[a][b] = (tmp[a][b] - 1)%list_unique.size
+	### Swappino (I want the Dynamic state to be the last one)
+	for a in range(len(tmp1)):
+		for b in range(len(tmp1[a])):
+				tmp1[a][b] = (tmp1[a][b] - 1)%list_unique.size
 
-	return tmp, list2
+	# list3 = []
+	# ordered_IDs = []
+	# while len(list2) > 0:
+	# 	min_mu = np.min([ state[0][0] for state in list2 ])
+	# 	ID = [ i for i, x in enumerate(list2) if x[0][0] == min_mu ][0]
+	# 	print(min_mu)
+	# 	ordered_IDs.append(ID)
+	# 	list3.append(list2[ID])
+	# 	list2.remove(list2[ID])
+	# tmp2 = tmp1
+	# for i, l in enumerate(ordered_IDs):
+	# 	for a in range(len(tmp)):
+	# 		for b in range(len(tmp[a])):
+	# 			if tmp[a][b] == l:
+	# 				tmp[a][b] = i
+
+	return tmp1, list1
 
 def Sankey(all_the_labels, t_start, number_of_frames, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
 	if t_start + number_of_frames > all_the_labels.shape[1]:
-		print('ERROR: the required time range is out of bound.')
+		print('ERROR: the required frame range is out of bound.')
 		return
 
 	n_states = np.unique(all_the_labels).size
