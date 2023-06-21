@@ -132,8 +132,8 @@ def Sankey(all_the_labels, t_start, number_of_frames, filename):
 			value[c] = T[n1][n2]
 			c += 1
 
-	# label = np.tile(range(n_states), n_steps)
-	label = np.tile(['Ice', 'Interface', 'Liquid', 'State_3', 'Fast_Dyn'], 2)
+	label = np.tile(range(n_states), 2)
+	# label = np.tile(['Ice', 'Interface', 'Liquid', 'State_3', 'Fast_Dyn'], 2)
 
 	palette = sns.color_palette('viridis', n_colors=n_states).as_hex()
 	color = np.tile(palette, 2)
