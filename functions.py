@@ -8,7 +8,14 @@ from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
 from matplotlib.pyplot import imshow
 from matplotlib.colors import LogNorm
+from matplotlib import cm
 import hdbscan
+import plotly
+plotly.__version__
+import plotly.graph_objects as go
+import plotly.io as pio
+import plotly.express as px
+import seaborn as sns
 
 def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
@@ -82,6 +89,44 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp, list2
 
+def Sankey(all_the_labels, t_start, number_of_frames, filename):
+	print('* Computing and plotting the averaged Sankey diagrams...')
+	if t_start + number_of_frames > all_the_labels.shape[1]:
+		print('ERROR: the required time range is out of bound.')
+		return
+
+	n_states = np.unique(all_the_labels).size
+	T = np.zeros((n_states, n_states))
+	for t in range(t_start, t_start + number_of_frames):
+		for L in all_the_labels:
+			T[int(L[t])][int(L[t + 1])] += 1
+
+	source = np.empty(n_states**2)
+	target = np.empty(n_states**2)
+	value = np.empty(n_states**2)
+	c = 0
+	for n1 in range(len(T)):
+		for n2 in range(len(T[n1])):
+			source[c] = n1
+			target[c] = n2 + n_states
+			value[c] = T[n1][n2]
+			c += 1
+
+	# label = np.tile(range(n_states), n_steps)
+	label = np.tile(['Ice', 'Liquid', 'Interface', 'State_3', 'Fast_Dyn'], 2)
+
+	palette = sns.color_palette('viridis', n_colors=n_states).as_hex()
+	color = np.tile(palette, 2)
+
+	node = dict(label=label, pad=30, thickness=20, color=color)
+	link = dict(source=source, target=target, value=value)
+
+	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
+	fig = go.Figure(Data)
+
+	fig.show()
+	fig.write_image(filename + '.png', scale=5.0)
+
 def print_mol_labels1(all_the_labels, tau_window, filename):
 	with open(filename, 'w') as f:
 		for i in range(all_the_labels.shape[0]):
@@ -92,79 +137,3 @@ def print_mol_labels1(all_the_labels, tau_window, filename):
 				for t in range(tau_window):
 					string += ' ' + str(all_the_labels[i][w])
 			print(string, file=f)
-
-def print_mol_labels2(all_the_labels, tau_window, filename):
-	with open(filename, 'w') as f:
-		for w in range(all_the_labels.shape[1]):
-			for t in range(tau_window):
-				for i in range(all_the_labels.shape[0]):
-					print(all_the_labels[i][w], file=f)
-
-def normalize_T_matrix(T):
-	N = np.empty(T.shape)
-	for i in range(len(T)):
-		S = np.sum(T[i])
-		if S != 0.0:
-			for j in range(len(T[i])):
-				N[i][j] = T[i][j]/S
-	return N
-
-def compute_transition_matrix(all_the_labels, filename):
-	unique_labels = np.unique(all_the_labels)
-	n_states = unique_labels.size
-	
-	def rename_index(ID, unique_labels):
-		for i, l in enumerate(unique_labels):
-			if ID == l:
-				return i
-	
-	T = np.zeros((n_states, n_states))
-	for lablist in all_the_labels:
-		for w in range(len(lablist) - 1):
-			ID0 = rename_index(lablist[w], unique_labels)
-			ID1 = rename_index(lablist[w + 1], unique_labels)
-			T[ID0][ID1] += 1
-	number_of_transitions = np.sum(T)
-	T /= number_of_transitions
-	# print(T)
-
-	fig, ax = plt.subplots(figsize=(10, 8))
-	im = ax.imshow(T, norm=LogNorm(vmin=0.000001, vmax=1))
-	fig.colorbar(im)
-	for (i, j),val in np.ndenumerate(T):
-		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
-	ax.set_xlabel('To...')
-	ax.set_ylabel('From...')
-	ax.xaxis.tick_top()
-	ax.xaxis.set_label_position('top')
-	plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-
-	return T
-
-def HDBSCAN_clustering(data):
-	norm_x, mux, sigmax = normalize_array(data.T[0])
-	norm_y, muy, sigmay = normalize_array(data.T[1])
-	data = np.array([norm_x, norm_y]).T
-
-	clusterer = hdbscan.HDBSCAN(algorithm='best', alpha=1.0, approx_min_span_tree=True, gen_min_span_tree=False, leaf_size=40,
-		metric='euclidean', min_cluster_size=50, min_samples=3 , p=None).fit(data)
-
-	labels = clusterer.labels_
-
-	fig, ax = plt.subplots(figsize=(7.5, 4.8))
-	for n in np.unique(labels):
-		ax.scatter(data[labels == n, 0]*sigmax + mux, data[labels == n, 1]*sigmay + muy, s=2)
-	plt.show()
-
-
-
-def Sankey(all_the_labels, frame_list):
-	n_states = np.unique(all_the_labels).size
-	T_list = []
-	for t in range(len(frame_list) - 1):
-		T = np.zeros((n_states, n_states))
-		for L in all_the_labels:
-			T[int(L[frame_list[t]])][int(L[frame_list[t + 1]])] += 1
-		T_list.append(T)
-

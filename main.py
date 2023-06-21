@@ -8,17 +8,23 @@ from scipy.signal import argrelextrema
 import pycwt as wavelet
 from functions import *
 
-### Other stuff, usually no need to changhe these ###
+### System specific parameters ###
+t_units = r'[ns]'			# Units of measure of time
+y_units = r'[$t$SOAP]'		# Units of measure of the signal
+example_ID = 800
+
+### Usually no need to changhe these ###
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
+replot = False				# Plot all the data distribution during the maxima search
+
+### TO MAKE AUTOMATIC
+tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
+
+### TO READ FROM INPUT
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
-t_units = r'[ns]'			# Units of measure of time
 t_conv = 0.001 				# Conversion between frames and time units
-y_units = r'[$t$SOAP]'		# Units of measure of the signal
-tSOAP_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-example_ID = 800
-replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -143,7 +149,32 @@ def find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, a
 			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
 
+def iterative_search(M, number_of_sigmas, number_of_windows, tau_window, all_the_labels, list_of_states):
+	M1 = M
+	iteration_id = 1
+	states_counter = 0
+	while True:
+		### Locate and fit maxima in the signal distribution
+		list_popt, list_th = gauss_fit_n(M1, n_bins, number_of_sigmas, 'output_figures/Fig1_' + str(iteration_id))
+
+		for n in range(len(list_th)):
+			list_of_states.append([list_popt[n], list_th[n], 0.0])
+
+		### Find the windows in which the trajectories are stable in one maxima
+		M2, c, list_of_states = find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, states_counter)
+
+		states_counter += len(list_popt)
+		iteration_id += 1
+		### Exit the loop if no new stable windows are found
+		if c < stop_th:
+			break
+		else:
+			M1 = M2
+
+	return relabel_states(all_the_labels, list_of_states)
+
 def plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, filename):
+	print('* Printing colored trajectories with histograms...')
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
@@ -208,6 +239,7 @@ def plot_one_trajectory(x, L, list_of_states, States, tau_window, tau_delay, fil
 	plt.close(fig)
 
 def state_statistics(M, all_the_labels, number_of_windows, tau_window, resolution, filename):
+	print('* Computing some statistics on the states...')
 	data = []
 	labels = []
 	for i, x in enumerate(M):
@@ -235,40 +267,26 @@ def state_statistics(M, all_the_labels, number_of_windows, tau_window, resolutio
 
 def main():
 	M_raw, M, tau_window, tau_delay, number_of_sigmas = all_the_input_stuff()
-	print(tau_delay)
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	print('* Using ' + str(number_of_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ns). ')
 	all_the_labels = np.zeros((len(M), number_of_windows))
 	list_of_states = []
 
-	M1 = M
-	iteration_id = 1
-	states_counter = 0
-	while True:
-		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, number_of_sigmas, 'output_figures/Fig1_' + str(iteration_id))
-
-		for n in range(len(list_th)):
-			list_of_states.append([list_popt[n], list_th[n], 0.0])
-
-		### Find the windows in which the trajectories are stable in one maxima
-		M2, c, list_of_states = find_stable_trj(M, list_th, list_of_states, number_of_windows, tau_window, all_the_labels, states_counter)
-
-		states_counter += len(list_popt)
-		iteration_id += 1
-		### Exit the loop if no new stable windows are found
-		if c < stop_th:
-			break
-		else:
-			M1 = M2
-
-	all_the_labels, list_of_states = relabel_states(all_the_labels, list_of_states)
+	all_the_labels, list_of_states = iterative_search(M, number_of_sigmas, number_of_windows, tau_window, all_the_labels, list_of_states)
 
 	# plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
-	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
-	state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
-	Sankey(all_the_labels, [0, 1, 2])
+	# plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
+	# state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
+	for t_start in [0, 100]:
+		Sankey(all_the_labels, t_start, 10, 'output_figures/Fig5_' + str(t_start) + '_')
+
+	### Print the file to color the MD trajectory on ovito
+	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
+
+	###################################################################################
+	### The following functions are usless, surpassed or wrong. I will remove them. ###
+	###################################################################################
 
 	### Amplitude vs time of the windows scatter plot
 	# print('* Computing the amplitude - correlation diagram...')
@@ -278,9 +296,6 @@ def main():
 	### Compute the trasition matrix
 	# T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')
 	# normalized_T_matrix = normalize_T_matrix(T_matrix)
-
-	### Print the file to color the MD trajectory on ovito
-	# print_mol_labels1(all_the_labels, tau_window, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
