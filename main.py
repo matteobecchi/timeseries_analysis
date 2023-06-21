@@ -277,7 +277,7 @@ def main():
 
 	plot_all_trajectories(M, all_the_labels, list_of_states, tau_window, tau_delay, 'output_figures/Fig2_')
 	plot_one_trajectory(M[example_ID], all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), tau_window, tau_delay, 'output_figures/Fig3')
-	# state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
+	state_statistics(M, all_the_labels, number_of_windows, tau_window, 1, 'output_figures/Fig4')
 	for t_start in [0, 100]:
 		Sankey(all_the_labels, t_start, 10, 'output_figures/Fig5_' + str(t_start) + '_')
 

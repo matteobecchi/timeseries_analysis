@@ -85,23 +85,33 @@ def relabel_states(all_the_labels, list_of_states):
 		for b in range(len(tmp1[a])):
 				tmp1[a][b] = (tmp1[a][b] - 1)%list_unique.size
 
-	# list3 = []
-	# ordered_IDs = []
-	# while len(list2) > 0:
-	# 	min_mu = np.min([ state[0][0] for state in list2 ])
-	# 	ID = [ i for i, x in enumerate(list2) if x[0][0] == min_mu ][0]
-	# 	print(min_mu)
-	# 	ordered_IDs.append(ID)
-	# 	list3.append(list2[ID])
-	# 	list2.remove(list2[ID])
-	# tmp2 = tmp1
-	# for i, l in enumerate(ordered_IDs):
-	# 	for a in range(len(tmp)):
-	# 		for b in range(len(tmp[a])):
-	# 			if tmp[a][b] == l:
-	# 				tmp[a][b] = i
+	### Order the states according to the mu values
+	list_of_mu = np.array([ state[0][0] for state in list1 ])
+	copy_of_list_of_mu = np.array([ state[0][0] for state in list1 ])
+	sorted_IDs = []
+	while len(copy_of_list_of_mu) > 0:
+		min_mu = np.min(copy_of_list_of_mu)
+		ID_min = np.where(list_of_mu == min_mu)[0][0]
+		sorted_IDs.append(ID_min)
+		ID_min2 = np.where(copy_of_list_of_mu == min_mu)[0][0]
+		copy_of_list_of_mu = np.delete(copy_of_list_of_mu, ID_min2)
+	list2 = []
+	for ID in sorted_IDs:
+		list2.append(list1[ID])
 
-	return tmp1, list1
+	# tmp2 = np.empty(tmp1.shape)
+	tmp2 = copy.deepcopy(tmp1)
+	for i, l in enumerate(sorted_IDs):
+		for a in range(len(tmp1)):
+			for b in range(len(tmp1[a])):
+				if tmp1[a][b] == l:
+					tmp2[a][b] = i
+	# for a in range(len(tmp1)):
+	# 	for b in range(len(tmp1[a])):
+	# 		if tmp1[a][b] == len(sorted_IDs):
+	# 			tmp2[a][b] = tmp1[a][b]
+
+	return tmp2, list2
 
 def Sankey(all_the_labels, t_start, number_of_frames, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
@@ -127,7 +137,7 @@ def Sankey(all_the_labels, t_start, number_of_frames, filename):
 			c += 1
 
 	# label = np.tile(range(n_states), n_steps)
-	label = np.tile(['Ice', 'Liquid', 'Interface', 'State_3', 'Fast_Dyn'], 2)
+	label = np.tile(['Ice', 'Interface', 'Liquid', 'State_3', 'Fast_Dyn'], 2)
 
 	palette = sns.color_palette('viridis', n_colors=n_states).as_hex()
 	color = np.tile(palette, 2)
