@@ -25,9 +25,9 @@ def read_input_parameters():
 	tau_delay = int(param[2])
 	number_of_sigmas = param[3]
 	if filename.shape == (2,):
-		return filename, tau_window, tau_smooth, tau_delay, number_of_sigmas
+		return filename, [tau_window, tau_smooth, tau_delay, number_of_sigmas]
 	else:
-		return str(filename), tau_window, tau_smooth, tau_delay, number_of_sigmas
+		return str(filename), [tau_window, tau_smooth, tau_delay, number_of_sigmas]
 
 def read_data(filename):
 	print('* Reading data...')
@@ -99,17 +99,12 @@ def relabel_states(all_the_labels, list_of_states):
 	for ID in sorted_IDs:
 		list2.append(list1[ID])
 
-	# tmp2 = np.empty(tmp1.shape)
 	tmp2 = copy.deepcopy(tmp1)
 	for i, l in enumerate(sorted_IDs):
 		for a in range(len(tmp1)):
 			for b in range(len(tmp1[a])):
 				if tmp1[a][b] == l:
 					tmp2[a][b] = i
-	# for a in range(len(tmp1)):
-	# 	for b in range(len(tmp1[a])):
-	# 		if tmp1[a][b] == len(sorted_IDs):
-	# 			tmp2[a][b] = tmp1[a][b]
 
 	return tmp2, list2
 
@@ -151,7 +146,8 @@ def Sankey(all_the_labels, t_start, number_of_frames, filename):
 	fig.show()
 	fig.write_image(filename + '.png', scale=5.0)
 
-def print_mol_labels1(all_the_labels, tau_window, filename):
+def print_mol_labels1(all_the_labels, PAR, filename):
+	tau_window = PAR[0]
 	with open(filename, 'w') as f:
 		for i in range(all_the_labels.shape[0]):
 			string = str(all_the_labels[i][0])
