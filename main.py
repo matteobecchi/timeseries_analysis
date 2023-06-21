@@ -20,12 +20,6 @@ n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
 replot = True				# Plot all the data distribution during the maxima search
 
-### TO MAKE AUTOMATIC
-y_lim = [0.014, 0.044]	# Limit of the x axes for the histograms
-
-### TO READ FROM INPUT
-t_conv = 0.001 				# Conversion between frames and time units
-
 def all_the_input_stuff():
 	### Read and clean the data points
 	data_directory, PAR = read_input_parameters()
@@ -107,6 +101,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 
 	if replot:
 		### Plot the distribution and the fitted Gaussians
+		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 		fig, ax = plt.subplots()
 		plot_histo(ax, counts, bins)
 		ax.set_xlim(y_lim)
@@ -115,7 +110,6 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 		for th in list_th:
 			ax.vlines(th, 0, 100, linestyle='--', color='black')
-		ax.set_xlim(y_lim)
 		plt.show()
 		fig.savefig(filename + '.png', dpi=600)
 
@@ -178,6 +172,7 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing colored trajectories with histograms...')
 	tau_window = PAR[0]
 	tau_delay = PAR[2]
+	t_conv = PAR[4]
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
@@ -206,6 +201,7 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_xlabel(r'Time ' + t_units)
 		ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
+		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 		ax[0].set_ylim(y_lim)
 		ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 		if c < len(States) - 1:
@@ -215,9 +211,10 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		fig.savefig(filename + str(c) + '.png', dpi=600)
 		plt.close(fig)
 
-def plot_one_trajectory(x, PAR, L, list_of_states, States, filename):
+def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[2]
+	t_conv = PAR[4]
 	fig, ax = plt.subplots()
 	for c, S in enumerate(States):
 		list_of_times = []
@@ -246,6 +243,7 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, filename):
 def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	print('* Computing some statistics on the states...')
 	tau_window = PAR[0]
+	t_conv = PAR[4]
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	data = []
@@ -276,17 +274,21 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 def main():
 	M_raw, M, PAR = all_the_input_stuff()
 	total_time = M.shape[1]
-	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*t_conv) + ' ns). ')
+	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[4]) + ' ns). ')
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
 	list_of_states = []
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
 	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), 'output_figures/Fig3')
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+
 	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
+
 	for t_start in [0, 100]:
 		Sankey(all_the_labels, t_start, 10, 'output_figures/Fig5_' + str(t_start) + '_')
+
 	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 	### Compute the trasition matrix

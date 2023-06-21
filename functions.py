@@ -24,10 +24,11 @@ def read_input_parameters():
 	tau_smooth = int(param[1])
 	tau_delay = int(param[2])
 	number_of_sigmas = param[3]
+	t_conv = param[4]
 	if filename.shape == (2,):
-		return filename, [tau_window, tau_smooth, tau_delay, number_of_sigmas]
+		return filename, [tau_window, tau_smooth, tau_delay, number_of_sigmas, t_conv]
 	else:
-		return str(filename), [tau_window, tau_smooth, tau_delay, number_of_sigmas]
+		return str(filename), [tau_window, tau_smooth, tau_delay, number_of_sigmas, t_conv]
 
 def read_data(filename):
 	print('* Reading data...')
