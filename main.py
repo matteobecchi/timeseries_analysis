@@ -18,7 +18,7 @@ output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
-replot = True				# Plot all the data distribution during the maxima search
+replot = False				# Plot all the data distribution during the maxima search
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -51,32 +51,26 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 
 	list_popt = []
 	for n in range(max_ID.size):
-		### This is the original fitting procedure
-		# if min_ID[n + 1] - min_ID[n] < 5:
-		# 	continue # If the fitting interval is too small, discard the maximum
-		# B = bins[min_ID[n]:min_ID[n + 1]]
-		# C = counts[min_ID[n]:min_ID[n + 1]]
-
-		### Let's try something different (Pavan's idea): chose the more internal interval between
+		### Chose the intersection interval between
 		### the width at half height and the minima surrounding the maximum
-		MAX = counts[max_ID[n]]
+		counts_max = counts[max_ID[n]]
 		tmp_id0 = max_ID[n]
 		tmp_id1 = max_ID[n]
-		while (counts[tmp_id0] > MAX/2 and tmp_id0 > 0):
+		while (counts[tmp_id0] > counts_max/2 and tmp_id0 > 0):
 			tmp_id0 -= 1
-		while (counts[tmp_id1] > MAX/2 and tmp_id1 < len(counts) - 1):
+		while (counts[tmp_id1] > counts_max/2 and tmp_id1 < len(counts) - 1):
 			tmp_id1 += 1
 		id0 = np.max([tmp_id0, min_ID[n]])
 		id1 = np.min([tmp_id1, min_ID[n + 1]])
-		if id1 - id0 < 5:
-			continue # If the fitting interval is too small, discard.
-		B = bins[id0:id1]
-		C = counts[id0:id1]
+		if id1 - id0 < 5: # If the fitting interval is too small, discard.
+			continue
+		Bins = bins[id0:id1]
+		Counts = counts[id0:id1]
 
 		### Perform the Gaussian fit
 		p0 = [bins[max_ID[n]], (bins[min_ID[n + 1]] - bins[min_ID[n]])/6, counts[max_ID[n]]]
 		try:
-			popt, pcov = scipy.optimize.curve_fit(gaussian, B, C, p0=p0)
+			popt, pcov = scipy.optimize.curve_fit(gaussian, Bins, Counts, p0=p0)
 		except RuntimeError:
 			print('gauss_fit_n: RuntimeError.')
 			continue
@@ -84,9 +78,9 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		if popt[1] < 0:
 			popt[1] = -popt[1]
 		flag = 1
-		if popt[0] < B[0] or popt[0] > B[-1]:
+		if popt[0] < Bins[0] or popt[0] > Bins[-1]:
 			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
-		if popt[1] > B[-1] - B[0]:
+		if popt[1] > Bins[-1] - Bins[0]:
 			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
 		perr = np.sqrt(np.diag(pcov))
 		for j in range(len(perr)):
@@ -301,16 +295,17 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
+	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	# plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
+	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
-	for t_start in [0, 100]:
-		Sankey(all_the_labels, t_start, 10, 'output_figures/Fig5_' + str(t_start) + '_')
+	t_start = 0
+	t_jump = 100
+	Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
 
-	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 	### Compute the trasition matrix
 	# T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')

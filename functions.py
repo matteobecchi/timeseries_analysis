@@ -109,9 +109,9 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp2, list2
 
-def Sankey(all_the_labels, t_start, number_of_frames, filename):
+def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
-	if t_start + number_of_frames > all_the_labels.shape[1]:
+	if t_start + t_jump + number_of_frames > all_the_labels.shape[1]:
 		print('ERROR: the required frame range is out of bound.')
 		return
 
@@ -119,7 +119,7 @@ def Sankey(all_the_labels, t_start, number_of_frames, filename):
 	T = np.zeros((n_states, n_states))
 	for t in range(t_start, t_start + number_of_frames):
 		for L in all_the_labels:
-			T[int(L[t])][int(L[t + 1])] += 1
+			T[int(L[t])][int(L[t + t_jump])] += 1
 
 	source = np.empty(n_states**2)
 	target = np.empty(n_states**2)
@@ -133,14 +133,12 @@ def Sankey(all_the_labels, t_start, number_of_frames, filename):
 			c += 1
 
 	label = np.tile(range(n_states), 2)
-	# label = np.tile(['Ice', 'Interface', 'Liquid', 'State_3', 'Fast_Dyn'], 2)
-
-	palette = sns.color_palette('viridis', n_colors=n_states).as_hex()
+	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
+	palette.insert(0, '#440154')
+	palette.append('#fde725')
 	color = np.tile(palette, 2)
-
 	node = dict(label=label, pad=30, thickness=20, color=color)
 	link = dict(source=source, target=target, value=value)
-
 	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
 	fig = go.Figure(Data)
 
