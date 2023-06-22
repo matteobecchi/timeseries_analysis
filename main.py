@@ -49,15 +49,34 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			tmp_to_delete.append(n + 1)
 	min_ID = np.delete(min_ID, tmp_to_delete, 0)
 
-	### Some tries and checks to identify and discard fake maxima
 	list_popt = []
 	for n in range(max_ID.size):
-		if min_ID[n + 1] - min_ID[n] < 5:
-			continue
-		B = bins[min_ID[n]:min_ID[n + 1]]
-		C = counts[min_ID[n]:min_ID[n + 1]]
+		### This is the original fitting procedure
+		# if min_ID[n + 1] - min_ID[n] < 5:
+		# 	continue # If the fitting interval is too small, discard the maximum
+		# B = bins[min_ID[n]:min_ID[n + 1]]
+		# C = counts[min_ID[n]:min_ID[n + 1]]
+
+		### Let's try something different (Pavan's idea): chose the more internal interval between
+		### the width at half height and the minima surrounding the maximum
+		MAX = counts[max_ID[n]]
+		tmp_id0 = max_ID[n]
+		tmp_id1 = max_ID[n]
+		while (counts[tmp_id0] > MAX/2 and tmp_id0 > 0):
+			tmp_id0 -= 1
+		while (counts[tmp_id1] > MAX/2 and tmp_id1 < len(counts) - 1):
+			tmp_id1 += 1
+		id0 = np.max([tmp_id0, min_ID[n]])
+		id1 = np.min([tmp_id1, min_ID[n + 1]])
+		if id1 - id0 < 5:
+			continue # If the fitting interval is too small, discard.
+		B = bins[id0:id1]
+		C = counts[id0:id1]
+
+		### Perform the Gaussian fit
+		p0 = [bins[max_ID[n]], (bins[min_ID[n + 1]] - bins[min_ID[n]])/6, counts[max_ID[n]]]
 		try:
-			popt, pcov = scipy.optimize.curve_fit(gaussian, B, C)
+			popt, pcov = scipy.optimize.curve_fit(gaussian, B, C, p0=p0)
 		except RuntimeError:
 			print('gauss_fit_n: RuntimeError.')
 			continue
@@ -66,11 +85,13 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			popt[1] = -popt[1]
 		flag = 1
 		if popt[0] < B[0] or popt[0] > B[-1]:
-			flag = 0
+			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
+		if popt[1] > B[-1] - B[0]:
+			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
 		perr = np.sqrt(np.diag(pcov))
 		for j in range(len(perr)):
 			if perr[j]/popt[j] > 0.5:
-				flag = 0
+				flag = 0 # If the uncertanties over the parameters is too large, discard.
 		if flag:
 			list_popt.append(popt)
 
@@ -200,7 +221,7 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		fig.suptitle('State ' + str(c))
 		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_xlabel(r'Time ' + t_units)
-		ax[0].set_ylabel(r'$t$SOAP signal ' + y_units)
+		ax[0].set_ylabel(r'Signal ' + y_units)
 		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 		ax[0].set_ylim(y_lim)
 		ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
@@ -234,7 +255,7 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05)
 	
 	ax.set_xlabel(r'Time ' + t_units)
-	ax.set_ylabel(r'$t$SOAP signal ' + y_units)
+	ax.set_ylabel(r'Signal ' + y_units)
 	ax.set_ylim(y_lim)
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
