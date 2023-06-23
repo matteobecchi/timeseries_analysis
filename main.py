@@ -18,7 +18,7 @@ output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
-replot = False				# Plot all the data distribution during the maxima search
+show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -119,19 +119,20 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			list_th[n][1] = middle_th
 			list_th[n + 1][0] = middle_th
 
-	if replot:
-		### Plot the distribution and the fitted Gaussians
-		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-		fig, ax = plt.subplots()
-		plot_histo(ax, counts, bins)
-		ax.set_xlim(y_lim)
-		for popt in list_popt:
-			tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
-			ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
-		for th in list_th:
-			ax.vlines(th, 0, 100, linestyle='--', color='black')
+	### Plot the distribution and the fitted Gaussians
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	fig, ax = plt.subplots()
+	plot_histo(ax, counts, bins)
+	ax.set_xlim(y_lim)
+	for popt in list_popt:
+		tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
+		ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+	for th in list_th:
+		ax.vlines(th, 0, 100, linestyle='--', color='black')
+	if show_plot:
 		plt.show()
-		fig.savefig(filename + '.png', dpi=600)
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
 
 	return list_popt, list_th
 
@@ -227,7 +228,8 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		if c < len(States) - 1:
 			ax[1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
 			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
-		plt.show()
+		if show_plot:
+			plt.show()
 		fig.savefig(filename + str(c) + '.png', dpi=600)
 		plt.close(fig)
 
@@ -256,7 +258,8 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 	ax.set_xlabel(r'Time ' + t_units)
 	ax.set_ylabel(r'Signal ' + y_units)
 	ax.set_ylim(y_lim)
-	plt.show()
+	if show_plot:
+		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -288,31 +291,29 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	ax.set_xlabel(r'State duration $T$ ' + t_units)
 	ax.set_ylabel(r'State mean amplitude ' + y_units)
 	# ax.legend()
+	if show_plot:
+		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.show()
+	plt.close(fig)
 
 def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
+	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	# plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
-	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
-
-	# t_start = 0
-	# t_jump = 100
-	# Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
+	t_start = 0
+	for t_jump in [1, 100]:
+		Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
 	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
-	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
-
-	### Compute the trasition matrix
-	# T_matrix = compute_transition_matrix(all_the_labels, 'output_figures/Fig8')
-	# normalized_T_matrix = normalize_T_matrix(T_matrix)
+	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
