@@ -20,6 +20,8 @@ import seaborn as sns
 from sklearn.preprocessing import normalize
 from sympy import *
 
+show_plot = False			# Show all the plots
+
 def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
 	param = np.loadtxt('input_parameters.txt')
@@ -149,7 +151,8 @@ def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
 	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
 	fig = go.Figure(Data)
 
-	fig.show()
+	if show_plot:
+		fig.show()
 	fig.write_image(filename + '.png', scale=5.0)
 
 def compute_transition_matrix(PAR, all_the_labels, filename):
@@ -188,8 +191,10 @@ def compute_transition_matrix(PAR, all_the_labels, filename):
 	ax.set_ylabel('From...')
 	ax.xaxis.tick_top()
 	ax.xaxis.set_label_position('top')
-	plt.show()
+	if show_plot:
+		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
 
 	# lambda_T, P = lin.eig(T.T) # eigenvalues, eigenvectors
 	# print('1. \n', lambda_T)
