@@ -34,7 +34,12 @@ def all_the_input_stuff():
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 	M_raw = remove_first_points(M_raw, PAR[2])
 	M = Savgol_filter(M_raw, PAR[1], poly_order)
-	return M_raw, M, PAR
+	total_time = M.shape[1]
+	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[4]) + ' ns). ')
+	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
+	list_of_states = []
+
+	return M_raw, M, PAR, all_the_labels, list_of_states
 
 def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	flat_M = M.flatten()
@@ -287,13 +292,10 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	plt.show()
 
 def main():
-	M_raw, M, PAR = all_the_input_stuff()
-	total_time = M.shape[1]
-	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[4]) + ' ns). ')
-	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
-	list_of_states = []
+	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
+
 
 	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
 	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
@@ -301,9 +303,10 @@ def main():
 
 	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
-	t_start = 0
-	t_jump = 100
-	Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
+	# t_start = 0
+	# t_jump = 100
+	# Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
+	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
 	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 

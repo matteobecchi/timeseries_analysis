@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as lin
 import matplotlib.pyplot as plt
 import sys
 import os
@@ -16,6 +17,8 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
 import seaborn as sns
+from sklearn.preprocessing import normalize
+from sympy import *
 
 def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
@@ -107,6 +110,10 @@ def relabel_states(all_the_labels, list_of_states):
 				if tmp1[a][b] == l:
 					tmp2[a][b] = i
 
+	with open('tmp_state_data.txt', 'w') as f:
+		for state in list2:
+			print(state[2], file=f)
+
 	return tmp2, list2
 
 def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
@@ -144,6 +151,55 @@ def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
 
 	fig.show()
 	fig.write_image(filename + '.png', scale=5.0)
+
+def compute_transition_matrix(PAR, all_the_labels, filename):
+	tau_window = PAR[0]
+	t_conv = PAR[4]
+	unique_labels = np.unique(all_the_labels)
+	n_states = unique_labels.size
+	
+	T = np.zeros((n_states, n_states))
+	for L in all_the_labels:
+		for w in range(len(L) - 1):
+			ID0 = int(L[w])
+			ID1 = int(L[w + 1])
+			T[ID0][ID1] += 1
+
+	T_sym = np.divide(T + np.transpose(T), 2.0)
+	T = normalize(T_sym, axis=1, norm='l1')
+
+	fig, ax = plt.subplots(figsize=(10, 8))
+	T_plot = copy.deepcopy(T)
+	T_min = T[0][0]
+	for a in range(T_plot.shape[0]):
+		for b in range(T_plot.shape[1]):
+			if T_plot[a][b] < T_min and T_plot[a][b] > 0:
+				T_min = T_plot[a][b]
+	for a in range(T_plot.shape[0]):
+		for b in range(T_plot.shape[1]):
+			if T_plot[a][b] == 0.0:
+				T_plot[a][b] = T_min
+	im = ax.imshow(T_plot, norm=LogNorm(vmin=np.min(T_plot), vmax=np.max(T_plot)))
+	fig.colorbar(im)
+	for (i, j),val in np.ndenumerate(T_plot):
+		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
+	fig.suptitle(r'$\tau=$' + str(tau_window*t_conv) + r' ns')
+	ax.set_xlabel('To...')
+	ax.set_ylabel('From...')
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+
+	# lambda_T, P = lin.eig(T.T) # eigenvalues, eigenvectors
+	# print('1. \n', lambda_T)
+	# lambda_K = np.empty(lambda_T.size)
+	# for n in range(lambda_T.size):
+	# 	lambda_K[n] = -t_conv*tau_window/np.log(complex(lambda_T[n]))
+	# print('2.\n', lambda_K)
+	# D = np.diag(lambda_K)
+	# K = (P.T)@D@lin.inv(P.T)
+	# print('3.\n', K)
 
 def print_mol_labels1(all_the_labels, PAR, filename):
 	tau_window = PAR[0]
