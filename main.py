@@ -290,11 +290,9 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	ax.scatter(data[0], data[1], c=labels, s=1.0)
 	ax.set_xlabel(r'State duration $T$ ' + t_units)
 	ax.set_ylabel(r'State mean amplitude ' + y_units)
-	# ax.legend()
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
-	plt.show()
 	plt.close(fig)
 
 def main():

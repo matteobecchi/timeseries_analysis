@@ -141,7 +141,15 @@ def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
 			value[c] = T[n1][n2]
 			c += 1
 
-	label = np.tile(range(n_states), 2)
+	tmp_label1 = []
+	tmp_label2 = []
+	for n in range(n_states):
+		starting_fraction = np.sum(T[n])/np.sum(T)
+		ending_fraction = np.sum(T.T[n])/np.sum(T)
+		tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
+		tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction*100) + '%')
+	label = np.concatenate((tmp_label1, tmp_label2))
+	# label = np.tile(range(n_states), 2)
 	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
