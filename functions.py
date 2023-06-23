@@ -20,7 +20,7 @@ import seaborn as sns
 from sklearn.preprocessing import normalize
 from sympy import *
 
-show_plot = False			# Show all the plots
+show_plot = True			# Show all the plots
 
 def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
@@ -37,14 +37,22 @@ def read_input_parameters():
 
 def read_data(filename):
 	print('* Reading data...')
-	with np.load(filename) as data:
-		lst = data.files
-		M = np.array(data[lst[0]])
-		if M.ndim == 3:
-			M = np.vstack(M)
-			M = M.T
-			print('\tData shape:', M.shape)
+	if filename[-3:] == 'npz':
+		with np.load(filename) as data:
+			lst = data.files
+			M = np.array(data[lst[0]])
+			if M.ndim == 3:
+				M = np.vstack(M)
+				M = M.T
+				print('\tData shape:', M.shape)
+			return M
+	elif filename[-3:] == 'npy':
+		M = np.load(filename)
+		print('\tData shape:', M.shape)
 		return M
+	else:
+		print('Error: unsupported format for input file.')
+		return
 
 def normalize_array(x):
 	mean = np.mean(x)
@@ -199,6 +207,10 @@ def compute_transition_matrix(PAR, all_the_labels, filename):
 	ax.set_ylabel('From...')
 	ax.xaxis.tick_top()
 	ax.xaxis.set_label_position('top')
+	ax.set_xticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_xticklabels(range(n_states))
+	ax.set_yticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_yticklabels(range(n_states))
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)

@@ -5,20 +5,21 @@ import os
 import scipy.optimize
 import scipy.stats
 from scipy.signal import argrelextrema
+from scipy.signal import savgol_filter
 import pycwt as wavelet
 from functions import *
 
 ### System specific parameters ###
 t_units = r'[ns]'			# Units of measure of time
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
-example_ID = 800
+example_ID = 100
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01 				# Treshold to exit the maxima search
-show_plot = False			# Show all the plots
+show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -53,6 +54,14 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		if min_ID[n + 1] == min_ID[n] + 1:
 			tmp_to_delete.append(n + 1)
 	min_ID = np.delete(min_ID, tmp_to_delete, 0)
+	tmp_min_ID = [min_ID[0]]
+	current_max = 0
+	for n in range(1, len(min_ID)):
+		if min_ID[n] > max_ID[current_max]:
+			tmp_min_ID.append(min_ID[n])
+			current_max += 1
+
+	min_ID = np.array(tmp_min_ID)
 
 	list_popt = []
 	for n in range(max_ID.size):
@@ -67,7 +76,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			tmp_id1 += 1
 		id0 = np.max([tmp_id0, min_ID[n]])
 		id1 = np.min([tmp_id1, min_ID[n + 1]])
-		if id1 - id0 < 5: # If the fitting interval is too small, discard.
+		if id1 - id0 < 4: # If the fitting interval is too small, discard.
 			continue
 		Bins = bins[id0:id1]
 		Counts = counts[id0:id1]
@@ -128,7 +137,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
 		ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 	for th in list_th:
-		ax.vlines(th, 0, 100, linestyle='--', color='black')
+		ax.vlines(th, 0, np.max(counts), linestyle='--', color='black')
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -307,7 +316,7 @@ def main():
 	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
 	t_start = 0
-	for t_jump in [1, 100]:
+	for t_jump in [1, 10]:
 		Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
 	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
