@@ -6,8 +6,8 @@ Code for identify dynamic enviroinments and events from a time series
 A one-dimensional timeseries. 
 
 ## Input parameters
-tau_window			the amplidude of the time windows<br>
-tau_smooth          sets the time resolution (Savgol_filter window)<br>
-tau_delay           is for ignoring the first tau_delay frames of the trajectory<br>
-number_of_sigmas    defines the width of the stable states<br>
-t_conv				convert number of frames in time units
+* tau_window: the amplidude of the time windows<br>
+* tau_smooth: sets the time resolution (Savgol_filter window)<br>
+* tau_delay: is for ignoring the first tau_delay frames of the trajectory<br>
+* number_of_sigmas: defines the width of the stable states<br>
+* t_conv: convert number of frames in time units
