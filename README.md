@@ -13,7 +13,7 @@ The working directory must contain:
 
 From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
 
-## Input parameters
+## input_parameters.txt
 * `tau_window`: the amplidude of the time windows. 
 * `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. 
 * `t_conv`: convert number of frames in time units. 
