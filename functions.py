@@ -26,14 +26,18 @@ def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
 	param = np.loadtxt('input_parameters.txt')
 	tau_window = int(param[0])
-	tau_smooth = int(param[1])
-	tau_delay = int(param[2])
-	number_of_sigmas = param[3]
-	t_conv = param[4]
+	tau_delay = int(param[1])
+	t_conv = param[2]
+	if len(param) > 3:
+		tau_smooth = int(param[3])
+		number_of_sigmas = param[4]
+	else:
+		tau_smooth = tau_window
+		number_of_sigmas = 2.0
 	if filename.shape == (2,):
 		return filename, [tau_window, tau_smooth, tau_delay, number_of_sigmas, t_conv]
 	else:
-		return str(filename), [tau_window, tau_smooth, tau_delay, number_of_sigmas, t_conv]
+		return str(filename), [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas]
 
 def read_data(filename):
 	print('* Reading data...')
@@ -173,7 +177,7 @@ def Sankey(all_the_labels, t_start, t_jump, number_of_frames, t_conv, filename):
 
 def compute_transition_matrix(PAR, all_the_labels, filename):
 	tau_window = PAR[0]
-	t_conv = PAR[4]
+	t_conv = PAR[2]
 	unique_labels = np.unique(all_the_labels)
 	n_states = unique_labels.size
 	

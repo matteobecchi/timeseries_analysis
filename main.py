@@ -26,20 +26,20 @@ def all_the_input_stuff():
 	data_directory, PAR = read_input_parameters()
 	### Create file for output
 	with open(output_file, 'w') as f:
-		print('# ' + str(PAR[0]) + ', ' + str(PAR[2]) + ', ' + str(PAR[3]), file=f)
+		print('# ' + str(PAR[0]) + ', ' + str(PAR[1]) + ', ' + str(PAR[2]), file=f)
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
 		M0 = read_data(data_directory[0])
 		M1 = read_data(data_directory[1])
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
-	M_raw = remove_first_points(M_raw, PAR[2])
-	M = Savgol_filter(M_raw, PAR[1], poly_order)
+	M_raw = remove_first_points(M_raw, PAR[1])
+	M = Savgol_filter(M_raw, PAR[3], poly_order)
 	SIG_MAX = np.max(M)
 	SIG_MIN = np.min(M)
 	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
 	total_time = M.shape[1]
-	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[4]) + ' ns). ')
+	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
 	list_of_states = []
 
@@ -184,7 +184,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, PAR[3], 'output_figures/Fig1_' + str(iteration_id))
+		list_popt, list_th = gauss_fit_n(M1, n_bins, PAR[4], 'output_figures/Fig1_' + str(iteration_id))
 
 		for n in range(len(list_th)):
 			list_of_states.append([list_popt[n], list_th[n], 0.0])
@@ -205,8 +205,8 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing colored trajectories with histograms...')
 	tau_window = PAR[0]
-	tau_delay = PAR[2]
-	t_conv = PAR[4]
+	tau_delay = PAR[1]
+	t_conv = PAR[2]
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
@@ -248,8 +248,8 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 
 def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 	tau_window = PAR[0]
-	tau_delay = PAR[2]
-	t_conv = PAR[4]
+	tau_delay = PAR[1]
+	t_conv = PAR[2]
 	fig, ax = plt.subplots()
 	for c, S in enumerate(States):
 		list_of_times = []
@@ -279,7 +279,7 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	print('* Computing some statistics on the states...')
 	tau_window = PAR[0]
-	t_conv = PAR[4]
+	t_conv = PAR[2]
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	data = []
@@ -321,7 +321,7 @@ def main():
 
 	t_start = 0
 	for t_jump in [1, 10]:
-		Sankey(all_the_labels, t_start, t_jump, 9, PAR[4], 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
+		Sankey(all_the_labels, t_start, t_jump, 9, PAR[2], 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
 	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
 	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
