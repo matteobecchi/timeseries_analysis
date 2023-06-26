@@ -35,6 +35,9 @@ def all_the_input_stuff():
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 	M_raw = remove_first_points(M_raw, PAR[2])
 	M = Savgol_filter(M_raw, PAR[1], poly_order)
+	SIG_MAX = np.max(M)
+	SIG_MIN = np.min(M)
+	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
 	total_time = M.shape[1]
 	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[4]) + ' ns). ')
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
@@ -56,10 +59,11 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	min_ID = np.delete(min_ID, tmp_to_delete, 0)
 	tmp_min_ID = [min_ID[0]]
 	current_max = 0
-	for n in range(1, len(min_ID)):
+	for n in range(1, len(min_ID) - 1):
 		if min_ID[n] > max_ID[current_max]:
 			tmp_min_ID.append(min_ID[n])
 			current_max += 1
+	tmp_min_ID.append(min_ID[-1])
 
 	min_ID = np.array(tmp_min_ID)
 
@@ -262,7 +266,7 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
 
-		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05)
+		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States))
 	
 	ax.set_xlabel(r'Time ' + t_units)
 	ax.set_ylabel(r'Signal ' + y_units)
@@ -317,7 +321,7 @@ def main():
 
 	t_start = 0
 	for t_jump in [1, 10]:
-		Sankey(all_the_labels, t_start, t_jump, 10, 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
+		Sankey(all_the_labels, t_start, t_jump, 9, PAR[4], 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
 	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
 	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
