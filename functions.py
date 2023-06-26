@@ -126,7 +126,7 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp2, list2
 
-def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
+def Sankey(all_the_labels, t_start, t_jump, number_of_frames, t_conv, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
 	if t_start + t_jump + number_of_frames > all_the_labels.shape[1]:
 		print('ERROR: the required frame range is out of bound.')
@@ -157,7 +157,6 @@ def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
 		tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
 		tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction*100) + '%')
 	label = np.concatenate((tmp_label1, tmp_label2))
-	# label = np.tile(range(n_states), 2)
 	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
@@ -166,6 +165,7 @@ def Sankey(all_the_labels, t_start, t_jump, number_of_frames, filename):
 	link = dict(source=source, target=target, value=value)
 	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
 	fig = go.Figure(Data)
+	fig.update_layout(title='Tau = ' + str(t_jump*t_conv) + ' ns')
 
 	if show_plot:
 		fig.show()
@@ -215,16 +215,6 @@ def compute_transition_matrix(PAR, all_the_labels, filename):
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
-
-	# lambda_T, P = lin.eig(T.T) # eigenvalues, eigenvectors
-	# print('1. \n', lambda_T)
-	# lambda_K = np.empty(lambda_T.size)
-	# for n in range(lambda_T.size):
-	# 	lambda_K[n] = -t_conv*tau_window/np.log(complex(lambda_T[n]))
-	# print('2.\n', lambda_K)
-	# D = np.diag(lambda_K)
-	# K = (P.T)@D@lin.inv(P.T)
-	# print('3.\n', K)
 
 def print_mol_labels1(all_the_labels, PAR, filename):
 	tau_window = PAR[0]
