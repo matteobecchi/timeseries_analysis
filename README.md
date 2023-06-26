@@ -3,7 +3,7 @@ Code for identify dynamic enviroinments and events from a time series
 (*t*SOAP, LENS...). 
 
 ## Input data
-A one-dimensional timeseries. Supported formats: .npy, npz.
+A one-dimensional timeseries. Supported formats: .npy, .npz.
 
 ## Usage
 The working directory must contain:
@@ -19,3 +19,6 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 * `tau_smooth`: sets the time resolution (Savgol_filter window). Default choise is `tau_smooth = tau_window`. 
 * `number_of_sigmas`: defines the width of the stable states. Default choise is `number_of_sigmas = 2.0`. 
 * `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. 
+
+## Required Python 3 packages
+`matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sklearn`, `sys`. 
