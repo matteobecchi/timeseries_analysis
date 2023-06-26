@@ -9,5 +9,5 @@ A one-dimensional timeseries. Supported formats: .npy, npz.
 * `tau_window`: the amplidude of the time windows. 
 * `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. 
 * `t_conv`: convert number of frames in time units. 
-* `tau_smooth`: sets the time resolution (Savgol_filter window). 
-* `number_of_sigmas`: defines the width of the stable states. 
+* `tau_smooth`: sets the time resolution (Savgol_filter window). Default `tau_smooth = tau_window`. 
+* `number_of_sigmas`: defines the width of the stable states. Default `number_of_sigmas = 2.0`. 
