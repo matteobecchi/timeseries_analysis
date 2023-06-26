@@ -12,7 +12,7 @@ from functions import *
 ### System specific parameters ###
 t_units = r'[ns]'			# Units of measure of time
 y_units = r'[$t$SOAP]'		# Units of measure of the signal
-example_ID = 100
+# example_ID = 100
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
@@ -24,9 +24,6 @@ show_plot = True			# Show all the plots
 def all_the_input_stuff():
 	### Read and clean the data points
 	data_directory, PAR = read_input_parameters()
-	### Create file for output
-	with open(output_file, 'w') as f:
-		print('# ' + str(PAR[0]) + ', ' + str(PAR[1]) + ', ' + str(PAR[2]), file=f)
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
@@ -42,6 +39,12 @@ def all_the_input_stuff():
 	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
 	list_of_states = []
+
+	### Create file for output
+	with open(output_file, 'w') as f:
+		print('# ' + str(PAR[0]) + ', ' + str(PAR[1]) + ', ' + str(PAR[2]), file=f)
+	if not os.path.exists('output_figures'):
+		os.makedirs('output_figures')
 
 	return M_raw, M, PAR, all_the_labels, list_of_states
 
@@ -266,7 +269,7 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
 
-		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States))
+		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05)
 	
 	ax.set_xlabel(r'Time ' + t_units)
 	ax.set_ylabel(r'Signal ' + y_units)
@@ -315,7 +318,7 @@ def main():
 
 	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	plot_one_trajectory(M[example_ID], PAR, all_the_labels[example_ID], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+	plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
 	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
