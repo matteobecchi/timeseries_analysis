@@ -1,6 +1,6 @@
 # timeseries_analysis
 Code for identify dynamic enviroinments and events from a time series 
-(_t_SOAP, LENS...). 
+(_t_ SOAP, LENS...). 
 
 ## Input data
 A one-dimensional timeseries. Supported formats: .npy, npz.
