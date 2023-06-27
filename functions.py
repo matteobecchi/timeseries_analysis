@@ -18,8 +18,6 @@ import plotly.express as px
 import seaborn as sns
 from sklearn.preprocessing import normalize
 
-show_plot = False			# Show all the plots
-
 def read_input_parameters():
 	filename = np.loadtxt('data_directory.txt', dtype=str)
 	param = np.loadtxt('input_parameters.txt')
@@ -62,7 +60,7 @@ def normalize_array(x):
 
 def plot_histo(ax, counts, bins):
 	ax.stairs(counts, bins, fill=True)
-	ax.set_xlabel(r'$t$SOAP signal')
+	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
 def Savgol_filter(M, tau, poly_order):
@@ -123,9 +121,9 @@ def relabel_states(all_the_labels, list_of_states):
 	tmp2 = tmp1
 	list2 = list1
 
-	with open('tmp_state_data.txt', 'w') as f:
-		for state in list2:
-			print(state[2], file=f)
+	# with open('tmp_state_data.txt', 'w') as f:
+	# 	for state in list2:
+	# 		print(state[2], file=f)
 
 	return tmp2, list2
 

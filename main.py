@@ -5,20 +5,18 @@ import os
 import scipy.optimize
 import scipy.stats
 from scipy.signal import argrelextrema
-from scipy.signal import savgol_filter
-import pycwt as wavelet
 from functions import *
 
 ### System specific parameters ###
 t_units = r'[ns]'			# Units of measure of time
-y_units = r'[$t$SOAP]'		# Units of measure of the signal
-# example_ID = 100
+# y_units = r'[$t$SOAP]'		# Units of measure of the signal
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
-stop_th = 0.01 				# Treshold to exit the maxima search
+stop_th = 0.001				# Treshold to exit the maxima search
+sankey_average = 10			# On how many frames to average the Sankey diagrams
 show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
@@ -237,7 +235,7 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		fig.suptitle('State ' + str(c))
 		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_xlabel(r'Time ' + t_units)
-		ax[0].set_ylabel(r'Signal ' + y_units)
+		ax[0].set_ylabel('Normalized signal')
 		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 		ax[0].set_ylim(y_lim)
 		ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
@@ -271,8 +269,8 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 
 		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05)
 	
-	ax.set_xlabel(r'Time ' + t_units)
-	ax.set_ylabel(r'Signal ' + y_units)
+	ax.set_xlabel('Time ' + t_units)
+	ax.set_ylabel('Normalized signal')
 	ax.set_ylim(y_lim)
 	if show_plot:
 		plt.show()
@@ -305,7 +303,112 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	fig, ax = plt.subplots()
 	ax.scatter(data[0], data[1], c=labels, s=1.0)
 	ax.set_xlabel(r'State duration $T$ ' + t_units)
-	ax.set_ylabel(r'State mean amplitude ' + y_units)
+	ax.set_ylabel(r'State mean amplitude')
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
+def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
+	print('* Computing and plotting the averaged Sankey diagrams...')
+	if frame_list[-1] + aver_window > all_the_labels.shape[1]:
+		print('ERROR: the required frame range is out of bound.')
+		return
+
+	n_states = np.unique(all_the_labels).size
+	source = np.empty((frame_list.size - 1)*n_states**2)
+	target = np.empty((frame_list.size - 1)*n_states**2)
+	value = np.empty((frame_list.size - 1)*n_states**2)
+	c = 0
+	tmp_label1 = []
+	tmp_label2 = []
+
+	for i, t0 in enumerate(frame_list[:-1]):
+		t_jump = frame_list[i + 1] - frame_list[i]
+		T = np.zeros((n_states, n_states))
+		for t in range(t0, t0 + aver_window):
+			for L in all_the_labels:
+				T[int(L[t])][int(L[t + t_jump])] += 1
+
+		for n1 in range(len(T)):
+			for n2 in range(len(T[n1])):
+				source[c] = n1 + i*n_states
+				target[c] = n2 + (i + 1)*n_states
+				value[c] = T[n1][n2]
+				c += 1
+
+		for n in range(n_states):
+			starting_fraction = np.sum(T[n])/np.sum(T)
+			ending_fraction = np.sum(T.T[n])/np.sum(T)
+			tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
+			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction*100) + '%')
+
+	label = np.concatenate((tmp_label1, tmp_label2))
+	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
+	palette.insert(0, '#440154')
+	palette.append('#fde725')
+	color = np.tile(palette, frame_list.size)
+	# x_loc = np.concatenate((np.zeros(n_states), np.ones(n_states)))
+	# y_loc = np.empty(2*n_states)
+	# y_sum1 = 0
+	# y_sum2 = 0
+	# delta = 0.1
+	# for n in range(n_states):
+	# 	y_loc[n] = y_sum1
+	# 	y_loc[n_states + n] = y_sum2
+	# 	y_sum1 += (np.sum(T[n]) + delta)/(np.sum(T) + n_states*delta)
+	# 	y_sum2 += (np.sum(T.T[n]) + delta)/(np.sum(T) + n_states*delta)
+	# node = dict(label=label, x=x_loc, y=y_loc, pad=30, thickness=20, color=color)
+	node = dict(label=label, pad=30, thickness=20, color=color)
+	link = dict(source=source, target=target, value=value)
+	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
+	fig = go.Figure(Data)
+	# fig.update_layout(title='Tau = ' + str(t_jump*t_conv) + ' ns')
+
+	if show_plot:
+		fig.show()
+	fig.write_image(filename + '.png', scale=5.0)
+
+def compute_transition_matrix(PAR, all_the_labels, filename):
+	tau_window = PAR[0]
+	t_conv = PAR[2]
+	unique_labels = np.unique(all_the_labels)
+	n_states = unique_labels.size
+	
+	T = np.zeros((n_states, n_states))
+	for L in all_the_labels:
+		for w in range(len(L) - 1):
+			ID0 = int(L[w])
+			ID1 = int(L[w + 1])
+			T[ID0][ID1] += 1
+
+	T_sym = np.divide(T + np.transpose(T), 2.0)
+	T = normalize(T_sym, axis=1, norm='l1')
+
+	fig, ax = plt.subplots(figsize=(10, 8))
+	T_plot = copy.deepcopy(T)
+	T_min = T[0][0]
+	for a in range(T_plot.shape[0]):
+		for b in range(T_plot.shape[1]):
+			if T_plot[a][b] < T_min and T_plot[a][b] > 0:
+				T_min = T_plot[a][b]
+	for a in range(T_plot.shape[0]):
+		for b in range(T_plot.shape[1]):
+			if T_plot[a][b] == 0.0:
+				T_plot[a][b] = T_min
+	im = ax.imshow(T_plot, norm=LogNorm(vmin=np.min(T_plot), vmax=np.max(T_plot)))
+	fig.colorbar(im)
+	for (i, j),val in np.ndenumerate(T_plot):
+		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
+	fig.suptitle(r'$\tau=$' + str(tau_window*t_conv) + r' ns')
+	ax.set_xlabel('To...')
+	ax.set_ylabel('From...')
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	ax.set_xticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_xticklabels(range(n_states))
+	ax.set_yticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_yticklabels(range(n_states))
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -316,18 +419,17 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
+	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	# plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
+	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
-	t_start = 0
-	for t_jump in [1, 10]:
-		Sankey(all_the_labels, t_start, t_jump, 9, PAR[2], 'output_figures/Fig5_' + str(t_start) + '-' + str(t_jump))
-	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
+		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig5_' + str(i))
+	# compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
-	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
