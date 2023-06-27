@@ -349,9 +349,13 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 				x_w = x[tau_window*w:tau_window*(w + 1)]
 				current_label = all_the_labels[i][w]
 
+	data = np.array(data)
+
+	### "Amplitude-frequency" analysis of the states
 	A = []
+	sigma_A = []
 	Nu = []
-	Labels = []
+	sigma_Nu = []
 	tmp_fig, tmp_ax = plt.subplots(np.unique(labels).size, 1)
 	for j, state in enumerate(np.unique(labels)):
 		a = []
@@ -368,28 +372,50 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 			tmp_ax[j].stairs(counts, bins, fill=True)
 			tmp_ax[j].plot(bins, exponential(bins, *popt))
 			Nu.append(popt[1]/(tau_window*t_conv))
-			A.append(np.array(a))
-			Labels.append('State ' + str(state) + f', {popt[1]/(tau_window*t_conv):.2f}')
+			sigma_Nu.append(pcov[1][1]/(tau_window*t_conv))
+			A.append(np.mean(np.array(a)))
+			sigma_A.append(np.std(np.array(a)))
 		except:
 			continue
-	
 	fig, ax = plt.subplots()
-	ax.boxplot(A, positions=Nu)
-	ax.set_xscale('log')
-	ax.set_xlabel(r'Frequency of decay [ns$^{-1}$]')
-	ax.set_ylabel(r'State average amplitude A')
+	ax.errorbar(x=Nu, y=A, xerr=sigma_Nu, yerr=sigma_A, capsize=2.0, marker='o', lw=0.0, elinewidth=1.0)
+	for n in range(len(Nu)):
+		ax.text(Nu[n], A[n], str(n))
+	ax.set_xlabel(r'Decay frequency [ns$^{-1}$]')
+	ax.set_ylabel(r'State average amplitude $A$')
+	fig.savefig(filename + '_A.png', dpi=600)
 
+	### "Amplitude-frequency" analysis of the jumps
+	n_states = np.unique(labels).size
+	Delta_A = [ [ [] for _ in range(n_states)] for _ in range(n_states) ]
+	T = np.empty((n_states, n_states))
+	for i in range(1, data.shape[0]):
+		i0 = int(labels[i - 1])
+		i1 = int(labels[i])
+		Delta_A[i0][i1].append(data[i][1] - data[i - 1][1])
+		T[i0][i1] += 1.0
+	T = normalize(T, axis=1, norm='l1')
+	A = []
+	sigma_A = []
+	P = []
+	Labels = []
+	for a in range(len(Delta_A)):
+		for b in range(len(Delta_A[a])):
+			if T[a][b] > 0.05:
+				A.append(np.mean(Delta_A[a][b]))
+				sigma_A.append(np.std(Delta_A[a][b]))
+				P.append(T[a][b])
+				Labels.append(str(a) + '->' + str(b))
+	fig, ax = plt.subplots()
+	ax.errorbar(x=P, y=A, yerr=sigma_A, capsize=2.0, marker='o', lw=0.0, elinewidth=1.0)
+	for n in range(len(P)):
+		ax.text(P[n], A[n], Labels[n])
+	ax.set_xlim([0.0, 1.0])
+	ax.set_xlabel(r'Jump probability')
+	ax.set_ylabel(r'Jump average amplitude $\Delta A$')
+	fig.savefig(filename + '_B.png', dpi=600)
+	
 	plt.show()
-
-	# data = np.array(data).T
-	# fig, ax = plt.subplots()
-	# ax.scatter(data[0], data[1], c=labels, s=1.0)
-	# ax.set_xlabel(r'State duration $T$ ' + t_units)
-	# ax.set_ylabel(r'State mean amplitude')
-	# if show_plot:
-	# 	plt.show()
-	# fig.savefig(filename + '.png', dpi=600)
-	# plt.close(fig)
 
 def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
