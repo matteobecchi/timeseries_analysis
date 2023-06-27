@@ -18,7 +18,7 @@ n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 sankey_average = 10			# On how many frames to average the Sankey diagrams
 tau_sig_resolutions = 10	# Ignore the windows shorter than tau_sig_resolutions
-show_plot = False			# Show all the plots
+show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -415,7 +415,8 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	ax.set_ylabel(r'Jump average amplitude $\Delta A$')
 	fig.savefig(filename + '_B.png', dpi=600)
 	
-	plt.show()
+	if show_plot:
+		plt.show()
 
 def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
@@ -483,23 +484,25 @@ def compute_transition_matrix(PAR, all_the_labels, filename):
 
 	T_sym = np.divide(T + np.transpose(T), 2.0)
 	T = normalize(T_sym, axis=1, norm='l1')
+	K = np.identity(T.shape[0]) - T
+	K /= tau_window*t_conv
+
+	for a in range(K.shape[0]):
+		for b in range(K.shape[1]):
+			if a!=b:
+				K[a][b] *= -1
+	K_min = K[0][0]
+	for a in range(K.shape[0]):
+		for b in range(K.shape[1]):
+			if K[a][b] < K_min and K[a][b] > 0:
+				K_min = K[a][b]
 
 	fig, ax = plt.subplots(figsize=(10, 8))
-	T_plot = copy.deepcopy(T)
-	T_min = T[0][0]
-	for a in range(T_plot.shape[0]):
-		for b in range(T_plot.shape[1]):
-			if T_plot[a][b] < T_min and T_plot[a][b] > 0:
-				T_min = T_plot[a][b]
-	for a in range(T_plot.shape[0]):
-		for b in range(T_plot.shape[1]):
-			if T_plot[a][b] == 0.0:
-				T_plot[a][b] = T_min
-	im = ax.imshow(T_plot, cmap='cividis', norm=LogNorm(vmin=np.min(T_plot), vmax=np.max(T_plot)))
+	im = ax.imshow(K, cmap='cividis', norm=LogNorm(vmin=K_min, vmax=np.max(K)))
 	fig.colorbar(im)
-	for (i, j),val in np.ndenumerate(T_plot):
-		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
-	fig.suptitle(r'$\Delta t=$' + str(tau_window*t_conv) + ' ' + t_units)
+	for (i, j), val in np.ndenumerate(K):
+		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
+	fig.suptitle(r'Approximate transition rates [ns$^{-1}$]')
 	ax.set_xlabel('To...')
 	ax.set_ylabel('From...')
 	ax.xaxis.tick_top()
@@ -522,12 +525,12 @@ def main():
 	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	# plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
+	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4') # Not really useful
 	# tau_sigma(M_raw, PAR, all_the_labels, tau_sig_resolutions, 'output_figures/Fig4')
 
 	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
 	# 	sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig5_' + str(i))
-	# compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
+	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
 	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
