@@ -69,12 +69,15 @@ def Savgol_filter(M, tau, poly_order):
 def gaussian(x, m, sigma, A):
 	return A*np.exp(-((x - m)/sigma)**2)
 
+def exponential(x, A, nu):
+	return A*np.exp(-x*nu)
+
 def remove_first_points(M, delay):
 	### to remove the first delay frames #####
 	tmp = []
 	for m in M:
 		tmp.append(m[delay:])
-	return tmp
+	return np.array(tmp)
 
 def find_nearest(array, value):
 	array = np.asarray(array)
