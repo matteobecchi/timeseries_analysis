@@ -348,22 +348,12 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
 	color = np.tile(palette, frame_list.size)
-	# x_loc = np.concatenate((np.zeros(n_states), np.ones(n_states)))
-	# y_loc = np.empty(2*n_states)
-	# y_sum1 = 0
-	# y_sum2 = 0
-	# delta = 0.1
-	# for n in range(n_states):
-	# 	y_loc[n] = y_sum1
-	# 	y_loc[n_states + n] = y_sum2
-	# 	y_sum1 += (np.sum(T[n]) + delta)/(np.sum(T) + n_states*delta)
-	# 	y_sum2 += (np.sum(T.T[n]) + delta)/(np.sum(T) + n_states*delta)
-	# node = dict(label=label, x=x_loc, y=y_loc, pad=30, thickness=20, color=color)
+
 	node = dict(label=label, pad=30, thickness=20, color=color)
 	link = dict(source=source, target=target, value=value)
-	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
+	Data = go.Sankey(link=link, node=node, arrangement="freeform")
 	fig = go.Figure(Data)
-	# fig.update_layout(title='Tau = ' + str(t_jump*t_conv) + ' ns')
+	fig.update_layout(title='Frames: ' + str(frame_list*t_conv) + ' ns')
 
 	if show_plot:
 		fig.show()
@@ -396,7 +386,7 @@ def compute_transition_matrix(PAR, all_the_labels, filename):
 		for b in range(T_plot.shape[1]):
 			if T_plot[a][b] == 0.0:
 				T_plot[a][b] = T_min
-	im = ax.imshow(T_plot, norm=LogNorm(vmin=np.min(T_plot), vmax=np.max(T_plot)))
+	im = ax.imshow(T_plot, cmap='cividis', norm=LogNorm(vmin=np.min(T_plot), vmax=np.max(T_plot)))
 	fig.colorbar(im)
 	for (i, j),val in np.ndenumerate(T_plot):
 		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
@@ -425,9 +415,9 @@ def main():
 
 	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
+	for i, frame_list in enumerate([np.array([0, 1])]):#, np.array([0, 100]), np.array([0, 50, 100])]):
 		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig5_' + str(i))
-	# compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
+	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
 	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
