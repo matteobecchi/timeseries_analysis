@@ -5,11 +5,11 @@ import os
 import scipy.optimize
 import scipy.stats
 from scipy.signal import argrelextrema
+import pycwt as wavelet
 from functions import *
 
 ### System specific parameters ###
 t_units = r'[ns]'			# Units of measure of time
-# y_units = r'[$t$SOAP]'		# Units of measure of the signal
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
@@ -17,7 +17,8 @@ poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 sankey_average = 10			# On how many frames to average the Sankey diagrams
-show_plot = True			# Show all the plots
+tau_sig_resolutions = 10	# Ignore the windows shorter than tau_sig_resolutions
+show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -38,7 +39,7 @@ def all_the_input_stuff():
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
 	list_of_states = []
 
-	### Create file for output
+	### Create files for output
 	with open(output_file, 'w') as f:
 		print('# ' + str(PAR[0]) + ', ' + str(PAR[1]) + ', ' + str(PAR[2]), file=f)
 	if not os.path.exists('output_figures'):
@@ -277,6 +278,55 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
+def tau_sigma(M, PAR, all_the_labels, resolution, filename):
+	tau_window = PAR[0]
+	T = M.shape[1]
+	number_of_windows = int(T/tau_window)
+	data = []
+	labels = []
+	wc = 0
+	for i, x in enumerate(M):
+		current_label = all_the_labels[i][0]
+		x_w = x[0:tau_window]
+		for w in range(1, number_of_windows):
+			 if all_the_labels[i][w] == current_label:
+			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+			 else:
+			 	if x_w.size < tau_window*resolution:
+			 		continue
+			 	### Lag-1 autocorrelation for colored noise
+				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n gaussian white noise
+			 	x_smean = x_w - np.mean(x_w)
+			 	alpha = 0.0
+			 	var = 1.0
+			 	try:
+			 		alpha, var, _ = wavelet.ar1(x_smean)
+			 		data.append([alpha, np.sqrt(var)])
+			 		labels.append(current_label)
+			 	except Warning:
+			 		wc += 1
+			 	x_w = x[tau_window*w:tau_window*(w + 1)]
+			 	current_label = all_the_labels[i][w]
+
+	print('\t-- ' + str(wc) + ' warnings generated --')
+	data = np.array(data).T
+	tau_c = 1/(1 - data[0])
+
+	figa, axa = plt.subplots(figsize=(7.5, 4.8))
+	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
+	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
+	axa.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
+	figa.savefig(filename + 'a.png', dpi=600)
+
+	figb, axb = plt.subplots(figsize=(7.5, 4.8))
+	axb.scatter(tau_c, data[1], c=labels, s=1.0)
+	axb.set_xlabel(r'Correlation time $\tau_c$ [ps]')
+	axb.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
+	# axb.legend()
+	figb.savefig(filename + 'b.png', dpi=600)
+	
+	plt.show()
+
 def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	print('* Computing some statistics on the states...')
 	tau_window = PAR[0]
@@ -299,15 +349,47 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 				x_w = x[tau_window*w:tau_window*(w + 1)]
 				current_label = all_the_labels[i][w]
 
-	data = np.array(data).T
+	A = []
+	Nu = []
+	Labels = []
+	tmp_fig, tmp_ax = plt.subplots(np.unique(labels).size, 1)
+	for j, state in enumerate(np.unique(labels)):
+		a = []
+		tmp = []
+		for i, p in enumerate(data):
+			if labels[i] == state:
+				tmp.append(p[0])
+				a.append(p[1])
+		try:
+			counts, bins = np.histogram(tmp, bins=50, density=True)
+			popt, pcov = scipy.optimize.curve_fit(exponential, bins[:-1], counts)
+			if popt[1] < 0:
+				continue
+			tmp_ax[j].stairs(counts, bins, fill=True)
+			tmp_ax[j].plot(bins, exponential(bins, *popt))
+			Nu.append(popt[1]/(tau_window*t_conv))
+			A.append(np.array(a))
+			Labels.append('State ' + str(state) + f', {popt[1]/(tau_window*t_conv):.2f}')
+		except:
+			continue
+	
 	fig, ax = plt.subplots()
-	ax.scatter(data[0], data[1], c=labels, s=1.0)
-	ax.set_xlabel(r'State duration $T$ ' + t_units)
-	ax.set_ylabel(r'State mean amplitude')
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
+	ax.boxplot(A, positions=Nu)
+	ax.set_xscale('log')
+	ax.set_xlabel(r'Frequency of decay [ns$^{-1}$]')
+	ax.set_ylabel(r'State average amplitude A')
+
+	plt.show()
+
+	# data = np.array(data).T
+	# fig, ax = plt.subplots()
+	# ax.scatter(data[0], data[1], c=labels, s=1.0)
+	# ax.set_xlabel(r'State duration $T$ ' + t_units)
+	# ax.set_ylabel(r'State mean amplitude')
+	# if show_plot:
+	# 	plt.show()
+	# fig.savefig(filename + '.png', dpi=600)
+	# plt.close(fig)
 
 def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
@@ -360,6 +442,7 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	fig.write_image(filename + '.png', scale=5.0)
 
 def compute_transition_matrix(PAR, all_the_labels, filename):
+	print('* Computing the transition matrix...')
 	tau_window = PAR[0]
 	t_conv = PAR[2]
 	unique_labels = np.unique(all_the_labels)
@@ -390,7 +473,7 @@ def compute_transition_matrix(PAR, all_the_labels, filename):
 	fig.colorbar(im)
 	for (i, j),val in np.ndenumerate(T_plot):
 		ax.text(j, i, "{:.2f}".format(100*val), ha='center', va='center')
-	fig.suptitle(r'$\tau=$' + str(tau_window*t_conv) + r' ns')
+	fig.suptitle(r'$\Delta t=$' + str(tau_window*t_conv) + ' ' + t_units)
 	ax.set_xlabel('To...')
 	ax.set_ylabel('From...')
 	ax.xaxis.tick_top()
@@ -413,11 +496,12 @@ def main():
 	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	# plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
+	state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4')
+	# tau_sigma(M_raw, PAR, all_the_labels, tau_sig_resolutions, 'output_figures/Fig4')
 
-	for i, frame_list in enumerate([np.array([0, 1])]):#, np.array([0, 100]), np.array([0, 50, 100])]):
-		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig5_' + str(i))
-	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
+	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
+	# 	sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig5_' + str(i))
+	# compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
 
 	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
