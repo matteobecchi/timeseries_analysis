@@ -17,8 +17,8 @@ poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 sankey_average = 10			# On how many frames to average the Sankey diagrams
-tau_sig_resolutions = 10	# Ignore the windows shorter than tau_sig_resolutions
-show_plot = True			# Show all the plots
+resolutions = 10		# Ignore the windows shorter than tau_sig_resolutions
+show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -325,17 +325,22 @@ def tau_sigma(M, PAR, all_the_labels, resolution, filename):
 	# axb.legend()
 	figb.savefig(filename + 'b.png', dpi=600)
 	
-	plt.show()
+	if show_plot:
+		plt.show()
 
 def state_statistics(M, PAR, all_the_labels, resolution, filename):
-	print('* Computing some statistics on the states...')
+	print('* Computing some statistics on the enviroinments...')
 	tau_window = PAR[0]
 	t_conv = PAR[2]
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
 	data = []
+	data2 = []
 	labels = []
+	labels2 = []
 	for i, x in enumerate(M):
+		data_mol = []
+		labels_mol = []
 		current_label = all_the_labels[i][0]
 		x_w = x[0:tau_window]
 		for w in range(1, number_of_windows):
@@ -344,77 +349,97 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 			else:
 				if x_w.size < tau_window*resolution:
 			 		continue
-				data.append([x_w.size*t_conv, np.mean(x_w)])
+				data.append([x_w.size*t_conv, np.mean(x_w), np.std(x_w)])
 				labels.append(current_label)
+				data_mol.append([x_w.size*t_conv, np.mean(x_w), np.std(x_w)])
+				labels_mol.append(current_label)
 				x_w = x[tau_window*w:tau_window*(w + 1)]
 				current_label = all_the_labels[i][w]
+		data2.append(np.array(data_mol))
+		labels2.append(np.array(labels_mol))
 
 	data = np.array(data)
+	data_tr = data.T
 
-	### "Amplitude-frequency" analysis of the states
-	A = []
-	sigma_A = []
-	Nu = []
-	sigma_Nu = []
-	tmp_fig, tmp_ax = plt.subplots(np.unique(labels).size, 1)
-	for j, state in enumerate(np.unique(labels)):
-		a = []
-		tmp = []
-		for i, p in enumerate(data):
-			if labels[i] == state:
-				tmp.append(p[0])
-				a.append(p[1])
-		try:
-			counts, bins = np.histogram(tmp, bins=50, density=True)
-			popt, pcov = scipy.optimize.curve_fit(exponential, bins[:-1], counts)
-			if popt[1] < 0:
-				continue
-			tmp_ax[j].stairs(counts, bins, fill=True)
-			tmp_ax[j].plot(bins, exponential(bins, *popt))
-			Nu.append(popt[1]/(tau_window*t_conv))
-			sigma_Nu.append(pcov[1][1]/(tau_window*t_conv))
-			A.append(np.mean(np.array(a)))
-			sigma_A.append(np.std(np.array(a)))
-		except:
-			continue
-	fig, ax = plt.subplots()
-	ax.errorbar(x=Nu, y=A, xerr=sigma_Nu, yerr=sigma_A, capsize=2.0, marker='o', lw=0.0, elinewidth=1.0)
-	for n in range(len(Nu)):
-		ax.text(Nu[n], A[n], str(n))
-	ax.set_xlabel(r'Decay frequency [ns$^{-1}$]')
-	ax.set_ylabel(r'State average amplitude $A$')
-	fig.savefig(filename + '_A.png', dpi=600)
+	### Characterization of the states ###
+	state_points = []
+	for s in np.unique(labels):
+		ID_s = np.where(labels == s)[0]
+		T = np.mean(data_tr[0][ID_s])
+		sigma_T = np.std(data_tr[0][ID_s])
+		A = np.mean(data_tr[1][ID_s])
+		sigma_A = np.std(data_tr[1][ID_s])
+		S = np.mean(data_tr[2][ID_s])
+		sigma_S = np.std(data_tr[2][ID_s])
+		state_points.append([T, A, S, sigma_T, sigma_A, sigma_S])
+	state_points_tr = np.array(state_points).T
 
-	### "Amplitude-frequency" analysis of the jumps
-	n_states = np.unique(labels).size
-	Delta_A = [ [ [] for _ in range(n_states)] for _ in range(n_states) ]
-	T = np.empty((n_states, n_states))
-	for i in range(1, data.shape[0]):
-		i0 = int(labels[i - 1])
-		i1 = int(labels[i])
-		Delta_A[i0][i1].append(data[i][1] - data[i - 1][1])
-		T[i0][i1] += 1.0
-	T = normalize(T, axis=1, norm='l1')
-	A = []
-	sigma_A = []
-	P = []
-	Labels = []
-	for a in range(len(Delta_A)):
-		for b in range(len(Delta_A[a])):
-			if T[a][b] > 0.05:
-				A.append(np.mean(Delta_A[a][b]))
-				sigma_A.append(np.std(Delta_A[a][b]))
-				P.append(T[a][b])
-				Labels.append(str(a) + '->' + str(b))
+	with open(output_file, 'a') as f:
+		print('\nEnviroinments\n')
+		print('\nEnviroinments\n', file=f)
+		for E in state_points:
+			print(E)
+			print(E, file=f)
+
 	fig, ax = plt.subplots()
-	ax.errorbar(x=P, y=A, yerr=sigma_A, capsize=2.0, marker='o', lw=0.0, elinewidth=1.0)
-	for n in range(len(P)):
-		ax.text(P[n], A[n], Labels[n])
-	ax.set_xlim([0.0, 1.0])
-	ax.set_xlabel(r'Jump probability')
-	ax.set_ylabel(r'Jump average amplitude $\Delta A$')
-	fig.savefig(filename + '_B.png', dpi=600)
-	
+	scatter = ax.scatter(data_tr[0], data_tr[1], c=labels, s=1.0)
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[3], yerr=state_points_tr[4], c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
+	fig.suptitle('Dynamic enviroinment statistics')
+	ax.set_xlabel(r'Duration $T$ [ns]')
+	ax.set_ylabel(r'Amplitude $A$')
+	ax.legend(*scatter.legend_elements())
+	fig.savefig(filename + 'a.png', dpi=600)
+
+	fig, ax = plt.subplots()
+	scatter = ax.scatter(data_tr[0], data_tr[2], c=labels, s=1.0)
+	ax.errorbar(state_points_tr[0], state_points_tr[2], xerr=state_points_tr[3], yerr=state_points_tr[5], c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
+	fig.suptitle('Dynamic enviroinment statistics')
+	ax.set_xlabel(r'Duration $T$ [ns]')
+	ax.set_ylabel(r'Standard deviation $\sigma_A$')
+	ax.legend(*scatter.legend_elements())
+	fig.savefig(filename + 'b.png', dpi=600)
+
+	### Characterization of the transitions ###
+	transition_data = []
+	transition_labels = []
+	for i in range(len(data2)):
+		for t in range(data2[i].shape[0] - 1):
+			transition_data.append([data2[i][t][0], data2[i][t + 1][1] - data2[i][t][1]])
+			tmp_jump = 0
+			if labels2[i][t + 1] > labels2[i][t]:
+				tmp_jump = -1
+			transition_labels.append(labels2[i][t]*4 + labels2[i][t + 1] + tmp_jump)
+
+	transition_data_tr = np.array(transition_data).T
+	transition_labels = np.array(transition_labels)
+
+	state_points = []
+	for s in np.unique(transition_labels):
+		ID_s = np.where(transition_labels == s)[0]
+		T = np.mean(transition_data_tr[0][ID_s])
+		sigma_T = np.std(transition_data_tr[0][ID_s])
+		A = np.mean(transition_data_tr[1][ID_s])
+		sigma_A = np.std(transition_data_tr[1][ID_s])
+		state_points.append([T, A, sigma_T, sigma_A])
+	state_points_tr = np.array(state_points).T
+
+	with open(output_file, 'a') as f:
+		print('\nTransitions\n')
+		print('\nTransitions\n', file=f)
+		for E in state_points:
+			print(E)
+			print(E, file=f)
+
+	fig, ax = plt.subplots()
+	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma')
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
+	fig.suptitle('Transitions statistics')
+	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	ax.set_ylabel(r'Transition amplitude $\Delta A$')
+	ax.legend(*scatter.legend_elements())
+	fig.savefig(filename + 'c.png', dpi=600)
+
+	plt.show()
 	if show_plot:
 		plt.show()
 
@@ -468,54 +493,6 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 		fig.show()
 	fig.write_image(filename + '.png', scale=5.0)
 
-def compute_transition_matrix(PAR, all_the_labels, filename):
-	print('* Computing the transition matrix...')
-	tau_window = PAR[0]
-	t_conv = PAR[2]
-	unique_labels = np.unique(all_the_labels)
-	n_states = unique_labels.size
-	
-	T = np.zeros((n_states, n_states))
-	for L in all_the_labels:
-		for w in range(len(L) - 1):
-			ID0 = int(L[w])
-			ID1 = int(L[w + 1])
-			T[ID0][ID1] += 1
-
-	T_sym = np.divide(T + np.transpose(T), 2.0)
-	T = normalize(T_sym, axis=1, norm='l1')
-	K = np.identity(T.shape[0]) - T
-	K /= tau_window*t_conv
-
-	for a in range(K.shape[0]):
-		for b in range(K.shape[1]):
-			if a!=b:
-				K[a][b] *= -1
-	K_min = K[0][0]
-	for a in range(K.shape[0]):
-		for b in range(K.shape[1]):
-			if K[a][b] < K_min and K[a][b] > 0:
-				K_min = K[a][b]
-
-	fig, ax = plt.subplots(figsize=(10, 8))
-	im = ax.imshow(K, cmap='cividis', norm=LogNorm(vmin=K_min, vmax=np.max(K)))
-	fig.colorbar(im)
-	for (i, j), val in np.ndenumerate(K):
-		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
-	fig.suptitle(r'Approximate transition rates [ns$^{-1}$]')
-	ax.set_xlabel('To...')
-	ax.set_ylabel('From...')
-	ax.xaxis.tick_top()
-	ax.xaxis.set_label_position('top')
-	ax.set_xticks(np.linspace(0.0, n_states - 1.0, n_states))
-	ax.set_xticklabels(range(n_states))
-	ax.set_yticks(np.linspace(0.0, n_states - 1.0, n_states))
-	ax.set_yticklabels(range(n_states))
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
-
 def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
 
@@ -525,12 +502,12 @@ def main():
 	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	# plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	# state_statistics(M, PAR, all_the_labels, 1, 'output_figures/Fig4') # Not really useful
-	# tau_sigma(M_raw, PAR, all_the_labels, tau_sig_resolutions, 'output_figures/Fig4')
+	state_statistics(M, PAR, all_the_labels, resolutions, 'output_figures/Fig4')
+	tau_sigma(M_raw, PAR, all_the_labels, resolutions, 'output_figures/Fig5')
 
-	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
-	# 	sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig5_' + str(i))
-	compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig6')
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
+		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
+	# compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig7')
 
 	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
