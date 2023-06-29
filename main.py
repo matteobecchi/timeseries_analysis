@@ -248,29 +248,40 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		flat_times2 = list_of_times2.flatten()
 		flat_signals2 = list_of_signals2.flatten()
 
-		fig, ax = plt.subplots(2, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 9))
-		fig.suptitle('State ' + str(c))
-		t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
-		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+		if c < States.size - 1:
+			fig, ax = plt.subplots(2, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 8))
+			fig.suptitle('State ' + str(c))
+			t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
+			y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 
-		ax[0][0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
-		# ax[0][0].set_xlabel(r'Time ' + t_units)
-		ax[0][0].set_ylabel('Normalized signal')
-		ax[0][0].set_xlim(t_lim)
-		ax[0][0].set_ylim(y_lim)
-		ax[0][1].stairs(counts, bins, fill=True, orientation='horizontal')
-		if c < len(States) - 1:
-			ax[0][1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-			ax[0][1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
+			ax[0][0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+			ax[0][0].set_ylabel('Normalized signal')
+			ax[0][0].set_xlim(t_lim)
+			ax[0][0].set_ylim(y_lim)
+			ax[0][1].stairs(counts, bins, fill=True, orientation='horizontal')
+			if c < len(States) - 1:
+				ax[0][1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+				ax[0][1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
 
-		ax[1][0].scatter(flat_times2, flat_signals2, c='black', s=0.05, alpha=0.5, rasterized=True)
-		ax[1][0].set_xlabel(r'Time ' + t_units)
-		ax[1][0].set_ylabel('Normalized signal')
-		ax[1][0].set_xlim(t_lim)
-		ax[1][0].set_ylim(y_lim)
-		counts2, bins2 = np.histogram(flat_signals2, bins=n_bins, density=True)
-		counts2 *= flat_signals2.size
-		ax[1][1].stairs(counts2, bins2, fill=True, orientation='horizontal')
+			ax[1][0].scatter(flat_times2, flat_signals2, c='black', s=0.05, alpha=0.5, rasterized=True)
+			ax[1][0].set_xlabel(r'Time ' + t_units)
+			ax[1][0].set_ylabel('Normalized signal')
+			ax[1][0].set_xlim(t_lim)
+			ax[1][0].set_ylim(y_lim)
+			counts2, bins2 = np.histogram(flat_signals2, bins=n_bins, density=True)
+			counts2 *= flat_signals2.size
+			ax[1][1].stairs(counts2, bins2, fill=True, orientation='horizontal')
+		else:
+			fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+			fig.suptitle('State ' + str(c))
+			t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
+			y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+
+			ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+			ax[0].set_ylabel('Normalized signal')
+			ax[0].set_xlim(t_lim)
+			ax[0].set_ylim(y_lim)
+			ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 
 		if show_plot:
 			plt.show()
@@ -504,10 +515,11 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 		for n in range(n_states):
 			starting_fraction = np.sum(T[n])/np.sum(T)
 			ending_fraction = np.sum(T.T[n])/np.sum(T)
-			tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
+			if i == 0:
+				tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
 			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction*100) + '%')
 
-	label = np.concatenate((tmp_label1, tmp_label2))
+	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
 	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
@@ -537,7 +549,7 @@ def main():
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
 		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
 
-	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
