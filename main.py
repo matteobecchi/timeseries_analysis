@@ -270,7 +270,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
 
-		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=1.0)
+		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(np.unique(all_the_labels)), s=1.0)
 	
 	fig.suptitle('Example particle: ID = ' + str(PAR[5]))
 	ax.set_xlabel('Time ' + t_units)
