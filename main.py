@@ -248,12 +248,14 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		fig.savefig(filename + str(c) + '.png', dpi=600)
 		plt.close(fig)
 
-def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
+def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
+	x = M[PAR[5]]
+	L = all_the_labels[PAR[5]]
 	fig, ax = plt.subplots()
-	for c, S in enumerate(States):
+	for c, S in enumerate(np.unique(all_the_labels)):
 		list_of_times = []
 		list_of_signals = []
 		for w, l in enumerate(L):
@@ -268,10 +270,12 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
 
-		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05)
+		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=1.0)
 	
+	fig.suptitle('Example particle: ID = ' + str(PAR[5]))
 	ax.set_xlabel('Time ' + t_units)
 	ax.set_ylabel('Normalized signal')
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	ax.set_ylim(y_lim)
 	if show_plot:
 		plt.show()
@@ -496,8 +500,7 @@ def main():
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
 	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
 	tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
