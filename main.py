@@ -217,32 +217,61 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 	for c, S in enumerate(States):
 		list_of_times = []
 		list_of_signals = []
+		list_of_times2 = []
+		list_of_signals2 = []
 		for i, L in enumerate(all_the_labels):
 			if i%10!=0:
 				continue
 			for w, l in enumerate(L):
+				t0 = w*tau_window
+				t1 = (w + 1)*tau_window
 				if l == S:
-					t0 = w*tau_window
-					t1 = (w + 1)*tau_window
 					list_of_times.append(np.linspace((tau_delay + t0)*t_conv, (tau_delay + t1)*t_conv, tau_window))
 					list_of_signals.append(M[i][t0:t1])
+				elif l > S:
+					list_of_times2.append(np.linspace((tau_delay + t0)*t_conv, (tau_delay + t1)*t_conv, tau_window))
+					list_of_signals2.append(M[i][t0:t1])
+
 		list_of_times = np.array(list_of_times)
 		list_of_signals = np.array(list_of_signals)
+		if list_of_times.shape[0] > 10000:
+			list_of_times = list_of_times[0::10]
+			list_of_signals = list_of_signals[0::10]
 		flat_times = list_of_times.flatten()
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
+		list_of_times2 = np.array(list_of_times2)
+		list_of_signals2 = np.array(list_of_signals2)
+		if list_of_times2.shape[0] > 10000:
+			list_of_times2 = list_of_times2[0::10]
+			list_of_signals2 = list_of_signals2[0::10]
+		flat_times2 = list_of_times2.flatten()
+		flat_signals2 = list_of_signals2.flatten()
 
-		fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+		fig, ax = plt.subplots(2, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 9))
 		fig.suptitle('State ' + str(c))
-		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
-		ax[0].set_xlabel(r'Time ' + t_units)
-		ax[0].set_ylabel('Normalized signal')
+		t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
 		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-		ax[0].set_ylim(y_lim)
-		ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
+
+		ax[0][0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+		# ax[0][0].set_xlabel(r'Time ' + t_units)
+		ax[0][0].set_ylabel('Normalized signal')
+		ax[0][0].set_xlim(t_lim)
+		ax[0][0].set_ylim(y_lim)
+		ax[0][1].stairs(counts, bins, fill=True, orientation='horizontal')
 		if c < len(States) - 1:
-			ax[1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
+			ax[0][1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
+			ax[0][1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
+
+		ax[1][0].scatter(flat_times2, flat_signals2, c='black', s=0.05, alpha=0.5, rasterized=True)
+		ax[1][0].set_xlabel(r'Time ' + t_units)
+		ax[1][0].set_ylabel('Normalized signal')
+		ax[1][0].set_xlim(t_lim)
+		ax[1][0].set_ylim(y_lim)
+		counts2, bins2 = np.histogram(flat_signals2, bins=n_bins, density=True)
+		counts2 *= flat_signals2.size
+		ax[1][1].stairs(counts2, bins2, fill=True, orientation='horizontal')
+
 		if show_plot:
 			plt.show()
 		fig.savefig(filename + str(c) + '.png', dpi=600)
