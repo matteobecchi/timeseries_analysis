@@ -17,8 +17,8 @@ poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 sankey_average = 10			# On how many frames to average the Sankey diagrams
-resolutions = 10		# Ignore the windows shorter than tau_sig_resolutions
-show_plot = False			# Show all the plots
+resolutions = 1			# Ignore the windows shorter than tau_sig_resolutions
+show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -375,10 +375,8 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	state_points_tr = np.array(state_points).T
 
 	with open(output_file, 'a') as f:
-		print('\nEnviroinments\n')
 		print('\nEnviroinments\n', file=f)
 		for E in state_points:
-			print(E)
 			print(E, file=f)
 
 	fig, ax = plt.subplots()
@@ -424,10 +422,8 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	state_points_tr = np.array(state_points).T
 
 	with open(output_file, 'a') as f:
-		print('\nTransitions\n')
 		print('\nTransitions\n', file=f)
 		for E in state_points:
-			print(E)
 			print(E, file=f)
 
 	fig, ax = plt.subplots()
@@ -439,7 +435,6 @@ def state_statistics(M, PAR, all_the_labels, resolution, filename):
 	ax.legend(*scatter.legend_elements())
 	fig.savefig(filename + 'c.png', dpi=600)
 
-	plt.show()
 	if show_plot:
 		plt.show()
 
@@ -498,16 +493,15 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	# plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
+	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
 	state_statistics(M, PAR, all_the_labels, resolutions, 'output_figures/Fig4')
 	tau_sigma(M_raw, PAR, all_the_labels, resolutions, 'output_figures/Fig5')
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
 		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
-	# compute_transition_matrix(PAR, all_the_labels, 'output_figures/Fig7')
 
 	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
