@@ -17,7 +17,7 @@ poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 sankey_average = 10			# On how many frames to average the Sankey diagrams
-resolutions = 1			# Ignore the windows shorter than tau_sig_resolutions
+resolutions = 1				# Ignore the windows shorter than tau_sig_resolutions
 show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
@@ -278,10 +278,11 @@ def plot_one_trajectory(x, PAR, L, list_of_states, States, y_lim, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def tau_sigma(M, PAR, all_the_labels, resolution, filename):
+def tau_sigma(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
+	resolution = PAR[6]
 	data = []
 	labels = []
 	wc = 0
@@ -328,12 +329,13 @@ def tau_sigma(M, PAR, all_the_labels, resolution, filename):
 	if show_plot:
 		plt.show()
 
-def state_statistics(M, PAR, all_the_labels, resolution, filename):
+def state_statistics(M, PAR, all_the_labels, filename):
 	print('* Computing some statistics on the enviroinments...')
 	tau_window = PAR[0]
 	t_conv = PAR[2]
 	T = M.shape[1]
 	number_of_windows = int(T/tau_window)
+	resolution = PAR[6]
 	data = []
 	data2 = []
 	labels = []
@@ -497,8 +499,8 @@ def main():
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	plot_one_trajectory(M[PAR[5]], PAR, all_the_labels[PAR[5]], list_of_states, np.unique(all_the_labels), y_lim, 'output_figures/Fig3')
 
-	state_statistics(M, PAR, all_the_labels, resolutions, 'output_figures/Fig4')
-	tau_sigma(M_raw, PAR, all_the_labels, resolutions, 'output_figures/Fig5')
+	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
+	tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
 		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))

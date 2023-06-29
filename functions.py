@@ -27,7 +27,8 @@ def read_input_parameters():
 	tau_smooth = int(param[3])
 	number_of_sigmas = param[4]
 	example_ID = int(param[5])
-	PAR = [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas, example_ID]
+	resolution = int(param[6])
+	PAR = [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas, example_ID, resolution]
 	if filename.shape == (2,):
 		return filename, PAR
 	else:
