@@ -51,6 +51,13 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 
+	def moving_average(data, window):
+	    weights = np.repeat(1.0, window) / window
+	    return np.convolve(data, weights, mode='valid')
+
+	counts = moving_average(counts, 3)
+	bins = moving_average(bins, 3)
+
 	### Locate the maxima and minima in the distribution
 	max_ID = argrelextrema(counts, np.greater)[0]
 	min_ID = argrelextrema(counts, np.less_equal)[0]
@@ -65,7 +72,10 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		if min_ID[n] > max_ID[current_max]:
 			tmp_min_ID.append(min_ID[n])
 			current_max += 1
-	tmp_min_ID.append(min_ID[-1])
+		if current_max == max_ID.size:
+			break
+	if len(tmp_min_ID) == max_ID.size:
+		tmp_min_ID.append(min_ID[n + 1])
 
 	min_ID = np.array(tmp_min_ID)
 
@@ -87,25 +97,36 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		Bins = bins[id0:id1]
 		Counts = counts[id0:id1]
 
+		### "Zoom in" into the relevant bins interval
+		reflat = []
+		for x in flat_M:
+			if x > bins[id0] and x <= bins[id1]:
+				reflat.append(x)
+		reflat = np.array(reflat)
+		recounts, rebins = np.histogram(reflat, bins=2*(id1-id0), density=True)
+
 		### Perform the Gaussian fit
 		p0 = [bins[max_ID[n]], (bins[min_ID[n + 1]] - bins[min_ID[n]])/6, counts[max_ID[n]]]
 		try:
-			popt, pcov = scipy.optimize.curve_fit(gaussian, Bins, Counts, p0=p0)
+			popt, pcov = scipy.optimize.curve_fit(gaussian, rebins[:-1], recounts, p0=p0)
 		except RuntimeError:
 			print('gauss_fit_n: RuntimeError.')
 			continue
-		popt[2] *= flat_M.size
+		popt[2] *= reflat.size
 		if popt[1] < 0:
 			popt[1] = -popt[1]
 		flag = 1
 		if popt[0] < Bins[0] or popt[0] > Bins[-1]:
 			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
+			print('gauss_fit_n: Unable to correctly fit a Gaussian.')
 		if popt[1] > Bins[-1] - Bins[0]:
 			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
+			print('gauss_fit_n: Unable to correctly fit a Gaussian.')
 		perr = np.sqrt(np.diag(pcov))
 		for j in range(len(perr)):
 			if perr[j]/popt[j] > 0.5:
 				flag = 0 # If the uncertanties over the parameters is too large, discard.
+				print('gauss_fit_n: Parameters uncertanty too large.')
 		if flag:
 			list_popt.append(popt)
 
@@ -434,14 +455,14 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	ax.legend(*scatter.legend_elements())
 	fig.savefig(filename + 'a.png', dpi=600)
 
-	fig, ax = plt.subplots()
-	scatter = ax.scatter(data_tr[0], data_tr[2], c=labels, s=1.0)
-	ax.errorbar(state_points_tr[0], state_points_tr[2], xerr=state_points_tr[3], yerr=state_points_tr[5], c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
-	fig.suptitle('Dynamic enviroinment statistics')
-	ax.set_xlabel(r'Duration $T$ [ns]')
-	ax.set_ylabel(r'Standard deviation $\sigma_A$')
-	ax.legend(*scatter.legend_elements())
-	fig.savefig(filename + 'b.png', dpi=600)
+	# fig, ax = plt.subplots()
+	# scatter = ax.scatter(data_tr[0], data_tr[2], c=labels, s=1.0)
+	# ax.errorbar(state_points_tr[0], state_points_tr[2], xerr=state_points_tr[3], yerr=state_points_tr[5], c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
+	# fig.suptitle('Dynamic enviroinment statistics')
+	# ax.set_xlabel(r'Duration $T$ [ns]')
+	# ax.set_ylabel(r'Standard deviation $\sigma_A$')
+	# ax.legend(*scatter.legend_elements())
+	# fig.savefig(filename + 'b.png', dpi=600)
 
 	### Characterization of the transitions ###
 	transition_data = []

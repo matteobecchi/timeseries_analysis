@@ -44,6 +44,8 @@ def read_data(filename):
 				M = np.vstack(M)
 				M = M.T
 				print('\tData shape:', M.shape)
+			if M.shape[0] != 2048:
+				return M.T
 			return M
 	elif filename[-3:] == 'npy':
 		M = np.load(filename)
