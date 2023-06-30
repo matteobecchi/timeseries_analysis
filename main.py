@@ -448,21 +448,12 @@ def state_statistics(M, PAR, all_the_labels, filename):
 
 	fig, ax = plt.subplots()
 	scatter = ax.scatter(data_tr[0], data_tr[1], c=labels, s=1.0)
-	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[3], yerr=state_points_tr[4], c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[3], yerr=state_points_tr[4], marker='o', ms=3.0, c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
 	fig.suptitle('Dynamic enviroinment statistics')
 	ax.set_xlabel(r'Duration $T$ [ns]')
 	ax.set_ylabel(r'Amplitude $A$')
 	ax.legend(*scatter.legend_elements())
 	fig.savefig(filename + 'a.png', dpi=600)
-
-	# fig, ax = plt.subplots()
-	# scatter = ax.scatter(data_tr[0], data_tr[2], c=labels, s=1.0)
-	# ax.errorbar(state_points_tr[0], state_points_tr[2], xerr=state_points_tr[3], yerr=state_points_tr[5], c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
-	# fig.suptitle('Dynamic enviroinment statistics')
-	# ax.set_xlabel(r'Duration $T$ [ns]')
-	# ax.set_ylabel(r'Standard deviation $\sigma_A$')
-	# ax.legend(*scatter.legend_elements())
-	# fig.savefig(filename + 'b.png', dpi=600)
 
 	### Characterization of the transitions ###
 	transition_data = []
@@ -495,12 +486,12 @@ def state_statistics(M, PAR, all_the_labels, filename):
 
 	fig, ax = plt.subplots()
 	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma')
-	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
 	fig.suptitle('Transitions statistics')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
 	ax.set_ylabel(r'Transition amplitude $\Delta A$')
 	ax.legend(*scatter.legend_elements())
-	fig.savefig(filename + 'c.png', dpi=600)
+	fig.savefig(filename + 'b.png', dpi=600)
 
 	if show_plot:
 		plt.show()
