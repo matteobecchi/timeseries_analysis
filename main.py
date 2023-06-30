@@ -18,7 +18,7 @@ n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 sankey_average = 10			# On how many frames to average the Sankey diagrams
 resolutions = 1				# Ignore the windows shorter than tau_sig_resolutions
-show_plot = True			# Show all the plots
+show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -464,7 +464,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 			tmp_jump = 0
 			if labels2[i][t + 1] > labels2[i][t]:
 				tmp_jump = -1
-			transition_labels.append(labels2[i][t]*4 + labels2[i][t + 1] + tmp_jump)
+			transition_labels.append(labels2[i][t]*(np.unique(labels).size - 1) + labels2[i][t + 1] + tmp_jump)
 
 	transition_data_tr = np.array(transition_data).T
 	transition_labels = np.array(transition_labels)
@@ -479,6 +479,14 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		state_points.append([T, A, sigma_T, sigma_A])
 	state_points_tr = np.array(state_points).T
 
+	### Create legend table
+	n_states = np.unique(labels).size
+	ref_legend_table = []
+	for a in range(n_states):
+		for b in range(n_states):
+			if a!=b:
+				ref_legend_table.append(str(a) + '-->' + str(b))
+
 	with open(output_file, 'a') as f:
 		print('\nTransitions\n', file=f)
 		for E in state_points:
@@ -490,7 +498,14 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	fig.suptitle('Transitions statistics')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
 	ax.set_ylabel(r'Transition amplitude $\Delta A$')
-	ax.legend(*scatter.legend_elements())
+	handles, _ = scatter.legend_elements()
+	tmp = []
+	print(np.unique(transition_labels))
+	print(ref_legend_table)
+	for fl in np.unique(transition_labels):
+		tmp.append(ref_legend_table[int(fl)])
+	tmp = np.array(tmp)
+	ax.legend(handles, tmp)
 	fig.savefig(filename + 'b.png', dpi=600)
 
 	if show_plot:
