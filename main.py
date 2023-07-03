@@ -16,8 +16,8 @@ output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
+
 sankey_average = 10			# On how many frames to average the Sankey diagrams
-resolutions = 1				# Ignore the windows shorter than tau_sig_resolutions
 show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
@@ -110,7 +110,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		try:
 			popt, pcov = scipy.optimize.curve_fit(gaussian, rebins[:-1], recounts, p0=p0)
 		except RuntimeError:
-			print('gauss_fit_n: RuntimeError.')
+			print('\tgauss_fit_n: RuntimeError.')
 			continue
 		popt[2] *= reflat.size
 		if popt[1] < 0:
@@ -118,7 +118,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		flag = 1
 		if popt[0] < Bins[0] or popt[0] > Bins[-1]:
 			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
-			print('gauss_fit_n: Unable to correctly fit a Gaussian.')
+			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
 		if popt[1] > Bins[-1] - Bins[0]:
 			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
 			print('gauss_fit_n: Unable to correctly fit a Gaussian.')
@@ -126,7 +126,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		for j in range(len(perr)):
 			if perr[j]/popt[j] > 0.5:
 				flag = 0 # If the uncertanties over the parameters is too large, discard.
-				print('gauss_fit_n: Parameters uncertanty too large.')
+				print('\tgauss_fit_n: Parameters uncertanty too large.')
 		if flag:
 			list_popt.append(popt)
 
@@ -223,7 +223,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 		else:
 			M1 = M2
 
-	return relabel_states(all_the_labels, list_of_states)
+	return relabel_states(all_the_labels, list_of_states, stop_th)
 
 def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing colored trajectories with histograms...')
@@ -464,7 +464,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 			tmp_jump = 0
 			if labels2[i][t + 1] > labels2[i][t]:
 				tmp_jump = -1
-			transition_labels.append(labels2[i][t]*(np.unique(labels).size - 1) + labels2[i][t + 1] + tmp_jump)
+			transition_labels.append(labels2[i][t]*(np.unique(all_the_labels).size - 1) + labels2[i][t + 1] + tmp_jump)
 
 	transition_data_tr = np.array(transition_data).T
 	transition_labels = np.array(transition_labels)
@@ -479,8 +479,8 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		state_points.append([T, A, sigma_T, sigma_A])
 	state_points_tr = np.array(state_points).T
 
-	### Create legend table
-	n_states = np.unique(labels).size
+	### Create reference legend table
+	n_states = np.unique(all_the_labels).size
 	ref_legend_table = []
 	for a in range(n_states):
 		for b in range(n_states):
@@ -500,8 +500,6 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	ax.set_ylabel(r'Transition amplitude $\Delta A$')
 	handles, _ = scatter.legend_elements()
 	tmp = []
-	print(np.unique(transition_labels))
-	print(ref_legend_table)
 	for fl in np.unique(transition_labels):
 		tmp.append(ref_legend_table[int(fl)])
 	tmp = np.array(tmp)

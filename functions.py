@@ -19,45 +19,51 @@ import seaborn as sns
 from sklearn.preprocessing import normalize
 
 def read_input_parameters():
-	filename = np.loadtxt('data_directory.txt', dtype=str)
-	param = np.loadtxt('input_parameters.txt')
-	tau_window = int(param[0])
-	tau_delay = int(param[1])
-	t_conv = param[2]
-	tau_smooth = int(param[3])
-	number_of_sigmas = param[4]
-	example_ID = int(param[5])
-	resolution = int(param[6])
-	PAR = [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas, example_ID, resolution]
-	if filename.shape == (2,):
-		return filename, PAR
-	else:
-		return str(filename), PAR
+    with open('data_directory.txt', 'r') as file:
+        filename = file.read().strip()
+
+    with open('input_parameters.txt', 'r') as file:
+        lines = file.readlines()
+        param = [float(line.strip()) for line in lines]
+
+    tau_window = int(param[0])
+    tau_delay = int(param[1])
+    t_conv = param[2]
+    tau_smooth = int(param[3])
+    number_of_sigmas = param[4]
+    example_ID = int(param[5])
+    resolution = int(param[6])
+    PAR = [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas, example_ID, resolution]
+
+    if len(filename) == 2:
+        return filename, PAR
+    else:
+        return str(filename), PAR
 
 def read_data(filename):
 	print('* Reading data...')
-	if filename[-3:] == 'npz':
+	if filename.endswith('.npz'):
 		with np.load(filename) as data:
 			lst = data.files
 			M = np.array(data[lst[0]])
 			if M.ndim == 3:
 				M = np.vstack(M)
 				M = M.T
-				print('\tData shape:', M.shape)
 			if M.shape[0] != 2048:
-				return M.T
+				M = M.T
+			print('\tData shape:', M.shape)
 			return M
-	elif filename[-3:] == 'npy':
+	elif filename.endswith('.npy'):
 		M = np.load(filename)
 		print('\tData shape:', M.shape)
 		return M
 	else:
 		print('Error: unsupported format for input file.')
-		return
+		return None
 
 def normalize_array(x):
 	mean = np.mean(x)
-	stddev = np.sqrt(np.var(x))
+	stddev = np.std(x)
 	tmp = (x - mean)/stddev
 	return tmp, mean, stddev
 
@@ -77,17 +83,14 @@ def exponential(x, A, nu):
 
 def remove_first_points(M, delay):
 	### to remove the first delay frames #####
-	tmp = []
-	for m in M:
-		tmp.append(m[delay:])
-	return np.array(tmp)
+	return M[:, delay:]
 
 def find_nearest(array, value):
 	array = np.asarray(array)
-	idx = (np.abs(array - value)).argmin()
+	idx = np.argmin(np.abs(array - value))
 	return array[idx]
 
-def relabel_states(all_the_labels, list_of_states):
+def relabel_states(all_the_labels, list_of_states, stop_th):
 	### Remove empty states and relabel from 0 to n_states-1
 	list1 = [ state for state in list_of_states if state[2] != 0.0 ]
 	list_unique = np.unique(all_the_labels)
