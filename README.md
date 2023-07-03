@@ -23,3 +23,7 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sklearn`, `sys`. 
+
+## Gaussian fitting procedure
+* The histogram of the signal is computed, and then smoothed with a moving average with width of 3 bins, to remove spurious local maxima and minima. 
+* 
