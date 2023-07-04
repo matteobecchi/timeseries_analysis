@@ -19,8 +19,7 @@ import seaborn as sns
 from sklearn.preprocessing import normalize
 
 def read_input_parameters():
-    with open('data_directory.txt', 'r') as file:
-        filename = file.read().strip()
+    data_dir = np.loadtxt('data_directory.txt', dtype=str)
 
     with open('input_parameters.txt', 'r') as file:
         lines = file.readlines()
@@ -35,10 +34,10 @@ def read_input_parameters():
     resolution = int(param[6])
     PAR = [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas, example_ID, resolution]
 
-    if len(filename) == 2:
-        return filename, PAR
+    if data_dir.shape == (2, ):
+        return data_dir, PAR
     else:
-        return str(filename), PAR
+        return str(data_dir), PAR
 
 def read_data(filename):
 	print('* Reading data...')
