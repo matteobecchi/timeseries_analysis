@@ -136,14 +136,18 @@ def relabel_states(all_the_labels, list_of_states, stop_th):
 	return tmp2, list2
 
 def print_mol_labels1(all_the_labels, PAR, filename):
+	print('* Print color IDs for Ovito...')
 	tau_window = PAR[0]
 	with open(filename, 'w') as f:
 		for i in range(all_the_labels.shape[0]):
 			string = str(all_the_labels[i][0])
 			for t in range(1, tau_window):
 					string += ' ' + str(all_the_labels[i][0])
-			for w in range(1, all_the_labels[i].size):
-				for t in range(tau_window):
-					string += ' ' + str(all_the_labels[i][w])
+			### TO REMOVE, IMPROVED WITH SCALENE
+			# for w in range(1, all_the_labels[i].size):
+			# 	for t in range(tau_window):
+			# 		string += ' ' + str(all_the_labels[i][w])
+			### TO REMOVE, IMPROVED WITH SCALENE
+			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
 			print(string, file=f)
 
