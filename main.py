@@ -98,11 +98,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		Counts = counts[id0:id1]
 
 		### "Zoom in" into the relevant bins interval
-		reflat = []
-		for x in flat_M:
-			if x > bins[id0] and x <= bins[id1]:
-				reflat.append(x)
-		reflat = np.array(reflat)
+		reflat = flat_M[(flat_M > bins[id0]) & (flat_M <= bins[id1])]
 		recounts, rebins = np.histogram(reflat, bins=2*(id1-id0), density=True)
 
 		### Perform the Gaussian fit
@@ -552,7 +548,7 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 
 	node = dict(label=label, pad=30, thickness=20, color=color)
 	link = dict(source=source, target=target, value=value)
-	Data = go.Sankey(link=link, node=node, arrangement="freeform")
+	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
 	fig = go.Figure(Data)
 	fig.update_layout(title='Frames: ' + str(frame_list*t_conv) + ' ns')
 
@@ -571,7 +567,7 @@ def main():
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
 	tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100]), np.array([0, 50, 100])]):
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
 		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
 
 	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
