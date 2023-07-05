@@ -78,8 +78,8 @@ def Savgol_filter(M, tau, poly_order):
 def gaussian(x, m, sigma, A):
 	return A*np.exp(-((x - m)/sigma)**2)
 
-# def exponential(t, tau):
-# 	return np.exp(-t/tau)/tau
+def exponential(t, tau):
+	return np.exp(-t/tau)/tau
 
 def cumulative_exp(t, tau):
 	return 1 - np.exp(-t/tau)

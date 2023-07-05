@@ -564,11 +564,12 @@ def state_statistics(M, PAR, all_the_labels, filename):
 			print(E, file=f)
 
 	###################################################################################
-	fig, ax = plt.subplots()
-	# for tr in np.unique(transition_labels):
+	fig1, ax1 = plt.subplots()
+	fig2, ax2 = plt.subplots()
 	for tr in [1.0, 5.0, 8.0, 9.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
-		counts, bins, _ = ax.hist(tmp_data, bins=int(np.sqrt(tmp_data.size)/2), density=True, histtype='step', label=ref_legend_table[int(tr)])
+
+		counts, bins, _ = ax1.hist(tmp_data, bins=int(np.sqrt(tmp_data.size)/2 + 1), density=True, histtype='step', label=ref_legend_table[int(tr)])
 		try:
 			pos_counts = []
 			pos_bins = []
@@ -577,41 +578,39 @@ def state_statistics(M, PAR, all_the_labels, filename):
 				pos_counts.append(counts[i])
 				pos_bins.append(bins[i])
 				i += 1
+			pos_bins = np.array(pos_bins)
+			pos_counts = np.array(pos_counts)
+			start_from = int(pos_bins.size/3)
 
-			logbins, logcounts = np.log(pos_bins), np.log(pos_counts)
-			popt, pcov = np.polyfit(logbins, logcounts, 1, cov=True)
-			print(-popt[0], np.sqrt(pcov[0][0]))
-			y_fit = np.exp(np.polyval(popt, logbins))
-			ax.plot(pos_bins, y_fit, linestyle='--', c='xkcd:grey', lw=1.0)
+			popt, pcov = scipy.optimize.curve_fit(exponential, pos_bins[start_from:-1], pos_counts[start_from:-1])
+			print('Tau:', popt[0], np.sqrt(pcov[0][0]))
+			ax1.plot(pos_bins[start_from:], exponential(pos_bins[start_from:], *popt), linestyle='--', c='xkcd:black')
 		except:
 			print('FAILURE')
-	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
-	ax.set_ylabel(r'Probability density function PDF$(\Delta t)$')
-	ax.set_xscale('log')
-	ax.set_yscale('log')
-	ax.legend(loc='upper right')
-	fig.savefig(filename + 'b.png', dpi=600)
 
-	fig, ax = plt.subplots()
-	# for tr in np.unique(transition_labels):
-	for tr in [1.0, 5.0, 8.0, 9.0]:
-		tmp_data = transition_data_tr[0][transition_labels == tr]
-		counts, bins, _ = ax.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
-		upper_bins = [bins[b] for b in range(counts.size) if counts[b] > 0.5]
-		upper_counts = [counts[b] for b in range(counts.size) if counts[b] > 0.5]
+		counts, bins, _ = ax2.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
+		upper_bins = [bins[b] for b in range(counts.size) if counts[b] > 1 - np.exp(-1)]
+		upper_counts = [counts[b] for b in range(counts.size) if counts[b] > 1 - np.exp(-1)]
 		try:
 			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, upper_bins, upper_counts)
 			print(popt[0], np.sqrt(pcov[0][0]))
-			times = np.linspace(0.5, bins[-1], 1000)
-			ax.plot(times, cumulative_exp(times, *popt), linestyle='--', c='xkcd:grey', lw=1.0)
+			times = np.linspace(bins[0], bins[-1], 1000)
+			ax2.plot(times, cumulative_exp(times, *popt), linestyle='--', c='xkcd:grey', lw=1.0)
 		except:
 			print('FAILURE')
-	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
-	ax.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
-	ax.set_xscale('log')
-	ax.hlines(1 - np.exp(-1), 0.5, 80, linestyle='--', color='xkcd:black')
-	ax.legend(loc='lower right')
-	fig.savefig(filename + 'c.png', dpi=600)
+
+	ax1.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	ax1.set_ylabel(r'Probability density function PDF$(\Delta t)$')
+	ax1.set_yscale('log')
+	ax1.legend(loc='upper right')
+	fig1.savefig(filename + 'b.png', dpi=600)
+
+	ax2.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	ax2.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
+	ax2.set_xscale('log')
+	ax2.hlines(1 - np.exp(-1), bins[0], 80, linestyle='--', color='xkcd:black')
+	ax2.legend(loc='lower right')
+	fig2.savefig(filename + 'c.png', dpi=600)
 	###################################################################################
 
 	fig, ax = plt.subplots()
