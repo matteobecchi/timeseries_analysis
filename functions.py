@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 import copy
+import math
 from scipy import stats
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
@@ -77,8 +78,11 @@ def Savgol_filter(M, tau, poly_order):
 def gaussian(x, m, sigma, A):
 	return A*np.exp(-((x - m)/sigma)**2)
 
-def exponential(x, A, nu):
-	return A*np.exp(-x*nu)
+# def exponential(t, tau):
+# 	return scipy.stats.expon(t, scale=tau)
+
+def cumulative_exp(t, tau):
+	return 1 - tau*scipy.stats.expon(t, scale=tau)
 
 def remove_first_points(M, delay):
 	### to remove the first delay frames #####
