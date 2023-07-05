@@ -117,7 +117,7 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
 		if popt[1] > Bins[-1] - Bins[0]:
 			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
-			print('gauss_fit_n: Unable to correctly fit a Gaussian.')
+			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
 		perr = np.sqrt(np.diag(pcov))
 		for j in range(len(perr)):
 			if perr[j]/popt[j] > 0.5:
@@ -315,13 +315,16 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	counts *= flat_M.size
 
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
-	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
+	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.8)
 
 	palette = sns.color_palette('viridis', n_colors=np.unique(all_the_labels).size - 2).as_hex()
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
 
 	States = np.unique(all_the_labels)
+	t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	
 	for c, S in enumerate(States[:-1]):
 		list_of_times = []
 		list_of_signals = []
@@ -342,10 +345,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
 
-		t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
-		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-
-		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+		ax[0].scatter(flat_times, flat_signals, c='xkcd:black', vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_ylabel('Normalized signal')
 		ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 		ax[0].set_xlim(t_lim)
@@ -354,6 +354,10 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		if c < len(States) - 1:
 			ax[1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color=palette[c])
 			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[c])
+
+	for c, S in enumerate(States[:-1]):
+		times = np.linspace(t_lim[0], t_lim[1], 100)
+		ax[0].fill_between(times, np.max([0.0, list_of_states[c][1][0]]), np.min([list_of_states[c][1][1], 1.0]), color=palette[c], alpha=0.25)
 
 	plt.show()
 	if show_plot:
@@ -469,9 +473,9 @@ def state_statistics(M, PAR, all_the_labels, filename):
 				if x_w.size < tau_window*resolution:
 			 		continue
 				data.append([x_w.size*t_conv, np.mean(x_w), np.std(x_w)])
-				labels.append(current_label)
+				labels.append(int(current_label))
 				data_mol.append([x_w.size*t_conv, np.mean(x_w), np.std(x_w)])
-				labels_mol.append(current_label)
+				labels_mol.append(int(current_label))
 				x_w = x[tau_window*w:tau_window*(w + 1)]
 				current_label = all_the_labels[i][w]
 		data2.append(np.array(data_mol))
@@ -508,36 +512,51 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	fig.savefig(filename + 'a.png', dpi=600)
 
 	### Characterization of the transitions ###
+	n_states = np.unique(all_the_labels).size
+
+	### Create dictionary
+	dictionary = np.empty((n_states, n_states))
+	c = 0
+	for i in range(n_states):
+		for j in range(n_states):
+			if i != j:
+				dictionary[i][j] = c
+				c += 1
+	### Create reference legend table
+	ref_legend_table = []
+	for i in range(n_states):
+		for j in range(n_states):
+			if i != j:
+				ref_legend_table.append(str(i) + '-->' + str(j))
+
 	transition_data = []
 	transition_labels = []
 	for i in range(len(data2)):
 		for t in range(data2[i].shape[0] - 1):
 			transition_data.append([data2[i][t][0], data2[i][t + 1][1] - data2[i][t][1]])
-			tmp_jump = 0
-			if labels2[i][t + 1] > labels2[i][t]:
-				tmp_jump = -1
-			transition_labels.append(labels2[i][t]*(np.unique(all_the_labels).size - 1) + labels2[i][t + 1] + tmp_jump)
+			transition_labels.append(dictionary[labels2[i][t]][labels2[i][t + 1]])
 
 	transition_data_tr = np.array(transition_data).T
 	transition_labels = np.array(transition_labels)
 
 	state_points = []
-	for s in np.unique(transition_labels):
-		ID_s = np.where(transition_labels == s)[0]
-		T = np.mean(transition_data_tr[0][ID_s])
-		sigma_T = np.std(transition_data_tr[0][ID_s])
-		A = np.mean(transition_data_tr[1][ID_s])
-		sigma_A = np.std(transition_data_tr[1][ID_s])
-		state_points.append([T, A, sigma_T, sigma_A])
+	for i in range(dictionary.shape[0]):
+		for j in range(dictionary.shape[1]):
+			s = dictionary[i][j]
+			# for s in np.unique(dictionary):
+			# for s in np.unique(transition_labels):
+			ID_s = np.where(transition_labels == s)[0]
+			if ID_s.size == 0:
+				continue
+			T = np.mean(transition_data_tr[0][ID_s])
+			sigma_T = np.std(transition_data_tr[0][ID_s])
+			A = np.mean(transition_data_tr[1][ID_s])
+			sigma_A = np.std(transition_data_tr[1][ID_s])
+			color = dictionary[i][j]
+			if i > j:
+				color = dictionary[j][i]
+			state_points.append([T, A, sigma_T, sigma_A, color])
 	state_points_tr = np.array(state_points).T
-
-	### Create reference legend table
-	n_states = np.unique(all_the_labels).size
-	ref_legend_table = []
-	for a in range(n_states):
-		for b in range(n_states):
-			if a!=b:
-				ref_legend_table.append(str(a) + '-->' + str(b))
 
 	with open(output_file, 'a') as f:
 		print('\nTransitions\n', file=f)
@@ -549,7 +568,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	# for tr in np.unique(transition_labels):
 	for tr in [1.0, 5.0, 8.0, 9.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
-		counts, bins, _ = ax.hist(tmp_data, bins='auto', density=True, histtype='step', label=ref_legend_table[int(tr)])
+		counts, bins, _ = ax.hist(tmp_data, bins=int(np.sqrt(tmp_data.size)/2), density=True, histtype='step', label=ref_legend_table[int(tr)])
 		try:
 			pos_counts = []
 			pos_bins = []
@@ -563,7 +582,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 			popt, pcov = np.polyfit(logbins, logcounts, 1, cov=True)
 			print(-popt[0], np.sqrt(pcov[0][0]))
 			y_fit = np.exp(np.polyval(popt, logbins))
-			ax.plot(pos_bins, y_fit, linestyle='--', c='black', lw=1.0)
+			ax.plot(pos_bins, y_fit, linestyle='--', c='xkcd:grey', lw=1.0)
 		except:
 			print('FAILURE')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
@@ -578,23 +597,27 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	for tr in [1.0, 5.0, 8.0, 9.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
 		counts, bins, _ = ax.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
+		upper_bins = [bins[b] for b in range(counts.size) if counts[b] > 0.5]
+		upper_counts = [counts[b] for b in range(counts.size) if counts[b] > 0.5]
 		try:
-			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, bins[:-1], counts)
+			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, upper_bins, upper_counts)
 			print(popt[0], np.sqrt(pcov[0][0]))
 			times = np.linspace(0.5, bins[-1], 1000)
-			ax.plot(times, cumulative_exp(times, *popt), linestyle='--', c='black', lw=1.0)
+			ax.plot(times, cumulative_exp(times, *popt), linestyle='--', c='xkcd:grey', lw=1.0)
 		except:
 			print('FAILURE')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
 	ax.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
 	ax.set_xscale('log')
+	ax.hlines(1 - np.exp(-1), 0.5, 80, linestyle='--', color='xkcd:black')
 	ax.legend(loc='lower right')
 	fig.savefig(filename + 'c.png', dpi=600)
 	###################################################################################
 
 	fig, ax = plt.subplots()
-	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma')
+	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma', alpha=0.5)
 	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
+	ax.scatter(state_points_tr[0], state_points_tr[1], marker='s', s=30.0, c=state_points_tr[4], cmap='tab10')
 	fig.suptitle('Transitions statistics')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
 	ax.set_ylabel(r'Transition amplitude $\Delta A$')
