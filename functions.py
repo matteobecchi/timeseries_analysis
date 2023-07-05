@@ -79,10 +79,10 @@ def gaussian(x, m, sigma, A):
 	return A*np.exp(-((x - m)/sigma)**2)
 
 # def exponential(t, tau):
-# 	return scipy.stats.expon(t, scale=tau)
+# 	return np.exp(-t/tau)/tau
 
 def cumulative_exp(t, tau):
-	return 1 - tau*scipy.stats.expon(t, scale=tau)
+	return 1 - np.exp(-t/tau)
 
 def remove_first_points(M, delay):
 	### to remove the first delay frames #####

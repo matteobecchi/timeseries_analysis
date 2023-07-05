@@ -306,7 +306,7 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		plt.close(fig)
 
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
-	print('* Printing comulative figure...')
+	print('* Printing cumulative figure...')
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
@@ -317,12 +317,12 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 
-	palette = sns.color_palette('viridis', n_colors=np.unique(all_the_labels) - 2).as_hex()
+	palette = sns.color_palette('viridis', n_colors=np.unique(all_the_labels).size - 2).as_hex()
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
 
 	States = np.unique(all_the_labels)
-	for c, S in enumerate(States):
+	for c, S in enumerate(States[:-1]):
 		list_of_times = []
 		list_of_signals = []
 		for i, L in enumerate(all_the_labels):
@@ -336,8 +336,8 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		list_of_times = np.array(list_of_times)
 		list_of_signals = np.array(list_of_signals)
 		if list_of_times.shape[0] > 10000:
-			list_of_times = list_of_times[0::1000]
-			list_of_signals = list_of_signals[0::1000]
+			list_of_times = list_of_times[0::100]
+			list_of_signals = list_of_signals[0::100]
 		flat_times = list_of_times.flatten()
 		flat_signals = list_of_signals.flatten()
 		flat_colors = c*np.ones(flat_times.size)
@@ -347,12 +347,15 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 
 		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_ylabel('Normalized signal')
+		ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 		ax[0].set_xlim(t_lim)
 		ax[0].set_ylim(y_lim)
+		ax[1].set_xticklabels([])
 		if c < len(States) - 1:
 			ax[1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color=palette[c])
-			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
+			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[c])
 
+	plt.show()
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -578,7 +581,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		try:
 			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, bins[:-1], counts)
 			print(popt[0], np.sqrt(pcov[0][0]))
-			times = np.linspace(bins[0], bins[-1], 1000)
+			times = np.linspace(0.5, bins[-1], 1000)
 			ax.plot(times, cumulative_exp(times, *popt), linestyle='--', c='black', lw=1.0)
 		except:
 			print('FAILURE')
@@ -601,6 +604,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		tmp.append(ref_legend_table[int(fl)])
 	tmp = np.array(tmp)
 	ax.legend(handles, tmp)
+	ax.set_xscale('log')
 	fig.savefig(filename + 'd.png', dpi=600)
 
 	plt.show()
@@ -665,7 +669,7 @@ def main():
 
 	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
 	# plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
-	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
+	# plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
 
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
 	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
