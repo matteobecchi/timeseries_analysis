@@ -305,6 +305,59 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 		fig.savefig(filename + str(c) + '.png', dpi=600)
 		plt.close(fig)
 
+def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
+	print('* Printing comulative figure...')
+	tau_window = PAR[0]
+	tau_delay = PAR[1]
+	t_conv = PAR[2]
+	flat_M = M.flatten()
+	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+	counts *= flat_M.size
+
+	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
+
+	palette = sns.color_palette('viridis', n_colors=np.unique(all_the_labels) - 2).as_hex()
+	palette.insert(0, '#440154')
+	palette.append('#fde725')
+
+	States = np.unique(all_the_labels)
+	for c, S in enumerate(States):
+		list_of_times = []
+		list_of_signals = []
+		for i, L in enumerate(all_the_labels):
+			for w, l in enumerate(L):
+				t0 = w*tau_window
+				t1 = (w + 1)*tau_window
+				if l == S:
+					list_of_times.append(np.linspace((tau_delay + t0)*t_conv, (tau_delay + t1)*t_conv, tau_window))
+					list_of_signals.append(M[i][t0:t1])
+
+		list_of_times = np.array(list_of_times)
+		list_of_signals = np.array(list_of_signals)
+		if list_of_times.shape[0] > 10000:
+			list_of_times = list_of_times[0::1000]
+			list_of_signals = list_of_signals[0::1000]
+		flat_times = list_of_times.flatten()
+		flat_signals = list_of_signals.flatten()
+		flat_colors = c*np.ones(flat_times.size)
+
+		t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
+		y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+
+		ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+		ax[0].set_ylabel('Normalized signal')
+		ax[0].set_xlim(t_lim)
+		ax[0].set_ylim(y_lim)
+		if c < len(States) - 1:
+			ax[1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color=palette[c])
+			ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
+
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
@@ -488,6 +541,43 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		for E in state_points:
 			print(E, file=f)
 
+	###################################################################################
+	fig, ax = plt.subplots()
+	# for tr in np.unique(transition_labels):
+	for tr in [1.0, 5.0, 8.0, 9.0]:
+		tmp_data = transition_data_tr[0][transition_labels == tr]
+		counts, bins, _ = ax.hist(tmp_data, bins=10, density=True, histtype='step', label=ref_legend_table[int(tr)])
+		try:
+			popt, pcov = scipy.optimize.curve_fit(exponential, bins[:-1], counts)
+			print(popt[0], np.sqrt(pcov[0][0]))
+			ax.plot(np.linspace(bins[0], bins[-1], 1000), exponential(np.linspace(bins[0], bins[-1], 1000), *popt), linestyle='--')
+		except:
+			print('FAILURE')
+	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	ax.set_ylabel(r'Probability density function PDF$(\Delta t)$')
+	ax.set_xscale('log')
+	ax.set_yscale('log')
+	ax.legend(loc='upper right')
+	fig.savefig(filename + 'b.png', dpi=600)
+
+	fig, ax = plt.subplots()
+	# for tr in np.unique(transition_labels):
+	for tr in [1.0, 5.0, 8.0, 9.0]:
+		tmp_data = transition_data_tr[0][transition_labels == tr]
+		counts, bins, _ = ax.hist(tmp_data, bins=100, density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
+		try:
+			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, bins[:-1], counts)
+			print(popt[0], np.sqrt(pcov[0][0]))
+			ax.plot(np.linspace(bins[0], bins[-1], 1000), cumulative_exp(np.linspace(bins[0], bins[-1], 1000), *popt), linestyle='--')
+		except:
+			print('FAILURE')
+	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	ax.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
+	ax.set_xscale('log')
+	ax.legend(loc='lower right')
+	fig.savefig(filename + 'c.png', dpi=600)
+	###################################################################################
+
 	fig, ax = plt.subplots()
 	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma')
 	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
@@ -500,8 +590,9 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		tmp.append(ref_legend_table[int(fl)])
 	tmp = np.array(tmp)
 	ax.legend(handles, tmp)
-	fig.savefig(filename + 'b.png', dpi=600)
+	fig.savefig(filename + 'd.png', dpi=600)
 
+	plt.show()
 	if show_plot:
 		plt.show()
 
@@ -561,16 +652,17 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
+	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
+	# plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
+	# plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
 
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
-	tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
+	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
-		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
+	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
+	# 	sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
 
-	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()
