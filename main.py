@@ -546,11 +546,21 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	# for tr in np.unique(transition_labels):
 	for tr in [1.0, 5.0, 8.0, 9.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
-		counts, bins, _ = ax.hist(tmp_data, bins=10, density=True, histtype='step', label=ref_legend_table[int(tr)])
+		counts, bins, _ = ax.hist(tmp_data, bins='auto', density=True, histtype='step', label=ref_legend_table[int(tr)])
 		try:
-			popt, pcov = scipy.optimize.curve_fit(exponential, bins[:-1], counts)
-			print(popt[0], np.sqrt(pcov[0][0]))
-			ax.plot(np.linspace(bins[0], bins[-1], 1000), exponential(np.linspace(bins[0], bins[-1], 1000), *popt), linestyle='--')
+			pos_counts = []
+			pos_bins = []
+			i = 0
+			while counts[i] > 0:
+				pos_counts.append(counts[i])
+				pos_bins.append(bins[i])
+				i += 1
+
+			logbins, logcounts = np.log(pos_bins), np.log(pos_counts)
+			popt, pcov = np.polyfit(logbins, logcounts, 1, cov=True)
+			print(-popt[0], np.sqrt(pcov[0][0]))
+			y_fit = np.exp(np.polyval(popt, logbins))
+			ax.plot(pos_bins, y_fit, linestyle='--', c='black', lw=1.0)
 		except:
 			print('FAILURE')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
@@ -564,11 +574,12 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	# for tr in np.unique(transition_labels):
 	for tr in [1.0, 5.0, 8.0, 9.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
-		counts, bins, _ = ax.hist(tmp_data, bins=100, density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
+		counts, bins, _ = ax.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
 		try:
 			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, bins[:-1], counts)
 			print(popt[0], np.sqrt(pcov[0][0]))
-			ax.plot(np.linspace(bins[0], bins[-1], 1000), cumulative_exp(np.linspace(bins[0], bins[-1], 1000), *popt), linestyle='--')
+			times = np.linspace(bins[0], bins[-1], 1000)
+			ax.plot(times, cumulative_exp(times, *popt), linestyle='--', c='black', lw=1.0)
 		except:
 			print('FAILURE')
 	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
@@ -654,7 +665,7 @@ def main():
 
 	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
 	# plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
-	# plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
+	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
 
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
 	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
