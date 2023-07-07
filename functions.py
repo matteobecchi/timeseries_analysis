@@ -81,12 +81,18 @@ def gaussian(x, m, sigma, A):
 def exponential(t, tau):
 	return np.exp(-t/tau)/tau
 
+def double_exp(t, tau1, tau2):
+	return np.exp(-t/tau1)/tau1 + np.exp(-t/tau2)/tau2
+
 def cumulative_exp(t, tau):
 	return 1 - np.exp(-t/tau)
 
-def remove_first_points(M, delay):
+def cumulative_double_exp(t, tau1, tau2):
+	return 1 - tau1*np.exp(-t/tau1)/(tau1 + tau2) - tau2*np.exp(-t/tau2)/(tau1 + tau2)
+
+def remove_edges(M, delay):
 	### to remove the first delay frames #####
-	return M[:, delay:]
+	return M[:, delay:-delay]
 
 def find_nearest(array, value):
 	array = np.asarray(array)
@@ -110,34 +116,112 @@ def relabel_states(all_the_labels, list_of_states, stop_th):
 				tmp1[a][b] = (tmp1[a][b] - 1)%list_unique.size
 
 	### Order the states according to the mu values
-	# list_of_mu = np.array([ state[0][0] for state in list1 ])
-	# copy_of_list_of_mu = np.array([ state[0][0] for state in list1 ])
-	# sorted_IDs = []
-	# while len(copy_of_list_of_mu) > 0:
-	# 	min_mu = np.min(copy_of_list_of_mu)
-	# 	ID_min = np.where(list_of_mu == min_mu)[0][0]
-	# 	sorted_IDs.append(ID_min)
-	# 	ID_min2 = np.where(copy_of_list_of_mu == min_mu)[0][0]
-	# 	copy_of_list_of_mu = np.delete(copy_of_list_of_mu, ID_min2)
-	# list2 = []
-	# for ID in sorted_IDs:
-	# 	list2.append(list1[ID])
+	list_of_mu = np.array([ state[0][0] for state in list1 ])
+	copy_of_list_of_mu = np.array([ state[0][0] for state in list1 ])
+	sorted_IDs = []
+	while len(copy_of_list_of_mu) > 0:
+		min_mu = np.min(copy_of_list_of_mu)
+		ID_min = np.where(list_of_mu == min_mu)[0][0]
+		sorted_IDs.append(ID_min)
+		ID_min2 = np.where(copy_of_list_of_mu == min_mu)[0][0]
+		copy_of_list_of_mu = np.delete(copy_of_list_of_mu, ID_min2)
+	list2 = []
+	for ID in sorted_IDs:
+		list2.append(list1[ID])
 
-	# tmp2 = copy.deepcopy(tmp1)
-	# for i, l in enumerate(sorted_IDs):
-	# 	for a in range(len(tmp1)):
-	# 		for b in range(len(tmp1[a])):
-	# 			if tmp1[a][b] == l:
-	# 				tmp2[a][b] = i
-
-	tmp2 = tmp1
-	list2 = list1
-
-	# with open('tmp_state_data.txt', 'w') as f:
-	# 	for state in list2:
-	# 		print(state[2], file=f)
+	tmp2 = copy.deepcopy(tmp1)
+	for i, l in enumerate(sorted_IDs):
+		for a in range(len(tmp1)):
+			for b in range(len(tmp1[a])):
+				if tmp1[a][b] == l:
+					tmp2[a][b] = i
 
 	return tmp2, list2
+
+def set_final_states(list_of_states):
+	### Check which states are inside the surrounding ones
+	tmp_list = []
+	mu0 = list_of_states[0][0][0]
+	mu1 = list_of_states[1][0][0]
+	sigma0 = list_of_states[0][0][1]
+	sigma1 = list_of_states[1][0][1]
+	if list_of_states[0][0][2] > list_of_states[1][0][2] and mu1 - mu0 < sigma0:
+		tmp_list.append(1)
+	elif list_of_states[0][0][2] < list_of_states[1][0][2] and mu1 - mu0 < sigma1:
+		tmp_list.append(0)
+	for s in range(1, len(list_of_states) - 1):
+		mu0 = list_of_states[s][0][0]
+		mu1 = list_of_states[s + 1][0][0]
+		sigma0 = list_of_states[s][0][1]
+		sigma1 = list_of_states[s + 1][0][1]
+		if list_of_states[s][0][2] > list_of_states[s + 1][0][2] and mu1 - mu0 < sigma0:
+			tmp_list.append(s + 1)
+		elif list_of_states[s][0][2] < list_of_states[s + 1][0][2] and mu1 - mu0 < sigma1:
+			tmp_list.append(s)
+	mu0 = list_of_states[-2][0][0]
+	mu1 = list_of_states[-1][0][0]
+	sigma0 = list_of_states[-2][0][1]
+	sigma1 = list_of_states[-1][0][1]
+	if list_of_states[-2][0][2] > list_of_states[-1][0][2] and mu1 - mu0 < sigma0:
+		tmp_list.append(-1)
+	elif list_of_states[-2][0][2] < list_of_states[-1][0][2] and mu1 - mu0 < sigma1:
+		tmp_list.append(-2)
+	print(tmp_list)
+
+	clean_states = []
+	for i in range(len(list_of_states)):
+		flag = 1
+		for j in tmp_list:
+			if i == j:
+				flag = 0
+		if flag:
+			clean_states.append(list_of_states[i])
+
+	final_list = []
+	final_list.append(0.0)
+	for s in range(len(clean_states) - 1):
+		mu0 = clean_states[s][0][0]
+		mu1 = clean_states[s + 1][0][0]
+		sigma0 = clean_states[s][0][1]
+		sigma1 = clean_states[s + 1][0][1]
+		th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
+		final_list.append(th)
+	final_list.append(1.0)
+
+	return final_list
+
+def assign_final_states(M, PAR, final_list):
+	print('* Assigning labels to the time windows...')
+	tau_window = PAR[0]
+	number_of_windows = int(M.shape[1]/tau_window)
+	all_the_labels = np.empty((M.shape[0], number_of_windows))
+	for i in range(M.shape[0]):
+		for w in range(number_of_windows):
+			x_w = M[i][w*tau_window:(w + 1)*tau_window]
+			flag = 0
+			for l in range(len(final_list) - 1):
+				if np.min(x_w) > final_list[l] and np.max(x_w) < final_list[l + 1]:
+					all_the_labels[i][w] = l
+					flag = 1
+			if flag == 0:
+				all_the_labels[i][w] = len(final_list) - 1
+
+	return all_the_labels
+
+def assign_final_states_to_single_frames(M, PAR, final_list):
+	print('* Assigning labels to all the single frames...')
+	all_the_labels = np.empty((M.shape[0], M.shape[1]))
+	for i in range(M.shape[0]):
+		for t in range(M.shape[1]):
+			flag = 0
+			for l in range(len(final_list) - 1):
+				if M[i][t] > final_list[l] and M[i][t] < final_list[l + 1]:
+					all_the_labels[i][t] = l
+					flag = 1
+			if flag == 0:
+				all_the_labels[i][t] = len(final_list) - 1
+
+	return all_the_labels
 
 def print_mol_labels1(all_the_labels, PAR, filename):
 	print('* Print color IDs for Ovito...')
@@ -154,4 +238,7 @@ def print_mol_labels1(all_the_labels, PAR, filename):
 			### TO REMOVE, IMPROVED WITH SCALENE
 			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
 			print(string, file=f)
+
+
+
 

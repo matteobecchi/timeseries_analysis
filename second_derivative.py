@@ -18,7 +18,7 @@ n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.001				# Treshold to exit the maxima search
 
 sankey_average = 10			# On how many frames to average the Sankey diagrams
-show_plot = False			# Show all the plots
+show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
 	### Read and clean the data points
@@ -29,15 +29,31 @@ def all_the_input_stuff():
 		M0 = read_data(data_directory[0])
 		M1 = read_data(data_directory[1])
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
-	M = Savgol_filter(M_raw, PAR[3], poly_order)
-	M = remove_edges(M, PAR[1])
-	SIG_MAX = np.max(M)
-	SIG_MIN = np.min(M)
-	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
+	M_raw = remove_edges(M_raw, PAR[1])
+	M_raw = Savgol_filter(M_raw, PAR[3], poly_order)
+
+	### Compute the derivative of the signal
+	tmp_M = []
+	for x in M_raw:
+		tmp_x = np.diff(x)/PAR[2]
+		tmp_M.append(tmp_x)
+	M = np.array(tmp_M)
+
+	# SIG_MAX = np.max(M)
+	# SIG_MIN = np.min(M)
+	# M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
 	total_time = M.shape[1]
 	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
 	list_of_states = []
+
+	fig, ax = plt.subplots()
+	for i, x in enumerate(M):
+		if i%10 == 0:
+			ax.scatter(np.linspace(PAR[1]*PAR[2], (PAR[1] + x.size)*PAR[2], x.size), x, s=0.25, c='xkcd:black')
+	ax.set_xlabel(r'Simulation time ' + t_units)
+	ax.set_ylabel(r'Derivative of the signal')
+	plt.show()
 
 	### Create files for output
 	with open(output_file, 'w') as f:
@@ -46,24 +62,6 @@ def all_the_input_stuff():
 		os.makedirs('output_figures')
 
 	return M_raw, M, PAR, all_the_labels, list_of_states
-
-def print_some_data(M, PAR, all_the_labels, filename):
-	tau_window = PAR[0]
-	with open(filename, 'w') as f:
-		with open('labels_for_PCA.txt', 'w') as f2:
-			print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
-			for i in range(all_the_labels.shape[0]):
-				for w in range(all_the_labels.shape[1]):
-					if all_the_labels[i][w] > 1:
-						print(all_the_labels[i][w], file=f2)
-						for t in range(tau_window):
-							print(M[i][w*tau_window + t], file=f)
-	with open('for_Martina_PCA_ALL', 'w') as f:
-		print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
-		for i in range(all_the_labels.shape[0]):
-			for w in range(all_the_labels.shape[1]):
-				for t in range(tau_window):
-					print(M[i][w*tau_window + t], file=f)
 
 def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 	flat_M = M.flatten()
@@ -159,15 +157,15 @@ def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
 		list_th.append([th_inf, th_sup])
 	
 	### To remove possible swapped tresholds:
-	for n in range(len(list_th) - 1):
-		if list_th[n][1] > list_th[n + 1][0]:
-			mu0 = list_popt[n][0]
-			sigma0 = list_popt[n][1]
-			mu1 = list_popt[n + 1][0]
-			sigma1 = list_popt[n + 1][1]
-			middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
-			list_th[n][1] = middle_th
-			list_th[n + 1][0] = middle_th
+	# for n in range(len(list_th) - 1):
+	# 	if list_th[n][1] > list_th[n + 1][0]:
+	# 		mu0 = list_popt[n][0]
+	# 		sigma0 = list_popt[n][1]
+	# 		mu1 = list_popt[n + 1][0]
+	# 		sigma1 = list_popt[n + 1][1]
+	# 		middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
+	# 		list_th[n][1] = middle_th
+	# 		list_th[n + 1][0] = middle_th
 
 	### Plot the distribution and the fitted Gaussians
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
@@ -317,12 +315,6 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 			ax[0].set_xlim(t_lim)
 			ax[0].set_ylim(y_lim)
 			ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
-
-			# F, A = plt.subplots()
-			# DIFF = np.diff(flat_signals)
-			# DIFF = Savgol_filter(DIFF, PAR[3], poly_order)
-			# A.plot(DIFF, lw=0.1)
-			# plt.show()
 
 		if show_plot:
 			plt.show()
@@ -535,35 +527,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	ax.legend(*scatter.legend_elements())
 	fig.savefig(filename + 'a.png', dpi=600)
 
-	plt.show()
-	if show_plot:
-		plt.show()
-
-def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
-	print('* Computing some statistics on the transitions...')
-	tau_window = PAR[0]
-	t_conv = PAR[2]
-	T = M.shape[1]
-	number_of_windows = int(T/tau_window)
-	resolution = PAR[6]
-	data = []
-	labels = []
-	for i, x in enumerate(M):
-		data_mol = []
-		labels_mol = []
-		current_label = all_the_labels[i][0]
-		x_w = x[0:tau_window]
-		for w in range(1, number_of_windows):
-			if all_the_labels[i][w] == current_label:
-				x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
-			else:
-				data_mol.append(x_w)
-				labels_mol.append(int(current_label))
-				x_w = x[tau_window*w:tau_window*(w + 1)]
-				current_label = all_the_labels[i][w]
-		data.append(data_mol)
-		labels.append(np.array(labels_mol))
-
+	### Characterization of the transitions ###
 	n_states = np.unique(all_the_labels).size
 
 	### Create dictionary
@@ -583,21 +547,10 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 
 	transition_data = []
 	transition_labels = []
-	for i in range(len(data)):
-		for t in range(len(data[i]) - 1):
-			state0 = labels[i][t]
-			state1 = labels[i][t + 1]
-			if state0 == len(list_of_states) or state1 == len(list_of_states):
-				continue
-			mu0 = list_of_states[state0][0][0]
-			mu1 = list_of_states[state1][0][0]
-			sigma0 = list_of_states[state0][0][1]
-			sigma1 = list_of_states[state1][0][1]
-			min_dist0 = np.abs(np.mean(data[i][t]) - mu0)
-			min_dist1 = np.abs(np.mean(data[i][t + 1]) - mu1)
-			if (min_dist0 < sigma0 and min_dist1 < sigma1):
-				transition_data.append([data[i][t].size*t_conv, np.mean(data[i][t + 1]) - np.mean(data[i][t])])
-				transition_labels.append(dictionary[state0][state1])
+	for i in range(len(data2)):
+		for t in range(data2[i].shape[0] - 1):
+			transition_data.append([data2[i][t][0], data2[i][t + 1][1] - data2[i][t][1]])
+			transition_labels.append(dictionary[labels2[i][t]][labels2[i][t + 1]])
 
 	transition_data_tr = np.array(transition_data).T
 	transition_labels = np.array(transition_labels)
@@ -606,6 +559,8 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	for i in range(dictionary.shape[0]):
 		for j in range(dictionary.shape[1]):
 			s = dictionary[i][j]
+			# for s in np.unique(dictionary):
+			# for s in np.unique(transition_labels):
 			ID_s = np.where(transition_labels == s)[0]
 			if ID_s.size == 0:
 				continue
@@ -627,7 +582,7 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	###################################################################################
 	fig1, ax1 = plt.subplots()
 	fig2, ax2 = plt.subplots()
-	for tr in [1.0, 4.0, 6.0, 7.0]:
+	for tr in [1.0, 5.0, 8.0, 9.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
 
 		counts, bins, _ = ax1.hist(tmp_data, bins=int(np.sqrt(tmp_data.size)/2 + 1), density=True, histtype='step', label=ref_legend_table[int(tr)])
@@ -646,21 +601,24 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 			log_counts = np.log(pos_counts)
 
 			popt, pcov = np.polyfit(pos_bins[start_from:], log_counts[start_from:], 1, cov=True)
-			print('Tau:', -1/popt[0], np.sqrt(pcov[0][0])/popt[0]**2)
+			print('Tau:', -1/popt[0], np.sqrt(pcov[0][0])/popt[0]**2, '\toppure', np.exp(-popt[1]))
 			y = np.exp(popt[0]*pos_bins[start_from:] + popt[1])
-			ax1.plot(pos_bins[start_from:], y, linestyle='--', c='xkcd:grey')
+			ax1.plot(pos_bins[start_from:], y, linestyle='--', c='xkcd:black')
+
+			# popt, pcov = scipy.optimize.curve_fit(exponential, pos_bins[start_from:-1], pos_counts[start_from:-1])
+			# print('Tau:', popt[0], np.sqrt(pcov[0][0]))
+			# ax1.plot(pos_bins[start_from:], exponential(pos_bins[start_from:], *popt), linestyle='--', c='xkcd:black')
 		except:
 			print('FAILURE')
 
 		counts, bins, _ = ax2.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
-		upper_bins = [bins[b] for b in range(counts.size)]# if counts[b] > 1 - np.exp(-1)]
-		upper_counts = [counts[b] for b in range(counts.size)]# if counts[b] > 1 - np.exp(-1)]
+		upper_bins = [bins[b] for b in range(counts.size) if counts[b] > 1 - np.exp(-1)]
+		upper_counts = [counts[b] for b in range(counts.size) if counts[b] > 1 - np.exp(-1)]
 		try:
-			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, upper_bins, upper_counts, p0=[1.0, 1.0])
-			print(popt)
-			print(np.sqrt(pcov))
+			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, upper_bins, upper_counts)
+			print(popt[0], np.sqrt(pcov[0][0]))
 			times = np.linspace(bins[0], bins[-1], 1000)
-			ax2.plot(times, cumulative_exp(times, *popt2), linestyle='--', c='xkcd:gray', lw=1.0)
+			ax2.plot(times, cumulative_exp(times, *popt), linestyle='--', c='xkcd:grey', lw=1.0)
 		except:
 			print('FAILURE')
 
@@ -668,13 +626,14 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	ax1.set_ylabel(r'Probability density function PDF$(\Delta t)$')
 	ax1.set_yscale('log')
 	ax1.legend(loc='upper right')
-	fig1.savefig(filename + 'a.png', dpi=600)
+	fig1.savefig(filename + 'b.png', dpi=600)
 
 	ax2.set_xlabel(r'Waiting time $\Delta t$ [ns]')
 	ax2.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
 	ax2.set_xscale('log')
+	ax2.hlines(1 - np.exp(-1), bins[0], 80, linestyle='--', color='xkcd:black')
 	ax2.legend(loc='lower right')
-	fig2.savefig(filename + 'b.png', dpi=600)
+	fig2.savefig(filename + 'c.png', dpi=600)
 	###################################################################################
 
 	fig, ax = plt.subplots()
@@ -691,7 +650,7 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	tmp = np.array(tmp)
 	ax.legend(handles, tmp)
 	ax.set_xscale('log')
-	fig.savefig(filename + 'c.png', dpi=600)
+	fig.savefig(filename + 'd.png', dpi=600)
 
 	plt.show()
 	if show_plot:
@@ -753,20 +712,17 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	print_some_data(M, PAR, all_the_labels, 'for_Martina_PCA.txt')
-
 	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
 
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
-	transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
-	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig6')
+	tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig5')
 
-	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
-	# 	sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig7_' + str(i))
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
+		sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig6_' + str(i))
 
-	# print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	print_mol_labels1(all_the_labels, PAR, 'all_cluster_IDs.dat')
 
 if __name__ == "__main__":
 	main()

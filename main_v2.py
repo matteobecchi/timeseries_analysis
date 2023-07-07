@@ -15,7 +15,7 @@ t_units = r'[ns]'			# Units of measure of time
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
-stop_th = 0.001				# Treshold to exit the maxima search
+stop_th = 0.01				# Treshold to exit the maxima search
 
 sankey_average = 10			# On how many frames to average the Sankey diagrams
 show_plot = False			# Show all the plots
@@ -274,7 +274,7 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 			list_of_signals = list_of_signals[0::10]
 		flat_times = list_of_times.flatten()
 		flat_signals = list_of_signals.flatten()
-		flat_colors = c*np.ones(flat_times.size)
+		flat_colors = S*np.ones(flat_times.size)
 		list_of_times2 = np.array(list_of_times2)
 		list_of_signals2 = np.array(list_of_signals2)
 		if list_of_times2.shape[0] > 10000:
@@ -317,12 +317,6 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 			ax[0].set_xlim(t_lim)
 			ax[0].set_ylim(y_lim)
 			ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
-
-			# F, A = plt.subplots()
-			# DIFF = np.diff(flat_signals)
-			# DIFF = Savgol_filter(DIFF, PAR[3], poly_order)
-			# A.plot(DIFF, lw=0.1)
-			# plt.show()
 
 		if show_plot:
 			plt.show()
@@ -367,7 +361,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 			list_of_signals = list_of_signals[0::100]
 		flat_times = list_of_times.flatten()
 		flat_signals = list_of_signals.flatten()
-		flat_colors = c*np.ones(flat_times.size)
+		flat_colors = S*np.ones(flat_times.size)
 
 		ax[0].scatter(flat_times, flat_signals, c='xkcd:black', vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
 		ax[0].set_ylabel('Normalized signal')
@@ -409,7 +403,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 		list_of_signals = np.array(list_of_signals)
 		flat_times = list_of_times.flatten()
 		flat_signals = list_of_signals.flatten()
-		flat_colors = c*np.ones(flat_times.size)
+		flat_colors = S*np.ones(flat_times.size)
 
 		ax.scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(np.unique(all_the_labels)), s=1.0)
 	
@@ -753,14 +747,25 @@ def main():
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	print_some_data(M, PAR, all_the_labels, 'for_Martina_PCA.txt')
+	final_list = set_final_states(list_of_states)
+	# all_the_labels = assign_final_states(M, PAR, final_list)
+	all_the_labels = assign_final_states_to_single_frames(M, PAR, final_list)
+	print(np.unique(all_the_labels))
 
-	plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
-	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
-	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
+	fig, ax = plt.subplots()
+	times = np.linspace(PAR[1]*PAR[2], (PAR[1] + M.shape[1])*PAR[2], M.shape[1])
+	signal = M[PAR[5]]
+	color = all_the_labels[PAR[5]]
+	ax.scatter(times, signal, c=color, s=1.0)
+	plt.show()
+	fig.savefig('FIGURE.png')
 
-	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
-	transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
+	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig2_')
+	# plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
+	# plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig3_cumulative')
+
+	# state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
+	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
 	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig6')
 
 	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
