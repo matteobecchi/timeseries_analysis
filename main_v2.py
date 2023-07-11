@@ -49,7 +49,7 @@ def all_the_input_stuff():
 
 	return M_raw, M, PAR, all_the_labels, list_of_states
 
-def print_some_data(M, PAR, all_the_labels, filename):
+def tmp_print_some_data(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
 	with open(filename, 'w') as f:
 		with open('labels_for_PCA.txt', 'w') as f2:
@@ -60,7 +60,7 @@ def print_some_data(M, PAR, all_the_labels, filename):
 						print(all_the_labels[i][w], file=f2)
 						for t in range(tau_window):
 							print(M[i][w*tau_window + t], file=f)
-	with open('for_Martina_PCA_ALL', 'w') as f:
+	with open('for_Martina_PCA_ALL.txt', 'w') as f:
 		print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
 		for i in range(all_the_labels.shape[0]):
 			for w in range(all_the_labels.shape[1]):
@@ -241,8 +241,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 
 	return relabel_states(all_the_labels, list_of_states, stop_th)
 
-def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
-	print('* Printing colored trajectories with histograms...')
+def plot_input_data(M, PAR, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
@@ -250,80 +249,25 @@ def plot_all_trajectories(M, PAR, all_the_labels, list_of_states, filename):
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
 
-	States = np.unique(all_the_labels)
-	for c, S in enumerate(States):
-		list_of_times = []
-		list_of_signals = []
-		list_of_times2 = []
-		list_of_signals2 = []
-		for i, L in enumerate(all_the_labels):
-			if i%10!=0:
-				continue
-			for w, l in enumerate(L):
-				t0 = w*tau_window
-				t1 = (w + 1)*tau_window
-				if l == S:
-					list_of_times.append(np.linspace((tau_delay + t0)*t_conv, (tau_delay + t1)*t_conv, tau_window))
-					list_of_signals.append(M[i][t0:t1])
-				elif l > S:
-					list_of_times2.append(np.linspace((tau_delay + t0)*t_conv, (tau_delay + t1)*t_conv, tau_window))
-					list_of_signals2.append(M[i][t0:t1])
+	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
 
-		list_of_times = np.array(list_of_times)
-		list_of_signals = np.array(list_of_signals)
-		if list_of_times.shape[0] > 10000:
-			list_of_times = list_of_times[0::10]
-			list_of_signals = list_of_signals[0::10]
-		flat_times = list_of_times.flatten()
-		flat_signals = list_of_signals.flatten()
-		flat_colors = S*np.ones(flat_times.size)
-		list_of_times2 = np.array(list_of_times2)
-		list_of_signals2 = np.array(list_of_signals2)
-		if list_of_times2.shape[0] > 10000:
-			list_of_times2 = list_of_times2[0::10]
-			list_of_signals2 = list_of_signals2[0::10]
-		flat_times2 = list_of_times2.flatten()
-		flat_signals2 = list_of_signals2.flatten()
+	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
+	if M.shape[1] > 1000:
+		for mol in M[::10]:
+			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
+	else:
+		for mol in M:
+			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
-		if c < States.size - 1:
-			fig, ax = plt.subplots(2, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 8))
-			fig.suptitle('State ' + str(c))
-			t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
-			y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	ax[0].set_ylabel('Normalized signal')
+	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
+	ax[1].set_xticklabels([])
 
-			ax[0][0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
-			ax[0][0].set_ylabel('Normalized signal')
-			ax[0][0].set_xlim(t_lim)
-			ax[0][0].set_ylim(y_lim)
-			ax[0][1].stairs(counts, bins, fill=True, orientation='horizontal')
-			if c < len(States) - 1:
-				ax[0][1].hlines(list_of_states[c][1], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='black')
-				ax[0][1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000))
-
-			ax[1][0].scatter(flat_times2, flat_signals2, c='black', s=0.05, alpha=0.5, rasterized=True)
-			ax[1][0].set_xlabel(r'Time ' + t_units)
-			ax[1][0].set_ylabel('Normalized signal')
-			ax[1][0].set_xlim(t_lim)
-			ax[1][0].set_ylim(y_lim)
-			counts2, bins2 = np.histogram(flat_signals2, bins=n_bins, density=True)
-			counts2 *= flat_signals2.size
-			ax[1][1].stairs(counts2, bins2, fill=True, orientation='horizontal')
-		else:
-			fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
-			fig.suptitle('State ' + str(c))
-			t_lim = np.array([tau_delay, (tau_delay + M.shape[1])])*t_conv
-			y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-
-			ax[0].scatter(flat_times, flat_signals, c=flat_colors, vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
-			ax[0].set_ylabel('Normalized signal')
-			ax[0].set_xlim(t_lim)
-			ax[0].set_ylim(y_lim)
-			ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
-
-		if show_plot:
-			plt.show()
-		fig.savefig(filename + str(c) + '.png', dpi=600)
-		plt.close(fig)
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
 
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, filename):
 	print('* Printing cumulative figure...')
@@ -345,29 +289,27 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, f
 	t_lim = np.array([tau_delay, (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	
-	for c, S in enumerate(States):
-		list_of_times = []
-		list_of_signals = []
-		for i, L in enumerate(all_the_labels):
-			for t, l in enumerate(L):
-				if l == S:
-					list_of_times.append((tau_delay + int(tau_window/2) + t)*t_conv)
-					list_of_signals.append(M[i][t])
+	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
+	if M.shape[1] > 1000:
+		for mol in M[::10]:
+			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
+	else:
+		for mol in M:
+			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
-		list_of_times = np.array(list_of_times)
-		list_of_signals = np.array(list_of_signals)
-		flat_times = list_of_times.flatten()
-		flat_signals = list_of_signals.flatten()
-		flat_colors = S*np.ones(flat_times.size)
-
-		ax[0].scatter(flat_times, flat_signals, c='xkcd:black', vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
-		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[c][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[c])
+	for S in range(States.size):
+		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
 
 	for n, th in enumerate(final_list):
-		ax[1].hlines(th, xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:black')
+		if th[1] == 0:
+			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), color='xkcd:black')
+		elif th[1] == 1:
+			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:black')
+		elif th[1] == 2:
+			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:red')
 		if n < len(final_list) - 1:
 			times = np.linspace(t_lim[0], t_lim[1], 100)
-			ax[0].fill_between(times, final_list[n], final_list[n + 1], color=palette[n], alpha=0.25)
+			ax[0].fill_between(times, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
 
 	ax[0].set_ylabel('Normalized signal')
 	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
@@ -394,38 +336,6 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	ax.set_ylabel('Normalized signal')
 	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	# ax.set_ylim(y_lim)
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
-
-def plot_one_trajectory_with_histos(M, PAR, all_the_labels, filename):
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
-
-	fig = plt.figure()
-	ax0 = plt.subplot(2, 4, 1)
-	ax1 = plt.subplot(2, 4, 2)
-	ax2 = plt.subplot(2, 4, 3)
-	ax3 = plt.subplot(2, 4, 4)
-	ax4 = plt.subplot(2, 1, 2)
-	axes = [ax0, ax1, ax2, ax3, ax4]
-	# fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
-	times = np.linspace(tau_delay*t_conv, (tau_delay + M.shape[1])*t_conv, M.shape[1])
-	signal = M[PAR[5]]
-	color = all_the_labels[PAR[5]]
-	block_t = int(times.size/4)
-	for i in range(4):
-		part_signal = signal[:(i + 1)*block_t]
-		counts, bins = np.histogram(part_signal, bins='auto', density=True)
-		axes[i].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
-	ax4.scatter(times, signal, c=color, vmin=0, vmax=np.amax(np.unique(all_the_labels)), s=1.0)
-
-	fig.suptitle('Example particle: ID = ' + str(PAR[5]))
-	ax4.set_xlabel('Time ' + t_units)
-	ax4.set_ylabel('Normalized signal')
-	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	# ax4.set_ylim(y_lim)
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -807,18 +717,21 @@ def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
 	print(PAR)
 
+	plot_input_data(M, PAR, 'output_figures/Fig0')
+
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
 	list_of_states, final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, PAR, final_list)
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, 'output_figures/Fig2')
-	plot_all_trajectory_with_histos(M, PAR, all_the_labels, 'output_figures/Fig2_bis')
+	# plot_all_trajectory_with_histos(M, PAR, all_the_labels, 'output_figures/Fig2_bis')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
-	# plot_one_trajectory_with_histos(M, PAR, all_the_labels, 'output_figures/Fig3_bis')
-	# plot_all_trajectories(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig4_')
 
-	print_mol_labels_fbf(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels_fbf(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels_fbf2(all_the_labels, PAR, 'tmp_clusters.dat')
+
+	transition_matrix(all_the_labels, 'output_figures/Fig4', show_plot)
 
 	### Transitions part, still to be tested ###
 	# state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
