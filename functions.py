@@ -141,17 +141,7 @@ def relabel_states(all_the_labels, list_of_states, stop_th):
 def set_final_states(list_of_states):
 	### Check which states are inside the surrounding ones
 	tmp_list = []
-	mu0 = list_of_states[0][0][0]
-	mu1 = list_of_states[1][0][0]
-	sigma0 = list_of_states[0][0][1]
-	sigma1 = list_of_states[1][0][1]
-	A0 = list_of_states[0][0][2]
-	A1 = list_of_states[1][0][2]
-	if A0 > A1 and mu1 - mu0 < sigma0:
-		tmp_list.append(1)
-	elif A0 < A1 and mu1 - mu0 < sigma1:
-		tmp_list.append(0)
-	for s in range(1, len(list_of_states) - 1):
+	for s in range(len(list_of_states) - 1):
 		mu0 = list_of_states[s][0][0]
 		mu1 = list_of_states[s + 1][0][0]
 		sigma0 = list_of_states[s][0][1]
@@ -162,16 +152,6 @@ def set_final_states(list_of_states):
 			tmp_list.append(s + 1)
 		elif A0 < A1 and mu1 - mu0 < sigma1:
 			tmp_list.append(s)
-	mu0 = list_of_states[-2][0][0]
-	mu1 = list_of_states[-1][0][0]
-	sigma0 = list_of_states[-2][0][1]
-	sigma1 = list_of_states[-1][0][1]
-	A0 = list_of_states[-2][0][2]
-	A1 = list_of_states[-1][0][2]
-	if A0 > A1 and mu1 - mu0 < sigma0:
-		tmp_list.append(-1)
-	elif A0 < A1 and mu1 - mu0 < sigma1:
-		tmp_list.append(-2)
 
 	clean_states = []
 	for i in range(len(list_of_states)):
@@ -183,7 +163,7 @@ def set_final_states(list_of_states):
 			clean_states.append(list_of_states[i])
 
 	final_list = []
-	final_list.append(0.0)
+	final_list.append([0.0, 0])
 	for s in range(len(clean_states) - 1):
 		mu0 = clean_states[s][0][0]
 		mu1 = clean_states[s + 1][0][0]
@@ -198,22 +178,15 @@ def set_final_states(list_of_states):
 		if Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
 			th_minus = (- b - np.sqrt(Delta))/(2*a)
-			I_plus = gaussian(th_plus, mu0, sigma0, A0)
-			I_minus = gaussian(th_minus, mu0, sigma0, A0)
-			if I_plus >= I_minus:
-				final_list.append(th_plus)
+			intercept_plus = gaussian(th_plus, mu0, sigma0, A0)
+			intercept_minus = gaussian(th_minus, mu0, sigma0, A0)
+			if intercept_plus >= intercept_minus:
+				final_list.append([th_plus, 1])
 			else:
-				final_list.append(th_minus)
-			### TO DELETE ###
-			# if mu0 < th_plus and mu1 > th_plus:
-			# 	final_list.append(th_plus)
-			# elif mu0 < th_minus and mu1 > th_minus:
-			# 	final_list.append(th_minus)
-			# else:
-			# 	final_list.append((mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1))
+				final_list.append([th_minus, 1])
 		else:
-			final_list.append((mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1))
-	final_list.append(1.0)
+			final_list.append([(mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1), 2])
+	final_list.append([1.0, 0])
 
 	return clean_states, final_list
 
@@ -242,7 +215,7 @@ def assign_final_states_to_single_frames(M, PAR, final_list):
 		for t in range(M.shape[1]):
 			flag = 0
 			for l in range(len(final_list) - 1):
-				if M[i][t] >= final_list[l] and M[i][t] <= final_list[l + 1]:
+				if M[i][t] >= final_list[l][0] and M[i][t] <= final_list[l + 1][0]:
 					all_the_labels[i][t] = l
 					flag = 1
 			if flag == 0:
@@ -267,6 +240,61 @@ def print_mol_labels_fbf(all_the_labels, PAR, filename):
 		for i in range(all_the_labels.shape[0]):
 			string = str(all_the_labels[i][0])
 			for t in range(1, all_the_labels[i].size):
-					string += ' ' + str(all_the_labels[i][t])
+				string += ' ' + str(all_the_labels[i][t])
 			print(string, file=f)
+
+def print_mol_labels_fbf2(all_the_labels, PAR, filename):
+	print(all_the_labels.shape)
+	print('* Print color IDs for Ovito...')
+	with open(filename, 'w') as f:
+		for t in range(481):
+			print('#', file=f)
+			print('#', file=f)
+			for i in range(all_the_labels.shape[0]):
+				print(all_the_labels[i][t], file=f)
+
+def transition_matrix(all_the_labels, filename, show_plot):
+	print('* Computing transition matrix...')
+	n_states = np.unique(all_the_labels).size
+	T = np.zeros((n_states, n_states))
+
+	for mol in all_the_labels:
+		for t in range(mol.size - 1):
+			id0 = int(mol[t])
+			id1 = int(mol[t + 1])
+			T[id0][id1] += 1.0
+
+	N = np.zeros((n_states, n_states))
+	for i, row in enumerate(T):
+		if np.sum(row) > 0:
+			for j, el in enumerate(row):
+				N[i][j] = row[j]/np.sum(row)
+
+	N_min = np.max(N)
+	for (i, j), val in np.ndenumerate(N):
+		if val < N_min and val > 0.0:
+			N_min = val
+
+	fig, ax = plt.subplots(figsize=(10, 8))
+	im = ax.imshow(N, cmap='viridis', norm=LogNorm(vmin=N_min, vmax=np.max(N)))
+	fig.colorbar(im)
+	for (i, j), val in np.ndenumerate(N):
+		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
+	fig.suptitle(r'Transition probabilities')
+	ax.set_xlabel('To...')
+	ax.set_ylabel('From...')
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	ax.set_xticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_xticklabels(range(n_states))
+	ax.set_yticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_yticklabels(range(n_states))
+	
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
+
+
 
