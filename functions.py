@@ -161,24 +161,6 @@ def set_final_states(list_of_states):
 
 	return final_list
 
-# def assign_final_states(M, PAR, final_list):
-# 	print('* Assigning labels to the time windows...')
-# 	tau_window = PAR[0]
-# 	number_of_windows = int(M.shape[1]/tau_window)
-# 	all_the_labels = np.empty((M.shape[0], number_of_windows))
-# 	for i in range(M.shape[0]):
-# 		for w in range(number_of_windows):
-# 			x_w = M[i][w*tau_window:(w + 1)*tau_window]
-# 			flag = 0
-# 			for l in range(len(final_list) - 1):
-# 				if np.min(x_w) > final_list[l] and np.max(x_w) < final_list[l + 1]:
-# 					all_the_labels[i][w] = l
-# 					flag = 1
-# 			if flag == 0:
-# 				all_the_labels[i][w] = len(final_list) - 1
-
-# 	return all_the_labels
-
 def assign_final_states_to_single_frames(M, final_list):
 	print('* Assigning labels to all the single frames...')
 	all_the_labels = np.empty((M.shape[0], M.shape[1]))
@@ -205,7 +187,7 @@ def print_mol_labels1(all_the_labels, PAR, filename):
 			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
 			print(string, file=f)
 
-def print_mol_labels_fbf(all_the_labels, PAR, filename):
+def print_mol_labels_fbf_gro(all_the_labels, PAR, filename):
 	print('* Print color IDs for Ovito...')
 	with open(filename, 'w') as f:
 		for i in range(all_the_labels.shape[0]):
@@ -214,7 +196,7 @@ def print_mol_labels_fbf(all_the_labels, PAR, filename):
 				string += ' ' + str(all_the_labels[i][t])
 			print(string, file=f)
 
-def print_mol_labels_fbf2(all_the_labels, PAR, filename):
+def print_mol_labels_fbf_xyz(all_the_labels, PAR, filename):
 	print(all_the_labels.shape)
 	print('* Print color IDs for Ovito...')
 	with open(filename, 'w') as f:
@@ -223,48 +205,6 @@ def print_mol_labels_fbf2(all_the_labels, PAR, filename):
 			print('#', file=f)
 			for i in range(all_the_labels.shape[0]):
 				print(all_the_labels[i][t], file=f)
-
-def transition_matrix(all_the_labels, filename, show_plot):
-	print('* Computing transition matrix...')
-	n_states = np.unique(all_the_labels).size
-	T = np.zeros((n_states, n_states))
-
-	for mol in all_the_labels:
-		for t in range(mol.size - 1):
-			id0 = int(mol[t])
-			id1 = int(mol[t + 1])
-			T[id0][id1] += 1.0
-
-	N = np.zeros((n_states, n_states))
-	for i, row in enumerate(T):
-		if np.sum(row) > 0:
-			for j, el in enumerate(row):
-				N[i][j] = row[j]/np.sum(row)
-
-	N_min = np.max(N)
-	for (i, j), val in np.ndenumerate(N):
-		if val < N_min and val > 0.0:
-			N_min = val
-
-	fig, ax = plt.subplots(figsize=(10, 8))
-	im = ax.imshow(N, cmap='viridis', norm=LogNorm(vmin=N_min, vmax=np.max(N)))
-	fig.colorbar(im)
-	for (i, j), val in np.ndenumerate(N):
-		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
-	fig.suptitle(r'Transition probabilities')
-	ax.set_xlabel('To...')
-	ax.set_ylabel('From...')
-	ax.xaxis.tick_top()
-	ax.xaxis.set_label_position('top')
-	ax.set_xticks(np.linspace(0.0, n_states - 1.0, n_states))
-	ax.set_xticklabels(range(n_states))
-	ax.set_yticks(np.linspace(0.0, n_states - 1.0, n_states))
-	ax.set_yticklabels(range(n_states))
-	
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
 
 
 

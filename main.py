@@ -18,7 +18,7 @@ n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01				# Treshold to exit the maxima search
 
 # sankey_average = 10			# On how many frames to average the Sankey diagrams
-show_plot = True			# Show all the plots
+show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
 	data_directory, PAR = read_input_parameters()
@@ -383,6 +383,99 @@ def plot_all_trajectory_with_histos(M, PAR, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
+def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
+	print('* Computing and plotting the averaged Sankey diagrams...')
+	if frame_list[-1] + aver_window > all_the_labels.shape[1]:
+		print('ERROR: the required frame range is out of bound.')
+		return
+
+	n_states = np.unique(all_the_labels).size
+	source = np.empty((frame_list.size - 1)*n_states**2)
+	target = np.empty((frame_list.size - 1)*n_states**2)
+	value = np.empty((frame_list.size - 1)*n_states**2)
+	c = 0
+	tmp_label1 = []
+	tmp_label2 = []
+
+	for i, t0 in enumerate(frame_list[:-1]):
+		t_jump = frame_list[i + 1] - frame_list[i]
+		T = np.zeros((n_states, n_states))
+		for t in range(t0, t0 + aver_window):
+			for L in all_the_labels:
+				T[int(L[t])][int(L[t + t_jump])] += 1
+
+		for n1 in range(len(T)):
+			for n2 in range(len(T[n1])):
+				source[c] = n1 + i*n_states
+				target[c] = n2 + (i + 1)*n_states
+				value[c] = T[n1][n2]
+				c += 1
+
+		for n in range(n_states):
+			starting_fraction = np.sum(T[n])/np.sum(T)
+			ending_fraction = np.sum(T.T[n])/np.sum(T)
+			if i == 0:
+				tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
+			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction*100) + '%')
+
+	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
+	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
+	palette.insert(0, '#440154')
+	palette.append('#fde725')
+	color = np.tile(palette, frame_list.size)
+
+	node = dict(label=label, pad=30, thickness=20, color=color)
+	link = dict(source=source, target=target, value=value)
+	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
+	fig = go.Figure(Data)
+	fig.update_layout(title='Frames: ' + str(frame_list*t_conv) + ' ns')
+
+	if show_plot:
+		fig.show()
+	fig.write_image(filename + '.png', scale=5.0)
+
+def transition_matrix(tau, all_the_labels, filename):
+	print('* Computing transition matrix...')
+	n_states = np.unique(all_the_labels).size
+	T = np.zeros((n_states, n_states))
+
+	for mol in all_the_labels:
+		for t in range(mol.size - tau):
+			id0 = int(mol[t])
+			id1 = int(mol[t + tau])
+			T[id0][id1] += 1.0
+
+	N = np.zeros((n_states, n_states))
+	for i, row in enumerate(T):
+		if np.sum(row) > 0:
+			for j, el in enumerate(row):
+				N[i][j] = row[j]/np.sum(row)
+
+	N_min = np.max(N)
+	for (i, j), val in np.ndenumerate(N):
+		if val < N_min and val > 0.0:
+			N_min = val
+
+	fig, ax = plt.subplots(figsize=(10, 8))
+	im = ax.imshow(N, cmap='viridis', norm=LogNorm(vmin=N_min, vmax=np.max(N)))
+	fig.colorbar(im)
+	for (i, j), val in np.ndenumerate(N):
+		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
+	fig.suptitle(r'Transition probabilities, $\tau=$' + str(tau))
+	ax.set_xlabel('To...')
+	ax.set_ylabel('From...')
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	ax.set_xticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_xticklabels(range(n_states))
+	ax.set_yticks(np.linspace(0.0, n_states - 1.0, n_states))
+	ax.set_yticklabels(range(n_states))
+	
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
 def tau_sigma(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
 	T = M.shape[1]
@@ -438,9 +531,6 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	print('* Computing some statistics on the enviroinments...')
 	tau_window = PAR[0]
 	t_conv = PAR[2]
-	T = M.shape[1]
-	number_of_windows = int(T/tau_window)
-	resolution = PAR[6]
 	data = []
 	data2 = []
 	labels = []
@@ -449,19 +539,17 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		data_mol = []
 		labels_mol = []
 		current_label = all_the_labels[i][0]
-		x_w = x[0:tau_window]
-		for w in range(1, number_of_windows):
-			if all_the_labels[i][w] == current_label:
-				x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+		x_t = np.array([M[i][0]])
+		for t in range(1, M.shape[1]):
+			if all_the_labels[i][t] == current_label:
+				x_t = np.append(x_t, M[i][t])
 			else:
-				if x_w.size < tau_window*resolution:
-			 		continue
-				data.append([x_w.size*t_conv, np.mean(x_w), np.std(x_w)])
+				data.append([x_t.size*t_conv, np.mean(x_t), np.std(x_t)])
 				labels.append(int(current_label))
-				data_mol.append([x_w.size*t_conv, np.mean(x_w), np.std(x_w)])
+				data_mol.append([x_t.size*t_conv, np.mean(x_t), np.std(x_t)])
 				labels_mol.append(int(current_label))
-				x_w = x[tau_window*w:tau_window*(w + 1)]
-				current_label = all_the_labels[i][w]
+				x_t = np.array([M[i][t]])
+				current_label = all_the_labels[i][t]
 		data2.append(np.array(data_mol))
 		labels2.append(np.array(labels_mol))
 
@@ -657,64 +745,11 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	if show_plot:
 		plt.show()
 
-def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
-	print('* Computing and plotting the averaged Sankey diagrams...')
-	if frame_list[-1] + aver_window > all_the_labels.shape[1]:
-		print('ERROR: the required frame range is out of bound.')
-		return
-
-	n_states = np.unique(all_the_labels).size
-	source = np.empty((frame_list.size - 1)*n_states**2)
-	target = np.empty((frame_list.size - 1)*n_states**2)
-	value = np.empty((frame_list.size - 1)*n_states**2)
-	c = 0
-	tmp_label1 = []
-	tmp_label2 = []
-
-	for i, t0 in enumerate(frame_list[:-1]):
-		t_jump = frame_list[i + 1] - frame_list[i]
-		T = np.zeros((n_states, n_states))
-		for t in range(t0, t0 + aver_window):
-			for L in all_the_labels:
-				T[int(L[t])][int(L[t + t_jump])] += 1
-
-		for n1 in range(len(T)):
-			for n2 in range(len(T[n1])):
-				source[c] = n1 + i*n_states
-				target[c] = n2 + (i + 1)*n_states
-				value[c] = T[n1][n2]
-				c += 1
-
-		for n in range(n_states):
-			starting_fraction = np.sum(T[n])/np.sum(T)
-			ending_fraction = np.sum(T.T[n])/np.sum(T)
-			if i == 0:
-				tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction*100) + '%')
-			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction*100) + '%')
-
-	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
-	palette = sns.color_palette('viridis', n_colors=n_states-2).as_hex()
-	palette.insert(0, '#440154')
-	palette.append('#fde725')
-	color = np.tile(palette, frame_list.size)
-
-	node = dict(label=label, pad=30, thickness=20, color=color)
-	link = dict(source=source, target=target, value=value)
-	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
-	fig = go.Figure(Data)
-	fig.update_layout(title='Frames: ' + str(frame_list*t_conv) + ' ns')
-
-	if show_plot:
-		fig.show()
-	fig.write_image(filename + '.png', scale=5.0)
-
 def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
-
 	plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
-
 	final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
@@ -722,18 +757,16 @@ def main():
 	plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
-	# print_mol_labels_fbf(all_the_labels, PAR, 'all_cluster_IDs.dat')
-	# print_mol_labels_fbf2(all_the_labels, PAR, 'tmp_clusters.dat')
+	# print_mol_labels_fbf_gro(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels_fbf_xyz(all_the_labels, PAR, 'tmp_clusters.dat')
 
-	# transition_matrix(all_the_labels, 'output_figures/Fig4', show_plot)
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
+		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+	transition_matrix(1, all_the_labels, 'output_figures/Fig5')
 
-	### Transitions part, still to be tested ###
-	# state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
+	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
 	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
 	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig6')
-	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 15, 30, 45, 60])]):
-	# 	sankey(all_the_labels, frame_list, sankey_average, PAR[2], 'output_figures/Fig7_' + str(i))
-
 
 if __name__ == "__main__":
 	main()
