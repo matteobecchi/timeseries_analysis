@@ -16,8 +16,6 @@ output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01				# Treshold to exit the maxima search
-
-# sankey_average = 10			# On how many frames to average the Sankey diagrams
 show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
@@ -758,13 +756,11 @@ def main():
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
 	# print_mol_labels_fbf_gro(all_the_labels, PAR, 'all_cluster_IDs.dat')
-	# print_mol_labels_fbf_xyz(all_the_labels, PAR, 'tmp_clusters.dat')
+	# print_mol_labels_fbf_xyz(all_the_labels, PAR, 'all_cluster_IDs_xyz.dat')
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
-		try:
-			sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
-		except:
-			print('\t snakey: frame_list too long')
+		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+
 	transition_matrix(1, all_the_labels, 'output_figures/Fig5')
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
 
