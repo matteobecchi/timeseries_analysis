@@ -145,28 +145,33 @@ def set_final_states(list_of_states):
 	mu1 = list_of_states[1][0][0]
 	sigma0 = list_of_states[0][0][1]
 	sigma1 = list_of_states[1][0][1]
-	if list_of_states[0][0][2] > list_of_states[1][0][2] and mu1 - mu0 < sigma0:
+	A0 = list_of_states[0][0][2]
+	A1 = list_of_states[1][0][2]
+	if A0 > A1 and mu1 - mu0 < sigma0:
 		tmp_list.append(1)
-	elif list_of_states[0][0][2] < list_of_states[1][0][2] and mu1 - mu0 < sigma1:
+	elif A0 < A1 and mu1 - mu0 < sigma1:
 		tmp_list.append(0)
 	for s in range(1, len(list_of_states) - 1):
 		mu0 = list_of_states[s][0][0]
 		mu1 = list_of_states[s + 1][0][0]
 		sigma0 = list_of_states[s][0][1]
 		sigma1 = list_of_states[s + 1][0][1]
-		if list_of_states[s][0][2] > list_of_states[s + 1][0][2] and mu1 - mu0 < sigma0:
+		A0 = list_of_states[s][0][2]
+		A1 = list_of_states[s + 1][0][2]
+		if A0 > A1 and mu1 - mu0 < sigma0:
 			tmp_list.append(s + 1)
-		elif list_of_states[s][0][2] < list_of_states[s + 1][0][2] and mu1 - mu0 < sigma1:
+		elif A0 < A1 and mu1 - mu0 < sigma1:
 			tmp_list.append(s)
 	mu0 = list_of_states[-2][0][0]
 	mu1 = list_of_states[-1][0][0]
 	sigma0 = list_of_states[-2][0][1]
 	sigma1 = list_of_states[-1][0][1]
-	if list_of_states[-2][0][2] > list_of_states[-1][0][2] and mu1 - mu0 < sigma0:
+	A0 = list_of_states[-2][0][2]
+	A1 = list_of_states[-1][0][2]
+	if A0 > A1 and mu1 - mu0 < sigma0:
 		tmp_list.append(-1)
-	elif list_of_states[-2][0][2] < list_of_states[-1][0][2] and mu1 - mu0 < sigma1:
+	elif A0 < A1 and mu1 - mu0 < sigma1:
 		tmp_list.append(-2)
-	print(tmp_list)
 
 	clean_states = []
 	for i in range(len(list_of_states)):
@@ -184,11 +189,33 @@ def set_final_states(list_of_states):
 		mu1 = clean_states[s + 1][0][0]
 		sigma0 = clean_states[s][0][1]
 		sigma1 = clean_states[s + 1][0][1]
-		th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
-		final_list.append(th)
+		A0 = clean_states[s][0][2]
+		A1= clean_states[s + 1][0][2]
+		a = sigma1**2 - sigma0**2
+		b = -2*(mu0*sigma1**2 - mu1*sigma0**2)
+		c = (mu0*sigma1)**2 - (mu1*sigma0)**2 - (sigma0*sigma1)**2*np.log(A0/A1)
+		Delta = b**2 - 4*a*c
+		if Delta >= 0:
+			th_plus = (- b + np.sqrt(Delta))/(2*a)
+			th_minus = (- b - np.sqrt(Delta))/(2*a)
+			I_plus = gaussian(th_plus, mu0, sigma0, A0)
+			I_minus = gaussian(th_minus, mu0, sigma0, A0)
+			if I_plus >= I_minus:
+				final_list.append(th_plus)
+			else:
+				final_list.append(th_minus)
+			### TO DELETE ###
+			# if mu0 < th_plus and mu1 > th_plus:
+			# 	final_list.append(th_plus)
+			# elif mu0 < th_minus and mu1 > th_minus:
+			# 	final_list.append(th_minus)
+			# else:
+			# 	final_list.append((mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1))
+		else:
+			final_list.append((mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1))
 	final_list.append(1.0)
 
-	return final_list
+	return clean_states, final_list
 
 def assign_final_states(M, PAR, final_list):
 	print('* Assigning labels to the time windows...')
@@ -215,7 +242,7 @@ def assign_final_states_to_single_frames(M, PAR, final_list):
 		for t in range(M.shape[1]):
 			flag = 0
 			for l in range(len(final_list) - 1):
-				if M[i][t] > final_list[l] and M[i][t] < final_list[l + 1]:
+				if M[i][t] >= final_list[l] and M[i][t] <= final_list[l + 1]:
 					all_the_labels[i][t] = l
 					flag = 1
 			if flag == 0:
@@ -231,14 +258,15 @@ def print_mol_labels1(all_the_labels, PAR, filename):
 			string = str(all_the_labels[i][0])
 			for t in range(1, tau_window):
 					string += ' ' + str(all_the_labels[i][0])
-			### TO REMOVE, IMPROVED WITH SCALENE
-			# for w in range(1, all_the_labels[i].size):
-			# 	for t in range(tau_window):
-			# 		string += ' ' + str(all_the_labels[i][w])
-			### TO REMOVE, IMPROVED WITH SCALENE
 			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
 			print(string, file=f)
 
-
-
+def print_mol_labels_fbf(all_the_labels, PAR, filename):
+	print('* Print color IDs for Ovito...')
+	with open(filename, 'w') as f:
+		for i in range(all_the_labels.shape[0]):
+			string = str(all_the_labels[i][0])
+			for t in range(1, all_the_labels[i].size):
+					string += ' ' + str(all_the_labels[i][t])
+			print(string, file=f)
 
