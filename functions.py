@@ -161,25 +161,25 @@ def set_final_states(list_of_states):
 
 	return final_list
 
-def assign_final_states(M, PAR, final_list):
-	print('* Assigning labels to the time windows...')
-	tau_window = PAR[0]
-	number_of_windows = int(M.shape[1]/tau_window)
-	all_the_labels = np.empty((M.shape[0], number_of_windows))
-	for i in range(M.shape[0]):
-		for w in range(number_of_windows):
-			x_w = M[i][w*tau_window:(w + 1)*tau_window]
-			flag = 0
-			for l in range(len(final_list) - 1):
-				if np.min(x_w) > final_list[l] and np.max(x_w) < final_list[l + 1]:
-					all_the_labels[i][w] = l
-					flag = 1
-			if flag == 0:
-				all_the_labels[i][w] = len(final_list) - 1
+# def assign_final_states(M, PAR, final_list):
+# 	print('* Assigning labels to the time windows...')
+# 	tau_window = PAR[0]
+# 	number_of_windows = int(M.shape[1]/tau_window)
+# 	all_the_labels = np.empty((M.shape[0], number_of_windows))
+# 	for i in range(M.shape[0]):
+# 		for w in range(number_of_windows):
+# 			x_w = M[i][w*tau_window:(w + 1)*tau_window]
+# 			flag = 0
+# 			for l in range(len(final_list) - 1):
+# 				if np.min(x_w) > final_list[l] and np.max(x_w) < final_list[l + 1]:
+# 					all_the_labels[i][w] = l
+# 					flag = 1
+# 			if flag == 0:
+# 				all_the_labels[i][w] = len(final_list) - 1
 
-	return all_the_labels
+# 	return all_the_labels
 
-def assign_final_states_to_single_frames(M, PAR, final_list):
+def assign_final_states_to_single_frames(M, final_list):
 	print('* Assigning labels to all the single frames...')
 	all_the_labels = np.empty((M.shape[0], M.shape[1]))
 	for i in range(M.shape[0]):

@@ -270,11 +270,12 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 
 	return relabel_states(all_the_labels, list_of_states, stop_th)
 
-def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, filename):
+def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 	print('* Printing cumulative figure...')
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
+	n_states = len(list_of_states)
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
@@ -282,15 +283,14 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, f
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
 
-	palette = sns.color_palette('viridis', n_colors=np.unique(all_the_labels).size - 2).as_hex()
+	palette = sns.color_palette('viridis', n_colors=n_states - 2).as_hex()
 	palette.insert(0, '#440154')
 	palette.append('#fde725')
 
-	States = np.unique(all_the_labels)
-	t_lim = np.array([tau_delay, (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
+	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	
-	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
+	time = np.linspace(t_lim[0], t_lim[1], M.shape[1])
+
 	if M.shape[1] > 1000:
 		for mol in M[::10]:
 			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
@@ -298,7 +298,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, f
 		for mol in M:
 			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
-	for S in range(States.size):
+	for S in range(n_states):
 		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
 
 	for n, th in enumerate(final_list):
@@ -323,27 +323,27 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, f
 	plt.close(fig)
 
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
+	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
 	example_ID = PAR[3]
 
 	fig, ax = plt.subplots()
-	times = np.linspace(tau_delay*t_conv, (tau_delay + M.shape[1])*t_conv, M.shape[1])
+	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
+	times = np.linspace(t_lim[0], t_lim[1], M.shape[1])
 	signal = M[example_ID]
 	color = all_the_labels[example_ID]
-	ax.scatter(times, signal, c=color, vmin=0, vmax=np.amax(np.unique(all_the_labels)), s=1.0)
+	ax.scatter(times, signal, c=color, vmin=0, vmax=np.amax(np.unique(all_the_labels).size), s=1.0)
 
 	fig.suptitle('Example particle: ID = ' + str(example_ID))
 	ax.set_xlabel('Time ' + t_units)
 	ax.set_ylabel('Normalized signal')
-	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	# ax.set_ylim(y_lim)
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def plot_all_trajectory_with_histos(M, PAR, all_the_labels, filename):
+def plot_all_trajectory_with_histos(M, PAR, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
@@ -356,23 +356,15 @@ def plot_all_trajectory_with_histos(M, PAR, all_the_labels, filename):
 	ax4 = plt.subplot(2, 1, 2)
 	axes = [ax0, ax1, ax2, ax3, ax4]
 
-	States = np.unique(all_the_labels)
-	for c, S in enumerate(States):
-		list_of_times = []
-		list_of_signals = []
-		for i, L in enumerate(all_the_labels):
-			for t, l in enumerate(L):
-				if l == S:
-					list_of_times.append((tau_delay + int(tau_window/2) + t)*t_conv)
-					list_of_signals.append(M[i][t])
+	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
+	time = np.linspace(t_lim[0], t_lim[1], M.shape[1])
 
-		list_of_times = np.array(list_of_times)
-		list_of_signals = np.array(list_of_signals)
-		flat_times = list_of_times.flatten()
-		flat_signals = list_of_signals.flatten()
-		flat_colors = S*np.ones(flat_times.size)
-
-		ax4.scatter(flat_times, flat_signals, c='xkcd:black', vmin=0, vmax=np.amax(States), s=0.05, alpha=0.5, rasterized=True)
+	if M.shape[1] > 1000:
+		for mol in M[::10]:
+			ax4.plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
+	else:
+		for mol in M:
+			ax4.plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
 	block_t = int(M.shape[1]/4)
 	for i in range(4):
@@ -385,6 +377,7 @@ def plot_all_trajectory_with_histos(M, PAR, all_the_labels, filename):
 	fig.suptitle('Example particle: ID = ' + str(PAR[3]))
 	ax4.set_xlabel('Time ' + t_units)
 	ax4.set_ylabel('Normalized signal')
+	ax4.set_xlim(t_lim)
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -723,16 +716,16 @@ def main():
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
 	final_list = set_final_states(list_of_states)
-	all_the_labels = assign_final_states_to_single_frames(M, PAR, final_list)
+	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
-	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, 'output_figures/Fig2')
-	# plot_all_trajectory_with_histos(M, PAR, all_the_labels, 'output_figures/Fig2_bis')
+	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'output_figures/Fig2')
+	plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
 	# print_mol_labels_fbf(all_the_labels, PAR, 'all_cluster_IDs.dat')
 	# print_mol_labels_fbf2(all_the_labels, PAR, 'tmp_clusters.dat')
 
-	transition_matrix(all_the_labels, 'output_figures/Fig4', show_plot)
+	# transition_matrix(all_the_labels, 'output_figures/Fig4', show_plot)
 
 	### Transitions part, still to be tested ###
 	# state_statistics(M, PAR, all_the_labels, 'output_figures/Fig4')
