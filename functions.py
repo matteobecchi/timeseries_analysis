@@ -133,6 +133,22 @@ def relabel_states(all_the_labels, list_of_states, stop_th):
 	return tmp2, list2
 
 def set_final_states(list_of_states):
+	tmp_list = []
+	for s in range(len(list_of_states) - 1):
+		mu0 = list_of_states[s][0][0]
+		mu1 = list_of_states[s + 1][0][0]
+		sigma0 = list_of_states[s][0][1]
+		sigma1 = list_of_states[s + 1][0][1]
+		A0 = list_of_states[s][0][2]
+		A1= list_of_states[s + 1][0][2]
+		if A0 > A1 and mu1 - mu0 < sigma0:
+			tmp_list.append(s + 1)
+		elif A0 < A1 and mu1 - mu0 < sigma1:
+			tmp_list.append(s)
+
+	for s in np.unique(tmp_list)[::-1]:
+		list_of_states.pop(s)
+
 	final_list = []
 	final_list.append([0.0, 0])
 	for s in range(len(list_of_states) - 1):
