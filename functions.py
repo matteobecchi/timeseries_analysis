@@ -58,9 +58,6 @@ def read_data(filename):
 		print('Error: unsupported format for input file.')
 		return None
 
-# def remove_edges(M, delay):
-# 	return M[:, delay:-delay]
-
 def Savgol_filter(M, tau, poly_order):
 	tmp = np.array([ savgol_filter(x, tau, poly_order) for x in M ])
 	return tmp[:, int(tau/2):-int(tau/2)]
@@ -75,7 +72,6 @@ def plot_histo(ax, counts, bins):
 	ax.stairs(counts, bins, fill=True)
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
-
 
 def gaussian(x, m, sigma, A):
 	return A*np.exp(-((x - m)/sigma)**2)
@@ -137,38 +133,15 @@ def relabel_states(all_the_labels, list_of_states, stop_th):
 	return tmp2, list2
 
 def set_final_states(list_of_states):
-	### Check which states are inside the surrounding ones
-	tmp_list = []
+	final_list = []
+	final_list.append([0.0, 0])
 	for s in range(len(list_of_states) - 1):
 		mu0 = list_of_states[s][0][0]
 		mu1 = list_of_states[s + 1][0][0]
 		sigma0 = list_of_states[s][0][1]
 		sigma1 = list_of_states[s + 1][0][1]
 		A0 = list_of_states[s][0][2]
-		A1 = list_of_states[s + 1][0][2]
-		if A0 > A1 and mu1 - mu0 < sigma0:
-			tmp_list.append(s + 1)
-		elif A0 < A1 and mu1 - mu0 < sigma1:
-			tmp_list.append(s)
-
-	clean_states = []
-	for i in range(len(list_of_states)):
-		flag = 1
-		for j in tmp_list:
-			if i == j:
-				flag = 0
-		if flag:
-			clean_states.append(list_of_states[i])
-
-	final_list = []
-	final_list.append([0.0, 0])
-	for s in range(len(clean_states) - 1):
-		mu0 = clean_states[s][0][0]
-		mu1 = clean_states[s + 1][0][0]
-		sigma0 = clean_states[s][0][1]
-		sigma1 = clean_states[s + 1][0][1]
-		A0 = clean_states[s][0][2]
-		A1= clean_states[s + 1][0][2]
+		A1= list_of_states[s + 1][0][2]
 		a = sigma1**2 - sigma0**2
 		b = -2*(mu0*sigma1**2 - mu1*sigma0**2)
 		c = (mu0*sigma1)**2 - (mu1*sigma0)**2 - (sigma0*sigma1)**2*np.log(A0/A1)
@@ -186,7 +159,7 @@ def set_final_states(list_of_states):
 			final_list.append([(mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1), 2])
 	final_list.append([1.0, 0])
 
-	return clean_states, final_list
+	return final_list
 
 def assign_final_states(M, PAR, final_list):
 	print('* Assigning labels to the time windows...')

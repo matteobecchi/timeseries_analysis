@@ -21,7 +21,6 @@ stop_th = 0.01				# Treshold to exit the maxima search
 show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
-	### Read and clean the data points
 	data_directory, PAR = read_input_parameters()
 
 	if type(data_directory) == str:
@@ -33,7 +32,6 @@ def all_the_input_stuff():
 
 	M_raw = M_raw[:, PAR[1]:]
 	M = Savgol_filter(M_raw, PAR[0], poly_order)
-	# M = remove_edges(M, int(PAR[0]/2) + 1)
 	SIG_MAX = np.max(M)
 	SIG_MIN = np.min(M)
 	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
@@ -49,6 +47,35 @@ def all_the_input_stuff():
 		os.makedirs('output_figures')
 
 	return M_raw, M, PAR, all_the_labels, list_of_states
+
+def plot_input_data(M, PAR, filename):
+	tau_window = PAR[0]
+	tau_delay = PAR[1]
+	t_conv = PAR[2]
+
+	flat_M = M.flatten()
+	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+	counts *= flat_M.size
+
+	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
+
+	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
+	if M.shape[1] > 1000:
+		for mol in M[::10]:
+			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
+	else:
+		for mol in M:
+			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
+
+	ax[0].set_ylabel('Normalized signal')
+	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
+	ax[1].set_xticklabels([])
+
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
 
 def tmp_print_some_data(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
@@ -242,35 +269,6 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 			M1 = M2
 
 	return relabel_states(all_the_labels, list_of_states, stop_th)
-
-def plot_input_data(M, PAR, filename):
-	tau_window = PAR[0]
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
-
-	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
-	counts *= flat_M.size
-
-	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
-	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
-
-	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
-	if M.shape[1] > 1000:
-		for mol in M[::10]:
-			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-	else:
-		for mol in M:
-			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-
-	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
-	ax[1].set_xticklabels([])
-
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
 
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, filename):
 	print('* Printing cumulative figure...')
@@ -719,13 +717,12 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 
 def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
-	print(PAR)
 
 	plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 
-	list_of_states, final_list = set_final_states(list_of_states)
+	final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, PAR, final_list)
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, 'output_figures/Fig2')
