@@ -18,7 +18,7 @@ n_bins = 100 				# Number of bins in the histograms
 stop_th = 0.01				# Treshold to exit the maxima search
 
 # sankey_average = 10			# On how many frames to average the Sankey diagrams
-show_plot = False			# Show all the plots
+show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
 	data_directory, PAR = read_input_parameters()
@@ -761,12 +761,12 @@ def main():
 	# print_mol_labels_fbf_xyz(all_the_labels, PAR, 'tmp_clusters.dat')
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
-		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+		try:
+			sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+		except:
+			print('\t snakey: frame_list too long')
 	transition_matrix(1, all_the_labels, 'output_figures/Fig5')
-
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
-	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
-	# tau_sigma(M_raw, PAR, all_the_labels, 'output_figures/Fig6')
 
 if __name__ == "__main__":
 	main()
