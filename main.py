@@ -23,16 +23,17 @@ show_plot = True			# Show all the plots
 def all_the_input_stuff():
 	### Read and clean the data points
 	data_directory, PAR = read_input_parameters()
-	PAR[3] = PAR[0]
+
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
 		M0 = read_data(data_directory[0])
 		M1 = read_data(data_directory[1])
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
-	M = Savgol_filter(M_raw, PAR[3], poly_order)
-	M = remove_edges(M, int(PAR[0]/2) + 1)
-	M = M[:, PAR[1]:]
+
+	M_raw = M_raw[:, PAR[1]:]
+	M = Savgol_filter(M_raw, PAR[0], poly_order)
+	# M = remove_edges(M, int(PAR[0]/2) + 1)
 	SIG_MAX = np.max(M)
 	SIG_MIN = np.min(M)
 	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
@@ -67,7 +68,8 @@ def tmp_print_some_data(M, PAR, all_the_labels, filename):
 				for t in range(tau_window):
 					print(M[i][w*tau_window + t], file=f)
 
-def gauss_fit_n(M, n_bins, number_of_sigmas, filename):
+def gauss_fit_n(M, n_bins, filename):
+	number_of_sigmas = 2.0
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 
@@ -223,7 +225,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, PAR[4], 'output_figures/Fig1_' + str(iteration_id))
+		list_popt, list_th = gauss_fit_n(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
 
 		for n in range(len(list_th)):
 			list_of_states.append([list_popt[n], list_th[n], 0.0])
@@ -245,6 +247,7 @@ def plot_input_data(M, PAR, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
+
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
 	counts *= flat_M.size
@@ -324,14 +327,15 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, final_list, f
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
+	example_ID = PAR[3]
 
 	fig, ax = plt.subplots()
 	times = np.linspace(tau_delay*t_conv, (tau_delay + M.shape[1])*t_conv, M.shape[1])
-	signal = M[PAR[5]]
-	color = all_the_labels[PAR[5]]
+	signal = M[example_ID]
+	color = all_the_labels[example_ID]
 	ax.scatter(times, signal, c=color, vmin=0, vmax=np.amax(np.unique(all_the_labels)), s=1.0)
 
-	fig.suptitle('Example particle: ID = ' + str(PAR[5]))
+	fig.suptitle('Example particle: ID = ' + str(example_ID))
 	ax.set_xlabel('Time ' + t_units)
 	ax.set_ylabel('Normalized signal')
 	# y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
@@ -380,7 +384,7 @@ def plot_all_trajectory_with_histos(M, PAR, all_the_labels, filename):
 		if i > 0:
 			axes[i].set_yticklabels([])
 
-	fig.suptitle('Example particle: ID = ' + str(PAR[5]))
+	fig.suptitle('Example particle: ID = ' + str(PAR[3]))
 	ax4.set_xlabel('Time ' + t_units)
 	ax4.set_ylabel('Normalized signal')
 	if show_plot:

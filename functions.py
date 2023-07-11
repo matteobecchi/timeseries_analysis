@@ -29,11 +29,8 @@ def read_input_parameters():
     tau_window = int(param[0])
     tau_delay = int(param[1])
     t_conv = param[2]
-    tau_smooth = int(param[3])
-    number_of_sigmas = param[4]
-    example_ID = int(param[5])
-    resolution = int(param[6])
-    PAR = [tau_window, tau_delay, t_conv, tau_smooth, number_of_sigmas, example_ID, resolution]
+    example_ID = int(param[3])
+    PAR = [tau_window, tau_delay, t_conv, example_ID]
 
     if data_dir.shape == (2, ):
         return data_dir, PAR
@@ -61,6 +58,13 @@ def read_data(filename):
 		print('Error: unsupported format for input file.')
 		return None
 
+# def remove_edges(M, delay):
+# 	return M[:, delay:-delay]
+
+def Savgol_filter(M, tau, poly_order):
+	tmp = np.array([ savgol_filter(x, tau, poly_order) for x in M ])
+	return tmp[:, int(tau/2):-int(tau/2)]
+
 def normalize_array(x):
 	mean = np.mean(x)
 	stddev = np.std(x)
@@ -72,8 +76,6 @@ def plot_histo(ax, counts, bins):
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
-def Savgol_filter(M, tau, poly_order):
-	return np.array([ savgol_filter(x, tau, poly_order) for x in M ])
 
 def gaussian(x, m, sigma, A):
 	return A*np.exp(-((x - m)/sigma)**2)
@@ -89,10 +91,6 @@ def cumulative_exp(t, tau):
 
 def cumulative_double_exp(t, tau1, tau2):
 	return 1 - tau1*np.exp(-t/tau1)/(tau1 + tau2) - tau2*np.exp(-t/tau2)/(tau1 + tau2)
-
-def remove_edges(M, delay):
-	### to remove the first delay frames #####
-	return M[:, delay:-delay]
 
 def find_nearest(array, value):
 	array = np.asarray(array)
