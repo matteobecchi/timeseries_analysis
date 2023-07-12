@@ -74,7 +74,7 @@ def plot_histo(ax, counts, bins):
 	ax.set_ylabel(r'Probability distribution')
 
 def gaussian(x, m, sigma, A):
-	return A*np.exp(-((x - m)/sigma)**2)
+	return np.exp(-((x - m)/sigma)**2)*A/(np.sqrt(np.pi)*sigma)
 
 def exponential(t, tau):
 	return np.exp(-t/tau)/tau
@@ -160,7 +160,7 @@ def set_final_states(list_of_states):
 		A1= list_of_states[s + 1][0][2]
 		a = sigma1**2 - sigma0**2
 		b = -2*(mu0*sigma1**2 - mu1*sigma0**2)
-		c = (mu0*sigma1)**2 - (mu1*sigma0)**2 - (sigma0*sigma1)**2*np.log(A0/A1)
+		c = (mu0*sigma1)**2 - (mu1*sigma0)**2 - (sigma0*sigma1)**2*np.log(A0*sigma1/A1/sigma0)
 		Delta = b**2 - 4*a*c
 		if Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
