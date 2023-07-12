@@ -15,8 +15,7 @@ t_units = r'[ns]'			# Units of measure of time
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
 n_bins = 100 				# Number of bins in the histograms
-stop_th = 0.01				# Treshold to exit the maxima search
-show_plot = True			# Show all the plots
+show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
 	data_directory, PAR = read_input_parameters()
@@ -93,6 +92,234 @@ def tmp_print_some_data(M, PAR, all_the_labels, filename):
 				for t in range(tau_window):
 					print(M[i][w*tau_window + t], file=f)
 
+def gauss_fit_sum(M, n_bins, filename):
+	print('* Gaussian fit...')
+	number_of_sigmas = 2.0
+	flat_M = M.flatten()
+	counts, bins = np.histogram(flat_M, bins=n_bins, density=False)
+
+	def moving_average(data, window):
+	    weights = np.repeat(1.0, window) / window
+	    return np.convolve(data, weights, mode='valid')
+
+	counts = moving_average(counts, 3)
+	bins = moving_average(bins, 3)
+
+	### Locate the maxima and minima in the distribution
+	max_ID = argrelextrema(counts, np.greater)[0]
+	min_ID = argrelextrema(counts, np.less_equal)[0]
+
+	tmp_to_delete = []
+	for n in range(min_ID.size - 1):
+		if min_ID[n + 1] == min_ID[n] + 1:
+			tmp_to_delete.append(n + 1)
+	min_ID = np.delete(min_ID, tmp_to_delete, 0)
+	tmp_min_ID = [min_ID[0]]
+	current_max = 0
+	for n in range(1, len(min_ID)):
+		if min_ID[n] > max_ID[current_max]:
+			tmp_min_ID.append(min_ID[n])
+			current_max += 1
+		if current_max == max_ID.size:
+			break
+	if len(tmp_min_ID) == max_ID.size:
+		tmp_min_ID.append(min_ID[n + 1])
+
+	min_ID = np.array(tmp_min_ID)
+
+	p0 = []
+	for n in range(max_ID.size):
+		p0.append(bins[max_ID[n]])
+		p0.append((bins[min_ID[n + 1]] - bins[min_ID[n]])/6)
+		p0.append(counts[max_ID[n]]*np.sqrt(np.pi)*(bins[min_ID[n + 1]] - bins[min_ID[n]])/6)
+
+	bounds = [np.array([-np.inf, 0.0, 0.0]), np.inf]
+	for n in range(max_ID.size - 1):
+		bounds[0] = np.concatenate((bounds[0], np.array([-np.inf, 0.0, 0.0])))
+
+	try:
+		Popt, pcov = scipy.optimize.curve_fit(sum_of_Gaussians, bins[:-1], counts, p0=p0, bounds=bounds)
+	except RuntimeError:
+		print('\tgauss_fit_n: RuntimeError.')
+		return [], []
+
+	list_popt = []
+	for i in range(0, Popt.size, 3):
+		list_popt.append([Popt[i], Popt[i + 1], Popt[i + 2]])
+
+	print('\tGaussians parameters:')
+	with open(output_file, 'a') as f:
+		print('\n', file=f)
+		for popt in list_popt:
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, peak = {popt[2]/popt[1]/np.sqrt(np.pi):.4f}')
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, peak = {popt[2]/popt[1]/np.sqrt(np.pi):.4f}', file=f)
+
+	### Create the list of the trasholds for state identification
+	list_th = []
+	for n in range(len(list_popt)):
+		th_inf = list_popt[n][0] - number_of_sigmas*list_popt[n][1]
+		th_sup = list_popt[n][0] + number_of_sigmas*list_popt[n][1]
+		list_th.append([th_inf, th_sup])
+	
+	### To remove possible swapped tresholds:
+	for n in range(len(list_th) - 1):
+		if list_th[n][1] > list_th[n + 1][0]:
+			mu0 = list_popt[n][0]
+			sigma0 = list_popt[n][1]
+			mu1 = list_popt[n + 1][0]
+			sigma1 = list_popt[n + 1][1]
+			middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
+			list_th[n][1] = middle_th
+			list_th[n + 1][0] = middle_th
+
+	### Plot the distribution and the fitted Gaussians
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	fig, ax = plt.subplots()
+	plot_histo(ax, counts, bins)
+	ax.set_xlim(y_lim)
+	x = np.linspace(bins[0], bins[-1], 1000)
+	ax.plot(x, sum_of_Gaussians(x, *Popt))
+
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
+	return list_popt, list_th
+
+def gauss_fit_max(M, n_bins, filename):
+	print('* Gaussian fit...')
+	number_of_sigmas = 2.0
+	flat_M = M.flatten()
+	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+
+	def moving_average(data, window):
+	    weights = np.repeat(1.0, window) / window
+	    return np.convolve(data, weights, mode='valid')
+
+	counts = moving_average(counts, 3)
+	bins = moving_average(bins, 3)
+
+	### Locate the maxima and minima in the distribution
+	max_ID = argrelextrema(counts, np.greater)[0]
+	min_ID = argrelextrema(counts, np.less_equal)[0]
+
+	tmp_to_delete = []
+	for n in range(min_ID.size - 1):
+		if min_ID[n + 1] == min_ID[n] + 1:
+			tmp_to_delete.append(n + 1)
+	min_ID = np.delete(min_ID, tmp_to_delete, 0)
+	tmp_min_ID = [min_ID[0]]
+	current_max = 0
+	for n in range(1, len(min_ID)):
+		if min_ID[n] > max_ID[current_max]:
+			tmp_min_ID.append(min_ID[n])
+			current_max += 1
+		if current_max == max_ID.size:
+			break
+	if len(tmp_min_ID) == max_ID.size:
+		tmp_min_ID.append(min_ID[n + 1])
+
+	min_ID = np.array(tmp_min_ID)
+
+	list_popt = []
+	fit_done = False
+	while (fit_done == False and max_ID.size > 0):
+		counts_max = np.max(counts[max_ID])
+		n = np.where(counts[max_ID] == counts_max)[0][0]
+
+		### Chose the intersection interval between
+		### the width at half height and the minima surrounding the maximum
+		tmp_id0 = max_ID[n]
+		tmp_id1 = max_ID[n]
+		while (counts[tmp_id0] > counts_max/2 and tmp_id0 > 0):
+			tmp_id0 -= 1
+		while (counts[tmp_id1] > counts_max/2 and tmp_id1 < len(counts) - 1):
+			tmp_id1 += 1
+		id0 = np.max([tmp_id0, min_ID[n]])
+		id1 = np.min([tmp_id1, min_ID[n + 1]])
+		if id1 - id0 < 4: # If the fitting interval is too small, discard.
+			continue
+		Bins = bins[id0:id1]
+		Counts = counts[id0:id1]
+
+		### "Zoom in" into the relevant bins interval
+		reflat = flat_M[(flat_M > bins[id0]) & (flat_M <= bins[id1])]
+		recounts, rebins = np.histogram(reflat, bins=2*(id1-id0), density=True)
+
+		### Perform the Gaussian fit
+		mu0 = bins[max_ID[n]]
+		sigma0 = (bins[min_ID[n + 1]] - bins[min_ID[n]])/6
+		A0 = counts[max_ID[n]]*np.sqrt(np.pi)*sigma0
+		try:
+			popt, pcov = scipy.optimize.curve_fit(Gaussian, rebins[:-1], recounts, p0=[mu0, sigma0, A0])
+		except RuntimeError:
+			print('\tgauss_fit_n: RuntimeError.')
+			max_ID = np.delete(max_ID, n)
+			min_ID = np.delete(min_ID, n + 1)
+			continue
+		popt[2] *= reflat.size
+		if popt[1] < 0:
+			popt[1] = -popt[1]
+		flag = 1
+		if popt[0] < Bins[0] or popt[0] > Bins[-1]:
+			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
+			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
+		if popt[1] > Bins[-1] - Bins[0]:
+			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
+			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
+		perr = np.sqrt(np.diag(pcov))
+		for j in range(len(perr)):
+			if perr[j]/popt[j] > 0.5:
+				flag = 0 # If the uncertanties over the parameters is too large, discard.
+				print('\tgauss_fit_n: Parameters uncertanty too large.')
+		if flag:
+			fit_done = True
+			list_popt.append(popt)
+		else:
+			max_ID = np.delete(max_ID, n)
+			min_ID = np.delete(min_ID, n + 1)
+
+	print('\tGaussians parameters:')
+	with open(output_file, 'a') as f:
+		print('\n', file=f)
+		for popt in list_popt:
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}', file=f)
+
+	### Create the list of the trasholds for state identification
+	list_th = []
+	for n in range(len(list_popt)):
+		th_inf = list_popt[n][0] - number_of_sigmas*list_popt[n][1]
+		th_sup = list_popt[n][0] + number_of_sigmas*list_popt[n][1]
+		list_th.append([th_inf, th_sup])
+	
+	### To remove possible swapped tresholds:
+	for n in range(len(list_th) - 1):
+		if list_th[n][1] > list_th[n + 1][0]:
+			mu0 = list_popt[n][0]
+			sigma0 = list_popt[n][1]
+			mu1 = list_popt[n + 1][0]
+			sigma1 = list_popt[n + 1][1]
+			middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
+			list_th[n][1] = middle_th
+			list_th[n + 1][0] = middle_th
+
+	### Plot the distribution and the fitted Gaussians
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	fig, ax = plt.subplots()
+	plot_histo(ax, counts, bins)
+	ax.set_xlim(y_lim)
+	for popt in list_popt:
+		tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
+		ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
+	return list_popt, list_th
+
 def gauss_fit_n(M, n_bins, filename):
 	number_of_sigmas = 2.0
 	flat_M = M.flatten()
@@ -151,7 +378,7 @@ def gauss_fit_n(M, n_bins, filename):
 		### Perform the Gaussian fit
 		p0 = [bins[max_ID[n]], (bins[min_ID[n + 1]] - bins[min_ID[n]])/6, counts[max_ID[n]]]
 		try:
-			popt, pcov = scipy.optimize.curve_fit(gaussian, rebins[:-1], recounts, p0=p0)
+			popt, pcov = scipy.optimize.curve_fit(Gaussian, rebins[:-1], recounts, p0=p0)
 		except RuntimeError:
 			print('\tgauss_fit_n: RuntimeError.')
 			continue
@@ -205,7 +432,7 @@ def gauss_fit_n(M, n_bins, filename):
 	ax.set_xlim(y_lim)
 	for popt in list_popt:
 		tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
-		ax.plot(np.linspace(bins[0], bins[-1], 1000), gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+		ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 	# for th in list_th:
 	# 	ax.vlines(th, 0, np.max(counts), linestyle='--', color='black')
 	if show_plot:
@@ -239,8 +466,8 @@ def find_stable_trj(M, tau_window, list_th, list_of_states, all_the_labels, offs
 	with open(output_file, 'a') as f:
 		for n, c in enumerate(counter):
 			fw = c/(all_the_labels.size)
-			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}')
-			print(f'\tFraction of windows in state ' + str(offset + n + 1) + f' = {fw:.3}', file=f)
+			print(f'\tFraction of windows in state ' + str(offset + n) + f' = {fw:.3}')
+			print(f'\tFraction of windows in state ' + str(offset + n) + f' = {fw:.3}', file=f)
 			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
 	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
 
@@ -250,7 +477,9 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_n(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
+		# list_popt, list_th = gauss_fit_sum(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
+		list_popt, list_th = gauss_fit_max(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
+		# list_popt, list_th = gauss_fit_n(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
 
 		for n in range(len(list_th)):
 			list_of_states.append([list_popt[n], list_th[n], 0.0])
@@ -261,12 +490,12 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 		states_counter += len(list_popt)
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
-		if c < stop_th:
+		if c <= 0.0:
 			break
 		else:
 			M1 = M2
 
-	return relabel_states(all_the_labels, list_of_states, stop_th)
+	return relabel_states(all_the_labels, list_of_states)
 
 def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 	print('* Printing cumulative figure...')
@@ -297,7 +526,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
 	for S in range(n_states):
-		ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
+		ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
 
 	for n, th in enumerate(final_list):
 		if th[1] == 0:
@@ -331,7 +560,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	times = np.linspace(t_lim[0], t_lim[1], M.shape[1])
 	signal = M[example_ID]
 	color = all_the_labels[example_ID]
-	ax.scatter(times, signal, c=color, vmin=0, vmax=np.amax(np.unique(all_the_labels).size), s=1.0)
+	ax.scatter(times, signal, c=color, vmin=0, vmax=np.max(np.unique(all_the_labels)), s=1.0)
 
 	fig.suptitle('Example particle: ID = ' + str(example_ID))
 	ax.set_xlabel('Time ' + t_units)
@@ -432,15 +661,15 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 		fig.show()
 	fig.write_image(filename + '.png', scale=5.0)
 
-def transition_matrix(tau, all_the_labels, filename):
+def transition_matrix(Delta, t_conv, all_the_labels, filename):
 	print('* Computing transition matrix...')
 	n_states = np.unique(all_the_labels).size
 	T = np.zeros((n_states, n_states))
 
 	for mol in all_the_labels:
-		for t in range(mol.size - tau):
+		for t in range(mol.size - Delta):
 			id0 = int(mol[t])
-			id1 = int(mol[t + tau])
+			id1 = int(mol[t + Delta])
 			T[id0][id1] += 1.0
 
 	N = np.zeros((n_states, n_states))
@@ -459,7 +688,7 @@ def transition_matrix(tau, all_the_labels, filename):
 	fig.colorbar(im)
 	for (i, j), val in np.ndenumerate(N):
 		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
-	fig.suptitle(r'Transition probabilities, $\tau=$' + str(tau))
+	fig.suptitle(r'Transition probabilities, $\Delta t=$' + str(Delta*t_conv) + ' ' + t_units)
 	ax.set_xlabel('To...')
 	ax.set_ylabel('From...')
 	ax.xaxis.tick_top()
@@ -492,7 +721,7 @@ def tau_sigma(M, PAR, all_the_labels, filename):
 			 	if x_w.size < tau_window*resolution:
 			 		continue
 			 	### Lag-1 autocorrelation for colored noise
-				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n gaussian white noise
+				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n Gaussian white noise
 			 	x_smean = x_w - np.mean(x_w)
 			 	alpha = 0.0
 			 	var = 1.0
@@ -745,23 +974,23 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 
 def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
-	plot_input_data(M, PAR, 'output_figures/Fig0')
+	# plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
-	final_list = set_final_states(list_of_states)
+	list_of_states, final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
 	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'output_figures/Fig2')
-	plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
+	# plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
-	# print_mol_labels_fbf_gro(all_the_labels, PAR, 'all_cluster_IDs.dat')
-	# print_mol_labels_fbf_xyz(all_the_labels, PAR, 'all_cluster_IDs_xyz.dat')
+	print_mol_labels_fbf_gro(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	print_mol_labels_fbf_xyz(all_the_labels, PAR, 'all_cluster_IDs_xyz.dat')
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
 		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
 
-	transition_matrix(1, all_the_labels, 'output_figures/Fig5')
+	transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
 
 if __name__ == "__main__":

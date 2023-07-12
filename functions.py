@@ -73,8 +73,17 @@ def plot_histo(ax, counts, bins):
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
-def gaussian(x, m, sigma, A):
+def Gaussian(x, m, sigma, A):
 	return np.exp(-((x - m)/sigma)**2)*A/(np.sqrt(np.pi)*sigma)
+
+def sum_of_Gaussians(x, *args):
+	result = np.zeros_like(x)  # Initialize the result array
+	for i in range(0, len(args), 3):
+		mu = args[i]
+		sigma = args[i + 1]
+		A = args[i + 2]
+		result += Gaussian(x, mu, sigma, A)
+	return result
 
 def exponential(t, tau):
 	return np.exp(-t/tau)/tau
@@ -93,7 +102,7 @@ def find_nearest(array, value):
 	idx = np.argmin(np.abs(array - value))
 	return array[idx]
 
-def relabel_states(all_the_labels, list_of_states, stop_th):
+def relabel_states(all_the_labels, list_of_states):
 	### Remove empty states and relabel from 0 to n_states-1
 	list1 = [ state for state in list_of_states if state[2] != 0.0 ]
 	list_unique = np.unique(all_the_labels)
@@ -134,17 +143,30 @@ def relabel_states(all_the_labels, list_of_states, stop_th):
 
 def set_final_states(list_of_states):
 	tmp_list = []
-	for s in range(len(list_of_states) - 1):
-		mu0 = list_of_states[s][0][0]
-		mu1 = list_of_states[s + 1][0][0]
-		sigma0 = list_of_states[s][0][1]
-		sigma1 = list_of_states[s + 1][0][1]
-		A0 = list_of_states[s][0][2]
-		A1= list_of_states[s + 1][0][2]
-		if A0 > A1 and mu1 - mu0 < sigma0:
-			tmp_list.append(s + 1)
-		elif A0 < A1 and mu1 - mu0 < sigma1:
-			tmp_list.append(s)
+	### This criterium is very arbitrary... 
+	# for s in range(len(list_of_states) - 1):
+	# 	mu0 = list_of_states[s][0][0]
+	# 	mu1 = list_of_states[s + 1][0][0]
+	# 	sigma0 = list_of_states[s][0][1]
+	# 	sigma1 = list_of_states[s + 1][0][1]
+	# 	A0 = list_of_states[s][0][2]
+	# 	A1 = list_of_states[s + 1][0][2]
+	# 	if A0 > A1 and mu1 - mu0 < sigma0:
+	# 		tmp_list.append(s + 1)
+	# 	elif A0 < A1 and mu1 - mu0 < sigma1:
+	# 		tmp_list.append(s)
+	for s0 in range(len(list_of_states)):
+		for s1 in range(s0 + 1, len(list_of_states)):
+			mu0 = list_of_states[s0][0][0]
+			mu1 = list_of_states[s1][0][0]
+			sigma0 = list_of_states[s0][0][1]
+			sigma1 = list_of_states[s1][0][1]
+			A0 = list_of_states[s0][0][2]
+			A1 = list_of_states[s1][0][2]
+			if A0 > A1 and mu1 - mu0 < sigma0:
+				tmp_list.append(s1)
+			elif A0 < A1 and mu1 - mu0 < sigma1:
+				tmp_list.append(s0)
 
 	for s in np.unique(tmp_list)[::-1]:
 		list_of_states.pop(s)
@@ -165,8 +187,8 @@ def set_final_states(list_of_states):
 		if Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
 			th_minus = (- b - np.sqrt(Delta))/(2*a)
-			intercept_plus = gaussian(th_plus, mu0, sigma0, A0)
-			intercept_minus = gaussian(th_minus, mu0, sigma0, A0)
+			intercept_plus = Gaussian(th_plus, mu0, sigma0, A0)
+			intercept_minus = Gaussian(th_minus, mu0, sigma0, A0)
 			if intercept_plus >= intercept_minus:
 				final_list.append([th_plus, 1])
 			else:
@@ -175,10 +197,21 @@ def set_final_states(list_of_states):
 			final_list.append([(mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1), 2])
 	final_list.append([1.0, 0])
 
-	return final_list
+	### Find and remove swapped tresholds
+	tmp_list = []
+	for i in range(1, len(final_list) - 2):
+		if final_list[i][0] > final_list[i + 1][0]:
+			### Rimuovere lo stato i
+			tmp_list.append(i)
+
+	for i in np.unique(tmp_list)[::-1]:
+		list_of_states.pop(i)
+		final_list.pop(i + 1)
+
+	return list_of_states, final_list
 
 def assign_final_states_to_single_frames(M, final_list):
-	print('* Assigning labels to all the single frames...')
+	print('* Assigning labels to the single frames...')
 	all_the_labels = np.empty((M.shape[0], M.shape[1]))
 	for i in range(M.shape[0]):
 		for t in range(M.shape[1]):
