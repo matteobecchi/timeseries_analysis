@@ -810,7 +810,6 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	ax.legend(*scatter.legend_elements())
 	fig.savefig(filename + 'a.png', dpi=600)
 
-	plt.show()
 	if show_plot:
 		plt.show()
 
@@ -974,10 +973,10 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 
 def main():
 	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
-	# plot_input_data(M, PAR, 'output_figures/Fig0')
+	plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
-	list_of_states, final_list = set_final_states(list_of_states)
+	list_of_states, final_list = set_final_states(list_of_states, 'states_final')
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
 	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'output_figures/Fig2')

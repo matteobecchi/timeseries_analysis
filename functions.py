@@ -141,20 +141,9 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp2, list2
 
-def set_final_states(list_of_states):
+def set_final_states(list_of_states, filename):
 	tmp_list = []
 	### This criterium is very arbitrary... 
-	# for s in range(len(list_of_states) - 1):
-	# 	mu0 = list_of_states[s][0][0]
-	# 	mu1 = list_of_states[s + 1][0][0]
-	# 	sigma0 = list_of_states[s][0][1]
-	# 	sigma1 = list_of_states[s + 1][0][1]
-	# 	A0 = list_of_states[s][0][2]
-	# 	A1 = list_of_states[s + 1][0][2]
-	# 	if A0 > A1 and mu1 - mu0 < sigma0:
-	# 		tmp_list.append(s + 1)
-	# 	elif A0 < A1 and mu1 - mu0 < sigma1:
-	# 		tmp_list.append(s)
 	for s0 in range(len(list_of_states)):
 		for s1 in range(s0 + 1, len(list_of_states)):
 			mu0 = list_of_states[s0][0][0]
@@ -208,6 +197,10 @@ def set_final_states(list_of_states):
 		list_of_states.pop(i)
 		final_list.pop(i + 1)
 
+	with open(filename + '.txt', 'w') as f:
+		for state in list_of_states:
+			print(state[0][0], state[0][1], state[0][2], file=f)
+
 	return list_of_states, final_list
 
 def assign_final_states_to_single_frames(M, final_list):
@@ -246,7 +239,6 @@ def print_mol_labels_fbf_gro(all_the_labels, PAR, filename):
 			print(string, file=f)
 
 def print_mol_labels_fbf_xyz(all_the_labels, PAR, filename):
-	print(all_the_labels.shape)
 	print('* Print color IDs for Ovito...')
 	with open(filename, 'w') as f:
 		for t in range(481):
