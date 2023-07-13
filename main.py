@@ -14,8 +14,8 @@ t_units = r'[ns]'			# Units of measure of time
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
-n_bins = 100 				# Number of bins in the histograms
-show_plot = False			# Show all the plots
+# n_bins = 100 				# Number of bins in the histograms
+show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
 	data_directory, PAR = read_input_parameters()
@@ -51,7 +51,7 @@ def plot_input_data(M, PAR, filename):
 	t_conv = PAR[2]
 
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+	counts, bins = np.histogram(flat_M, bins='auto', density=True)
 	counts *= flat_M.size
 
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
@@ -92,11 +92,11 @@ def tmp_print_some_data(M, PAR, all_the_labels, filename):
 				for t in range(tau_window):
 					print(M[i][w*tau_window + t], file=f)
 
-def gauss_fit_sum(M, n_bins, filename):
+def gauss_fit_sum(M, filename):
 	print('* Gaussian fit...')
 	number_of_sigmas = 2.0
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=False)
+	counts, bins = np.histogram(flat_M, bins='auto', density=False)
 
 	def moving_average(data, window):
 	    weights = np.repeat(1.0, window) / window
@@ -187,11 +187,11 @@ def gauss_fit_sum(M, n_bins, filename):
 
 	return list_popt, list_th
 
-def gauss_fit_max(M, n_bins, filename):
+def gauss_fit_max(M, filename):
 	print('* Gaussian fit...')
 	number_of_sigmas = 2.0
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+	counts, bins = np.histogram(flat_M, bins='auto', density=True)
 
 	def moving_average(data, window):
 	    weights = np.repeat(1.0, window) / window
@@ -239,6 +239,8 @@ def gauss_fit_max(M, n_bins, filename):
 		id0 = np.max([tmp_id0, min_ID[n]])
 		id1 = np.min([tmp_id1, min_ID[n + 1]])
 		if id1 - id0 < 4: # If the fitting interval is too small, discard.
+			max_ID = np.delete(max_ID, n)
+			min_ID = np.delete(min_ID, n + 1)
 			continue
 		Bins = bins[id0:id1]
 		Counts = counts[id0:id1]
@@ -320,10 +322,10 @@ def gauss_fit_max(M, n_bins, filename):
 
 	return list_popt, list_th
 
-def gauss_fit_n(M, n_bins, filename):
+def gauss_fit_n(M, filename):
 	number_of_sigmas = 2.0
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+	counts, bins = np.histogram(flat_M, bins='auto', density=True)
 
 	def moving_average(data, window):
 	    weights = np.repeat(1.0, window) / window
@@ -477,9 +479,9 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
-		# list_popt, list_th = gauss_fit_sum(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
-		list_popt, list_th = gauss_fit_max(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
-		# list_popt, list_th = gauss_fit_n(M1, n_bins, 'output_figures/Fig1_' + str(iteration_id))
+		# list_popt, list_th = gauss_fit_sum(M1, 'output_figures/Fig1_' + str(iteration_id))
+		list_popt, list_th = gauss_fit_max(M1, 'output_figures/Fig1_' + str(iteration_id))
+		# list_popt, list_th = gauss_fit_n(M1, 'output_figures/Fig1_' + str(iteration_id))
 
 		for n in range(len(list_th)):
 			list_of_states.append([list_popt[n], list_th[n], 0.0])
@@ -504,7 +506,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 	t_conv = PAR[2]
 	n_states = len(list_of_states)
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins=n_bins, density=True)
+	counts, bins = np.histogram(flat_M, bins='auto', density=True)
 	counts *= flat_M.size
 
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
