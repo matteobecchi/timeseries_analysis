@@ -14,7 +14,6 @@ t_units = r'[ns]'			# Units of measure of time
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
 poly_order = 2 				# Savgol filter polynomial order
-# n_bins = 100 				# Number of bins in the histograms
 show_plot = True			# Show all the plots
 
 def all_the_input_stuff():
@@ -222,6 +221,15 @@ def gauss_fit_max(M, filename):
 
 	min_ID = np.array(tmp_min_ID)
 
+	i = 0
+	while i < max_ID.size:
+		if max_ID[i] - min_ID[i] < 3 or min_ID[i + 1] - max_ID[i] < 3:
+			min_ID = np.delete(min_ID, i)
+			max_ID = np.delete(max_ID, i)
+			i = 0
+		else:
+			i += 1
+
 	list_popt = []
 	fit_done = False
 	while (fit_done == False and max_ID.size > 0):
@@ -245,31 +253,27 @@ def gauss_fit_max(M, filename):
 		Bins = bins[id0:id1]
 		Counts = counts[id0:id1]
 
-		### "Zoom in" into the relevant bins interval
-		reflat = flat_M[(flat_M > bins[id0]) & (flat_M <= bins[id1])]
-		recounts, rebins = np.histogram(reflat, bins=2*(id1-id0), density=True)
-
 		### Perform the Gaussian fit
 		mu0 = bins[max_ID[n]]
 		sigma0 = (bins[min_ID[n + 1]] - bins[min_ID[n]])/6
 		A0 = counts[max_ID[n]]*np.sqrt(np.pi)*sigma0
 		try:
-			popt, pcov = scipy.optimize.curve_fit(Gaussian, rebins[:-1], recounts, p0=[mu0, sigma0, A0])
+			popt, pcov = scipy.optimize.curve_fit(Gaussian, Bins, Counts, p0=[mu0, sigma0, A0])
 		except RuntimeError:
 			print('\tgauss_fit_n: RuntimeError.')
 			max_ID = np.delete(max_ID, n)
 			min_ID = np.delete(min_ID, n + 1)
 			continue
-		popt[2] *= reflat.size
+		popt[2] *= flat_M.size
 		if popt[1] < 0:
 			popt[1] = -popt[1]
 		flag = 1
 		if popt[0] < Bins[0] or popt[0] > Bins[-1]:
 			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
-			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
+			print('\tgauss_fit_n: Mu is outside the fitting range.')
 		if popt[1] > Bins[-1] - Bins[0]:
 			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
-			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
+			print('\tgauss_fit_n: Sigma is larger than the fitting range.')
 		perr = np.sqrt(np.diag(pcov))
 		for j in range(len(perr)):
 			if perr[j]/popt[j] > 0.5:
