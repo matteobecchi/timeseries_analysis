@@ -97,6 +97,10 @@ def gauss_fit_max(M, filename):
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins='auto', density=True)
 
+	def moving_average(data, window):
+	    weights = np.repeat(1.0, window) / window
+	    return np.convolve(data, weights, mode='valid')
+
 	counts = moving_average(counts, 3)
 	bins = moving_average(bins, 3)
 
@@ -109,9 +113,6 @@ def gauss_fit_max(M, filename):
 		if min_ID[n + 1] == min_ID[n] + 1:
 			tmp_to_delete.append(n + 1)
 	min_ID = np.delete(min_ID, tmp_to_delete, 0)
-
-	if min_ID.size == 0:
-		return [], []
 
 	tmp_min_ID = [min_ID[0]]
 	current_max = 0
@@ -244,6 +245,128 @@ def gauss_fit_max(M, filename):
 
 	return list_popt, list_th
 
+def gauss_fit_n(M, filename):
+	number_of_sigmas = 2.0
+	flat_M = M.flatten()
+	counts, bins = np.histogram(flat_M, bins='auto', density=True)
+
+	def moving_average(data, window):
+	    weights = np.repeat(1.0, window) / window
+	    return np.convolve(data, weights, mode='valid')
+
+	counts = moving_average(counts, 3)
+	bins = moving_average(bins, 3)
+
+	### Locate the maxima and minima in the distribution
+	max_ID = argrelextrema(counts, np.greater)[0]
+	min_ID = argrelextrema(counts, np.less_equal)[0]
+	tmp_to_delete = []
+	for n in range(min_ID.size - 1):
+		if min_ID[n + 1] == min_ID[n] + 1:
+			tmp_to_delete.append(n + 1)
+	min_ID = np.delete(min_ID, tmp_to_delete, 0)
+	tmp_min_ID = [min_ID[0]]
+	current_max = 0
+	for n in range(1, len(min_ID) - 1):
+		if min_ID[n] > max_ID[current_max]:
+			tmp_min_ID.append(min_ID[n])
+			current_max += 1
+		if current_max == max_ID.size:
+			break
+	if len(tmp_min_ID) == max_ID.size:
+		tmp_min_ID.append(min_ID[n + 1])
+
+	min_ID = np.array(tmp_min_ID)
+
+	list_popt = []
+	for n in range(max_ID.size):
+		### Chose the intersection interval between
+		### the width at half height and the minima surrounding the maximum
+		counts_max = counts[max_ID[n]]
+		tmp_id0 = max_ID[n]
+		tmp_id1 = max_ID[n]
+		while (counts[tmp_id0] > counts_max/2 and tmp_id0 > 0):
+			tmp_id0 -= 1
+		while (counts[tmp_id1] > counts_max/2 and tmp_id1 < len(counts) - 1):
+			tmp_id1 += 1
+		id0 = np.max([tmp_id0, min_ID[n]])
+		id1 = np.min([tmp_id1, min_ID[n + 1]])
+		if id1 - id0 < 4: # If the fitting interval is too small, discard.
+			continue
+		Bins = bins[id0:id1]
+		Counts = counts[id0:id1]
+
+		### "Zoom in" into the relevant bins interval
+		reflat = flat_M[(flat_M > bins[id0]) & (flat_M <= bins[id1])]
+		recounts, rebins = np.histogram(reflat, bins=2*(id1-id0), density=True)
+
+		### Perform the Gaussian fit
+		p0 = [bins[max_ID[n]], (bins[min_ID[n + 1]] - bins[min_ID[n]])/6, counts[max_ID[n]]]
+		try:
+			popt, pcov = scipy.optimize.curve_fit(Gaussian, rebins[:-1], recounts, p0=p0)
+		except RuntimeError:
+			print('\tgauss_fit_n: RuntimeError.')
+			continue
+		popt[2] *= reflat.size
+		if popt[1] < 0:
+			popt[1] = -popt[1]
+		flag = 1
+		if popt[0] < Bins[0] or popt[0] > Bins[-1]:
+			flag = 0 # If mu is outside the fitting range, it's not identifying the right Gaussian. Discard. 
+			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
+		if popt[1] > Bins[-1] - Bins[0]:
+			flag = 0 # If sigma is larger than the fitting interval, it's not identifying the right Gaussian. Discard. 
+			print('\tgauss_fit_n: Unable to correctly fit a Gaussian.')
+		perr = np.sqrt(np.diag(pcov))
+		for j in range(len(perr)):
+			if perr[j]/popt[j] > 0.5:
+				flag = 0 # If the uncertanties over the parameters is too large, discard.
+				print('\tgauss_fit_n: Parameters uncertanty too large.')
+		if flag:
+			list_popt.append(popt)
+
+	print('* Gaussians parameters:')
+	with open(output_file, 'a') as f:
+		print('\n', file=f)
+		for popt in list_popt:
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
+			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}', file=f)
+
+	### Create the list of the trasholds for state identification
+	list_th = []
+	for n in range(len(list_popt)):
+		th_inf = list_popt[n][0] - number_of_sigmas*list_popt[n][1]
+		th_sup = list_popt[n][0] + number_of_sigmas*list_popt[n][1]
+		list_th.append([th_inf, th_sup])
+	
+	### To remove possible swapped tresholds:
+	for n in range(len(list_th) - 1):
+		if list_th[n][1] > list_th[n + 1][0]:
+			mu0 = list_popt[n][0]
+			sigma0 = list_popt[n][1]
+			mu1 = list_popt[n + 1][0]
+			sigma1 = list_popt[n + 1][1]
+			middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
+			list_th[n][1] = middle_th
+			list_th[n + 1][0] = middle_th
+
+	### Plot the distribution and the fitted Gaussians
+	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
+	fig, ax = plt.subplots()
+	plot_histo(ax, counts, bins)
+	ax.set_xlim(y_lim)
+	for popt in list_popt:
+		tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
+		ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+	# for th in list_th:
+	# 	ax.vlines(th, 0, np.max(counts), linestyle='--', color='black')
+	if show_plot:
+		plt.show()
+	fig.savefig(filename + '.png', dpi=600)
+	plt.close(fig)
+
+	return list_popt, list_th
+
 def find_stable_trj(M, tau_window, list_th, list_of_states, all_the_labels, offset):
 	number_of_windows = int(M.shape[1]/tau_window)
 	M2 = []
@@ -279,6 +402,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	states_counter = 0
 	while True:
 		### Locate and fit maxima in the signal distribution
+		# list_popt, list_th = gauss_fit_sum(M1, 'output_figures/Fig1_' + str(iteration_id))
 		list_popt, list_th = gauss_fit_max(M1, 'output_figures/Fig1_' + str(iteration_id))
 		# list_popt, list_th = gauss_fit_n(M1, 'output_figures/Fig1_' + str(iteration_id))
 
