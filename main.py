@@ -42,7 +42,7 @@ def all_the_input_stuff():
 	if not os.path.exists('output_figures'):
 		os.makedirs('output_figures')
 
-	return M_raw, M, PAR, all_the_labels, list_of_states
+	return M_raw, M, PAR, data_directory, all_the_labels, list_of_states
 
 def plot_input_data(M, PAR, filename):
 	tau_window = PAR[0]
@@ -97,10 +97,6 @@ def gauss_fit_max(M, filename):
 	flat_M = M.flatten()
 	counts, bins = np.histogram(flat_M, bins='auto', density=True)
 
-	def moving_average(data, window):
-	    weights = np.repeat(1.0, window) / window
-	    return np.convolve(data, weights, mode='valid')
-
 	counts = moving_average(counts, 3)
 	bins = moving_average(bins, 3)
 
@@ -130,7 +126,7 @@ def gauss_fit_max(M, filename):
 	i = 0
 	prox_lim = 3
 	if bins.size < 50:
-		prox_lim = bins.size/100
+		prox_lim = 0.0
 	while i < max_ID.size:
 		if max_ID[i] - min_ID[i] < prox_lim or min_ID[i + 1] - max_ID[i] < prox_lim:
 			min_ID = np.delete(min_ID, i)
@@ -174,7 +170,6 @@ def gauss_fit_max(M, filename):
 
 		try:
 			# popt, pcov = scipy.optimize.curve_fit(Gaussian, rebins[:-1], recounts, p0=[mu0, sigma0, A0])
-			print(Bins[0], Bins[-1])
 			popt, pcov = scipy.optimize.curve_fit(Gaussian, Bins, Counts, p0=[mu0, sigma0, A0])
 		except RuntimeError:
 			print('\tgauss_fit_n: RuntimeError.')
@@ -422,7 +417,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 
 	return relabel_states(all_the_labels, list_of_states)
 
-def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
+def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
 	print('* Printing cumulative figure...')
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
@@ -464,6 +459,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 			times = np.linspace(t_lim[0], t_lim[1], 100)
 			ax[0].fill_between(times, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
 
+	fig.suptitle(data_directory)
 	ax[0].set_ylabel('Normalized signal')
 	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[0].set_ylim(y_lim)
@@ -899,14 +895,14 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 		plt.show()
 
 def main():
-	M_raw, M, PAR, all_the_labels, list_of_states = all_the_input_stuff()
-	# plot_input_data(M, PAR, 'output_figures/Fig0')
+	M_raw, M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
+	plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 	list_of_states, final_list = set_final_states(list_of_states, 'states_final')
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'output_figures/Fig2')
+	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'output_figures/Fig2')
 	# plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
