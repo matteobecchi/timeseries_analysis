@@ -62,6 +62,10 @@ def Savgol_filter(M, tau, poly_order):
 	tmp = np.array([ savgol_filter(x, tau, poly_order) for x in M ])
 	return tmp[:, int(tau/2):-int(tau/2)]
 
+def moving_average(data, window):
+    weights = np.repeat(1.0, window) / window
+    return np.convolve(data, weights, mode='valid')
+
 def normalize_array(x):
 	mean = np.mean(x)
 	stddev = np.std(x)
@@ -113,11 +117,6 @@ def relabel_states(all_the_labels, list_of_states):
 				if all_the_labels[a][b] == l:
 					tmp1[a][b] = i
 
-	### Swappino (I want the Dynamic state to be the last one)
-	for a in range(len(tmp1)):
-		for b in range(len(tmp1[a])):
-				tmp1[a][b] = (tmp1[a][b] - 1)%list_unique.size
-
 	### Order the states according to the mu values
 	list_of_mu = np.array([ state[0][0] for state in list1 ])
 	copy_of_list_of_mu = np.array([ state[0][0] for state in list1 ])
@@ -142,8 +141,9 @@ def relabel_states(all_the_labels, list_of_states):
 	return tmp2, list2
 
 def set_final_states(list_of_states, filename):
+	###########################################	
+	### This criterium is very arbitrary... ###
 	tmp_list = []
-	### This criterium is very arbitrary... 
 	for s0 in range(len(list_of_states)):
 		for s1 in range(s0 + 1, len(list_of_states)):
 			mu0 = list_of_states[s0][0][0]
@@ -159,6 +159,7 @@ def set_final_states(list_of_states, filename):
 
 	for s in np.unique(tmp_list)[::-1]:
 		list_of_states.pop(s)
+	###########################################
 
 	final_list = []
 	final_list.append([0.0, 0])
@@ -201,6 +202,7 @@ def set_final_states(list_of_states, filename):
 		for state in list_of_states:
 			print(state[0][0], state[0][1], state[0][2], file=f)
 
+	print(final_list)
 	return list_of_states, final_list
 
 def assign_final_states_to_single_frames(M, final_list):
@@ -241,12 +243,9 @@ def print_mol_labels_fbf_gro(all_the_labels, PAR, filename):
 def print_mol_labels_fbf_xyz(all_the_labels, PAR, filename):
 	print('* Print color IDs for Ovito...')
 	with open(filename, 'w') as f:
-		for t in range(481):
+		for t in range(all_the_labels.shape[1]):
 			print('#', file=f)
 			print('#', file=f)
 			for i in range(all_the_labels.shape[0]):
 				print(all_the_labels[i][t], file=f)
-
-
-
 
