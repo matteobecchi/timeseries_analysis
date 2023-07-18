@@ -22,14 +22,15 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 `matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sklearn`, `sys`. 
 
 ## Gaussian fitting procedure
-* The histogram of the signal is computed, and then smoothed with a moving average with width of 3 bins, to remove spurious local maxima and minima. 
-* Local maxima and minima are identified. 
-* For the global maximum, the fitting interval is identified as the intersection interval between the width at half height and the minima surrounding the maximum. 
-* If the fitting interval is shorter than 4 bins, that maximum is discarded. 
-* The Gaussian fit is then performed over a new histogram, computed only inside the fitting interval, in order to increase the binnin resolution in an adaptive way. 
-* If the Gaussian means falls out of the fitting interval, that maximum is discarded. 
-* If the Gaussian square root variance is larger that the fitting interval, that maximum is discarded. 
-* If the relative uncertanty over one of the fit parameters is larger than 0.5, that maximum is discarded. 
-* If for any reason the maximum is discarder, the procedure is repeated with the second highest maximum, and so on until the procedure converges or all the maxima are discarded. 
-* The threshold are set as the Gaussian average plus and minus 2 times the Gaussian square root variance. 
-* If there are states which overlaps, a new threshold is set between them, located in the average between the states' means, weighted with the states' square root variances. 
+1. The histogram of the timeseries is computed, using the `bins='auto'` option. 
+2. The histogram is smoothed with moving average with `tau=3`. 
+3. The absolute maximum of the histogram is found. 
+4. Two fits are performed:
+ * The first one is in the interval between the two minima surrounding the maximum. 
+ * The second one is in the interval where the peak around the maxima has its half height. 
+5. Both fits, if converged, are evaluated according to the following points:
+ * `mu` is contained inside the fit interval;
+ * `sigma` is smallet than the fit interval;
+ * the height of the peak is at least half the value of the maximum;
+ * the relative uncertanty over the fit parameters is smaller than 0.5.
+6. Finally the fit with the best score is chosen. If none of the fits converges, the iterative procedure stops. 
