@@ -202,7 +202,6 @@ def set_final_states(list_of_states, filename):
 		for state in list_of_states:
 			print(state[0][0], state[0][1], state[0][2], file=f)
 
-	print(final_list)
 	return list_of_states, final_list
 
 def assign_final_states_to_single_frames(M, final_list):
