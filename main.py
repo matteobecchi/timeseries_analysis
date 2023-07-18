@@ -73,24 +73,6 @@ def plot_input_data(M, PAR, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def tmp_print_some_data(M, PAR, all_the_labels, filename):
-	tau_window = PAR[0]
-	with open(filename, 'w') as f:
-		with open('labels_for_PCA.txt', 'w') as f2:
-			print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
-			for i in range(all_the_labels.shape[0]):
-				for w in range(all_the_labels.shape[1]):
-					if all_the_labels[i][w] > 1:
-						print(all_the_labels[i][w], file=f2)
-						for t in range(tau_window):
-							print(M[i][w*tau_window + t], file=f)
-	with open('for_Martina_PCA_ALL.txt', 'w') as f:
-		print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
-		for i in range(all_the_labels.shape[0]):
-			for w in range(all_the_labels.shape[1]):
-				for t in range(tau_window):
-					print(M[i][w*tau_window + t], file=f)
-
 def gauss_fit_max(M, filename):
 	print('* Gaussian fit...')
 	number_of_sigmas = 2.0

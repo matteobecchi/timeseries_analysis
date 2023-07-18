@@ -33,4 +33,4 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
  * `sigma` is smaller than the fit interval;
  * the height of the peak is at least half the value of the maximum;
  * the relative uncertanty over the fit parameters is smaller than 0.5.
-6. Finally the fit with the best score is chosen. If none of the fits converges, the iterative procedure stops. 
+6. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops. 
