@@ -13,10 +13,10 @@ t_units = r'[ns]'			# Units of measure of time
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
-poly_order = 2 				# Savgol filter polynomial order
 show_plot = False			# Show all the plots
 
 def all_the_input_stuff():
+	poly_order = 2 				# Savgol filter polynomial order
 	data_directory, PAR = read_input_parameters()
 
 	if type(data_directory) == str:
@@ -173,17 +173,18 @@ def gauss_fit_max(M, filename):
 		flag_half = 0
 
 	### 8. Choose the best fit ###
-	list_popt = []
-	print(flag_min, flag_half, goodness_min, goodness_half)
+	goodness = goodness_min
 	if flag_min == 1 and flag_half == 0:
-		list_popt.append(popt_min)
+		popt = popt_min
 	elif flag_min == 0 and flag_half == 1:
-		list_popt.append(popt_half)
+		popt = popt_half
+		goodness = goodness_half
 	elif flag_min*flag_half == 1:
 		if goodness_min >= goodness_half:
-			list_popt.append(popt_min)
+			popt = popt_min
 		else:
-			list_popt.append(popt_half)
+			popt = popt_half
+			goodness = goodness_half
 	else:
 		print('\t ERROR: the fit is not converging.')
 		return [], []
@@ -191,87 +192,69 @@ def gauss_fit_max(M, filename):
 	print('\tGaussians parameters:')
 	with open(output_file, 'a') as f:
 		print('\n', file=f)
-		for popt in list_popt:
-			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
-			print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}', file=f)
+		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
+		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}', file=f)
+		print('Fit goodness = ' + str(goodness), file=f)
 
-	### Create the list of the trasholds for state identification
-	list_th = []
-	for n in range(len(list_popt)):
-		th_inf = list_popt[n][0] - number_of_sigmas*list_popt[n][1]
-		th_sup = list_popt[n][0] + number_of_sigmas*list_popt[n][1]
-		list_th.append([th_inf, th_sup])
-	
-	### To remove possible swapped tresholds:
-	for n in range(len(list_th) - 1):
-		if list_th[n][1] > list_th[n + 1][0]:
-			mu0 = list_popt[n][0]
-			sigma0 = list_popt[n][1]
-			mu1 = list_popt[n + 1][0]
-			sigma1 = list_popt[n + 1][1]
-			middle_th = (mu0/sigma0 + mu1/sigma1)/(1/sigma0 + 1/sigma1)
-			list_th[n][1] = middle_th
-			list_th[n + 1][0] = middle_th
+	### Find the tresholds for state identification
+	th_inf = popt[0] - number_of_sigmas*popt[1]
+	th_sup = popt[0] + number_of_sigmas*popt[1]
+	th = [th_inf, th_sup]
 
 	### Plot the distribution and the fitted Gaussians
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	fig, ax = plt.subplots()
 	plot_histo(ax, counts, bins)
 	ax.set_xlim(y_lim)
-	for popt in list_popt:
-		tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
-		ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+	tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
+	ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-	return list_popt, list_th
+	return popt, th
 
-def find_stable_trj(M, tau_window, list_th, list_of_states, all_the_labels, offset):
+def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
 	number_of_windows = int(M.shape[1]/tau_window)
 	M2 = []
-	counter = [ 0 for n in range(len(list_th)) ]
+	counter = 0
 	for i, x in enumerate(M):
 		for w in range(number_of_windows):
 			if all_the_labels[i][w] > 0.5:
 				continue
 			else:
 				x_w = x[w*tau_window:(w + 1)*tau_window]
-				flag = 1
-				for l, th in enumerate(list_th):
-					if np.amin(x_w) > th[0] and np.amax(x_w) < th[1]:
-						all_the_labels[i][w] = l + offset + 1
-						counter[l] += 1
-						flag = 0
-						break
-				if flag:
+				if np.amin(x_w) > th[0] and np.amax(x_w) < th[1]:
+					all_the_labels[i][w] = offset + 1
+					counter += 1
+				else:
 					M2.append(x_w)
 
 	print('* Finding stable windows...')
 	with open(output_file, 'a') as f:
-		for n, c in enumerate(counter):
-			fw = c/(all_the_labels.size)
-			print(f'\tFraction of windows in state ' + str(offset + n) + f' = {fw:.3}')
-			print(f'\tFraction of windows in state ' + str(offset + n) + f' = {fw:.3}', file=f)
-			list_of_states[len(list_of_states) - len(counter) + n][2] = fw
-	return np.array(M2), np.sum(counter)/(len(M)*number_of_windows), list_of_states
+		fw = counter/(all_the_labels.size)
+		print(f'\tFraction of windows in state ' + str(offset) + f' = {fw:.3}')
+		print(f'\tFraction of windows in state ' + str(offset) + f' = {fw:.3}', file=f)
+		list_of_states[len(list_of_states) - 1][2] = fw
+
+	return np.array(M2), counter/(len(M)*number_of_windows), list_of_states
 
 def iterative_search(M, PAR, all_the_labels, list_of_states):
 	M1 = M
 	iteration_id = 1
 	states_counter = 0
 	while True:
-		### Locate and fit maxima in the signal distribution
-		list_popt, list_th = gauss_fit_max(M1, 'output_figures/Fig1_' + str(iteration_id))
+		### Locate and fit maximum in the signal distribution
+		popt, th = gauss_fit_max(M1, 'output_figures/Fig1_' + str(iteration_id))
 
-		for n in range(len(list_th)):
-			list_of_states.append([list_popt[n], list_th[n], 0.0])
+		list_of_states.append([popt, th, 0.0])
 
-		### Find the windows in which the trajectories are stable in one maxima
-		M2, c, list_of_states = find_stable_trj(M, PAR[0], list_th, list_of_states, all_the_labels, states_counter)
+		### Find the windows in which the trajectories are stable in the maximum
+		M2, c, list_of_states = find_stable_trj(M, PAR[0], th, list_of_states, all_the_labels, states_counter)
 
-		states_counter += len(list_popt)
+		states_counter += 1
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
 		if c <= 0.0:
