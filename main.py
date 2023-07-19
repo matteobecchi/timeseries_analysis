@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 import sys
 import os
 import scipy.optimize
-import scipy.stats
-from scipy.signal import argrelextrema
-import pycwt as wavelet
+# import scipy.stats
+# import pycwt as wavelet
 from functions import *
 
 ### System specific parameters ###
@@ -13,10 +12,9 @@ t_units = r'[ns]'			# Units of measure of time
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
-show_plot = False			# Show all the plots
+show_plot = True
 
 def all_the_input_stuff():
-	poly_order = 2 				# Savgol filter polynomial order
 	data_directory, PAR = read_input_parameters()
 
 	if type(data_directory) == str:
@@ -27,12 +25,22 @@ def all_the_input_stuff():
 		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 
 	M_raw = M_raw[:, PAR[1]:]
-	M = Savgol_filter(M_raw, PAR[0], poly_order)
+	if PAR[0] > 3:
+		M = Savgol_filter(M_raw, PAR[0])
+	else:
+		M = np.copy(M_raw)
+		print('\tWARNING: no data smoothing. ')
+	M_raw = None ### Freeing memory ###
+
 	SIG_MAX = np.max(M)
 	SIG_MIN = np.min(M)
 	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
+
+	total_particles = M.shape[0]
 	total_time = M.shape[1]
-	print('* Using ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
+	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
+	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[2]) + ' ns). ')
+	print('\tUsing ' + str(int(total_time/PAR[0])) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
 	all_the_labels = np.zeros((len(M), int(total_time/PAR[0])))
 	list_of_states = []
 
@@ -42,7 +50,7 @@ def all_the_input_stuff():
 	if not os.path.exists('output_figures'):
 		os.makedirs('output_figures')
 
-	return M_raw, M, PAR, data_directory, all_the_labels, list_of_states
+	return M, PAR, data_directory, all_the_labels, list_of_states
 
 def plot_input_data(M, PAR, filename):
 	tau_window = PAR[0]
@@ -102,7 +110,7 @@ def gauss_fit_max(M, filename):
 
 	### 5. Try the fit between the minima and check its goodness ###
 	flag_min = 1
-	goodness_min = 0
+	goodness_min = 4
 	Bins = bins[min_id0:min_id1]
 	Counts = counts[min_id0:min_id1]
 	mu0 = bins[max_ind]
@@ -142,7 +150,7 @@ def gauss_fit_max(M, filename):
 
 	### 7. Try the fit between the minima and check its goodness ###
 	flag_half = 1
-	goodness_half = 0
+	goodness_half = 4
 	Bins = bins[half_id0:half_id1]
 	Counts = counts[half_id0:half_id1]
 	mu0 = bins[max_ind]
@@ -194,7 +202,7 @@ def gauss_fit_max(M, filename):
 		print('\n', file=f)
 		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}')
 		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, amplitude = {popt[2]:.4f}', file=f)
-		print('Fit goodness = ' + str(goodness), file=f)
+		print('\tFit goodness = ' + str(goodness), file=f)
 
 	### Find the tresholds for state identification
 	th_inf = popt[0] - number_of_sigmas*popt[1]
@@ -248,6 +256,8 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	while True:
 		### Locate and fit maximum in the signal distribution
 		popt, th = gauss_fit_max(M1, 'output_figures/Fig1_' + str(iteration_id))
+		if len(popt) == 0:
+			break
 
 		list_of_states.append([popt, th, 0.0])
 
@@ -381,7 +391,7 @@ def plot_all_trajectory_with_histos(M, PAR, filename):
 def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	print('* Computing and plotting the averaged Sankey diagrams...')
 	if frame_list[-1] + aver_window > all_the_labels.shape[1]:
-		print('ERROR: the required frame range is out of bound.')
+		print('\tERROR: the required frame range is out of bound.')
 		return
 
 	n_states = np.unique(all_the_labels).size
@@ -587,43 +597,36 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Computing some statistics on the transitions...')
 	tau_window = PAR[0]
 	t_conv = PAR[2]
-	T = M.shape[1]
-	number_of_windows = int(T/tau_window)
-	resolution = PAR[6]
 	data = []
 	labels = []
 	for i, x in enumerate(M):
 		data_mol = []
 		labels_mol = []
 		current_label = all_the_labels[i][0]
-		x_w = x[0:tau_window]
-		for w in range(1, number_of_windows):
-			if all_the_labels[i][w] == current_label:
-				x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+		x_t = [x[0]]
+		for t in range(1, M.shape[1]):
+			if all_the_labels[i][t] == current_label:
+				x_t.append(x[t])
 			else:
-				data_mol.append(x_w)
+				data_mol.append(np.array(x_t))
 				labels_mol.append(int(current_label))
-				x_w = x[tau_window*w:tau_window*(w + 1)]
-				current_label = all_the_labels[i][w]
+				x_t = [x[t]]
+				current_label = all_the_labels[i][t]
 		data.append(data_mol)
 		labels.append(np.array(labels_mol))
 
 	n_states = np.unique(all_the_labels).size
 
 	### Create dictionary
-	dictionary = np.empty((n_states, n_states))
+	dictionary_21 = np.empty((n_states, n_states))
+	dictionary_12 = []
 	c = 0
 	for i in range(n_states):
 		for j in range(n_states):
 			if i != j:
-				dictionary[i][j] = c
+				dictionary_21[i][j] = c
 				c += 1
-	### Create reference legend table
-	ref_legend_table = []
-	for i in range(n_states):
-		for j in range(n_states):
-			if i != j:
-				ref_legend_table.append(str(i) + '-->' + str(j))
+				dictionary_12.append(str(i) + '-->' + str(j))
 
 	transition_data = []
 	transition_labels = []
@@ -631,25 +634,20 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 		for t in range(len(data[i]) - 1):
 			state0 = labels[i][t]
 			state1 = labels[i][t + 1]
-			if state0 == len(list_of_states) or state1 == len(list_of_states):
-				continue
 			mu0 = list_of_states[state0][0][0]
 			mu1 = list_of_states[state1][0][0]
 			sigma0 = list_of_states[state0][0][1]
 			sigma1 = list_of_states[state1][0][1]
-			min_dist0 = np.abs(np.mean(data[i][t]) - mu0)
-			min_dist1 = np.abs(np.mean(data[i][t + 1]) - mu1)
-			if (min_dist0 < sigma0 and min_dist1 < sigma1):
-				transition_data.append([data[i][t].size*t_conv, np.mean(data[i][t + 1]) - np.mean(data[i][t])])
-				transition_labels.append(dictionary[state0][state1])
+			transition_data.append([data[i][t].size*t_conv, np.mean(data[i][t + 1]) - np.mean(data[i][t])])
+			transition_labels.append(dictionary_21[state0][state1])
 
 	transition_data_tr = np.array(transition_data).T
 	transition_labels = np.array(transition_labels)
 
 	state_points = []
-	for i in range(dictionary.shape[0]):
-		for j in range(dictionary.shape[1]):
-			s = dictionary[i][j]
+	for i in range(n_states):
+		for j in range(n_states):
+			s = dictionary_21[i][j]
 			ID_s = np.where(transition_labels == s)[0]
 			if ID_s.size == 0:
 				continue
@@ -657,9 +655,9 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 			sigma_T = np.std(transition_data_tr[0][ID_s])
 			A = np.mean(transition_data_tr[1][ID_s])
 			sigma_A = np.std(transition_data_tr[1][ID_s])
-			color = dictionary[i][j]
+			color = dictionary_21[i][j]
 			if i > j:
-				color = dictionary[j][i]
+				color = dictionary_21[j][i]
 			state_points.append([T, A, sigma_T, sigma_A, color])
 	state_points_tr = np.array(state_points).T
 
@@ -668,45 +666,28 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 		for E in state_points:
 			print(E, file=f)
 
-	###################################################################################
+	fig, ax = plt.subplots()
+	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma', alpha=0.5)
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
+	ax.scatter(state_points_tr[0], state_points_tr[1], marker='s', s=30.0, c=state_points_tr[4], cmap='tab10')
+	fig.suptitle('Transitions statistics')
+	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	ax.set_ylabel(r'Transition amplitude $\Delta A$')
+	handles, _ = scatter.legend_elements()
+	tmp = []
+	for fl in np.unique(transition_labels):
+		tmp.append(dictionary_12[int(fl)])
+	tmp = np.array(tmp)
+	ax.legend(handles, tmp)
+	ax.set_xscale('log')
+	fig.savefig(filename + '.png', dpi=600)
+
 	fig1, ax1 = plt.subplots()
 	fig2, ax2 = plt.subplots()
-	for tr in [1.0, 4.0, 6.0, 7.0]:
+	for tr in [0.0, 2.0, 3.0, 5.0]:
 		tmp_data = transition_data_tr[0][transition_labels == tr]
-
-		counts, bins, _ = ax1.hist(tmp_data, bins=int(np.sqrt(tmp_data.size)/2 + 1), density=True, histtype='step', label=ref_legend_table[int(tr)])
-		try:
-			pos_counts = []
-			pos_bins = []
-			i = 0
-			while counts[i] > 0:
-				pos_counts.append(counts[i])
-				pos_bins.append(bins[i])
-				i += 1
-			pos_bins = np.array(pos_bins)
-			pos_counts = np.array(pos_counts)
-			start_from = int(pos_bins.size/3)
-
-			log_counts = np.log(pos_counts)
-
-			popt, pcov = np.polyfit(pos_bins[start_from:], log_counts[start_from:], 1, cov=True)
-			print('Tau:', -1/popt[0], np.sqrt(pcov[0][0])/popt[0]**2)
-			y = np.exp(popt[0]*pos_bins[start_from:] + popt[1])
-			ax1.plot(pos_bins[start_from:], y, linestyle='--', c='xkcd:grey')
-		except:
-			print('FAILURE')
-
-		counts, bins, _ = ax2.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=ref_legend_table[int(tr)])
-		upper_bins = [bins[b] for b in range(counts.size)]# if counts[b] > 1 - np.exp(-1)]
-		upper_counts = [counts[b] for b in range(counts.size)]# if counts[b] > 1 - np.exp(-1)]
-		try:
-			popt, pcov = scipy.optimize.curve_fit(cumulative_exp, upper_bins, upper_counts, p0=[1.0, 1.0])
-			print(popt)
-			print(np.sqrt(pcov))
-			times = np.linspace(bins[0], bins[-1], 1000)
-			ax2.plot(times, cumulative_exp(times, *popt2), linestyle='--', c='xkcd:gray', lw=1.0)
-		except:
-			print('FAILURE')
+		counts, bins, _ = ax1.hist(tmp_data, bins='doane', density=True, histtype='step', label=dictionary_12[int(tr)])
+		counts, bins, _ = ax2.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=dictionary_12[int(tr)])
 
 	ax1.set_xlabel(r'Waiting time $\Delta t$ [ns]')
 	ax1.set_ylabel(r'Probability density function PDF$(\Delta t)$')
@@ -719,34 +700,16 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	ax2.set_xscale('log')
 	ax2.legend(loc='lower right')
 	fig2.savefig(filename + 'b.png', dpi=600)
-	###################################################################################
 
-	fig, ax = plt.subplots()
-	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma', alpha=0.5)
-	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
-	ax.scatter(state_points_tr[0], state_points_tr[1], marker='s', s=30.0, c=state_points_tr[4], cmap='tab10')
-	fig.suptitle('Transitions statistics')
-	ax.set_xlabel(r'Waiting time $\Delta t$ [ns]')
-	ax.set_ylabel(r'Transition amplitude $\Delta A$')
-	handles, _ = scatter.legend_elements()
-	tmp = []
-	for fl in np.unique(transition_labels):
-		tmp.append(ref_legend_table[int(fl)])
-	tmp = np.array(tmp)
-	ax.legend(handles, tmp)
-	ax.set_xscale('log')
-	fig.savefig(filename + 'c.png', dpi=600)
-
-	plt.show()
 	if show_plot:
 		plt.show()
 
 def main():
-	M_raw, M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
+	M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
 	plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
-	list_of_states, final_list = set_final_states(list_of_states, 'states_final')
+	list_of_states, final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
 	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'output_figures/Fig2')
@@ -761,6 +724,7 @@ def main():
 
 	transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
+	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig7')
 
 if __name__ == "__main__":
 	main()

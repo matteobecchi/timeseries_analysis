@@ -46,21 +46,33 @@ def read_data(filename):
 			if M.ndim == 3:
 				M = np.vstack(M)
 				M = M.T
-			if M.shape[0] != 2048:
+			if M.shape[0] != 2048: ### HIS IS OBVIOUSLY TO CHANGE ###
 				M = M.T
-			print('\tData shape:', M.shape)
 			return M
 	elif filename.endswith('.npy'):
 		M = np.load(filename)
-		print('\tData shape:', M.shape)
 		return M
 	else:
 		print('Error: unsupported format for input file.')
 		return None
 
-def Savgol_filter(M, tau, poly_order):
+def Savgol_filter(M, tau):
+	poly_order = 2
 	tmp = np.array([ savgol_filter(x, tau, poly_order) for x in M ])
 	return tmp[:, int(tau/2):-int(tau/2)]
+
+# def Savgol_filter(M, tau):
+# 	poly_order = 2
+# 	M_smooth = []
+# 	for x in M:
+# 		x_smooth = savgol_filter(x, tau, poly_order)
+# 		x_max = np.max(x_smooth)
+# 		x_min = np.min(x_smooth)
+# 		if x_min < x_max:
+# 			x_smooth = (x_smooth - x_min)/(x_max - x_min)
+# 		M_smooth.append(x_smooth[int(tau/2):-int(tau/2)])
+
+# 	return np.array(M_smooth)
 
 def moving_average(data, window):
     weights = np.repeat(1.0, window) / window
@@ -79,27 +91,6 @@ def plot_histo(ax, counts, bins):
 
 def Gaussian(x, m, sigma, A):
 	return np.exp(-((x - m)/sigma)**2)*A/(np.sqrt(np.pi)*sigma)
-
-def sum_of_Gaussians(x, *args):
-	result = np.zeros_like(x)  # Initialize the result array
-	for i in range(0, len(args), 3):
-		mu = args[i]
-		sigma = args[i + 1]
-		A = args[i + 2]
-		result += Gaussian(x, mu, sigma, A)
-	return result
-
-def exponential(t, tau):
-	return np.exp(-t/tau)/tau
-
-def double_exp(t, tau1, tau2):
-	return np.exp(-t/tau1)/tau1 + np.exp(-t/tau2)/tau2
-
-def cumulative_exp(t, tau):
-	return 1 - np.exp(-t/tau)
-
-def cumulative_double_exp(t, tau1, tau2):
-	return 1 - tau1*np.exp(-t/tau1)/(tau1 + tau2) - tau2*np.exp(-t/tau2)/(tau1 + tau2)
 
 def find_nearest(array, value):
 	array = np.asarray(array)
@@ -140,7 +131,7 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp2, list2
 
-def set_final_states(list_of_states, filename):
+def set_final_states(list_of_states):
 	###########################################	
 	### This criterium is very arbitrary... ###
 	tmp_list = []
@@ -198,9 +189,12 @@ def set_final_states(list_of_states, filename):
 		list_of_states.pop(i)
 		final_list.pop(i + 1)
 
-	with open(filename + '.txt', 'w') as f:
+	with open('final_states.txt', 'w') as f:
 		for state in list_of_states:
 			print(state[0][0], state[0][1], state[0][2], file=f)
+	with open('final_tresholds.txt', 'w') as f:
+		for th in final_list:
+			print(th[0], file=f)
 
 	return list_of_states, final_list
 
@@ -247,8 +241,6 @@ def print_mol_labels_fbf_xyz(all_the_labels, PAR, filename):
 			print('#', file=f)
 			for i in range(all_the_labels.shape[0]):
 				print(all_the_labels[i][t], file=f)
-
-
 
 def tmp_print_some_data(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
