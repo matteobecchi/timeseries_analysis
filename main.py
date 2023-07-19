@@ -12,7 +12,7 @@ t_units = r'[ns]'			# Units of measure of time
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
-show_plot = True
+show_plot = False
 
 def all_the_input_stuff():
 	data_directory, PAR = read_input_parameters()
@@ -322,6 +322,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
 
+	plt.show()
 	if show_plot:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -713,18 +714,18 @@ def main():
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
 	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'output_figures/Fig2')
-	# plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
+	# # plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
-	print_mol_labels_fbf_gro(all_the_labels, PAR, 'all_cluster_IDs.dat')
-	print_mol_labels_fbf_xyz(all_the_labels, PAR, 'all_cluster_IDs_xyz.dat')
+	# print_mol_labels_fbf_gro(all_the_labels, PAR, 'all_cluster_IDs.dat')
+	# print_mol_labels_fbf_xyz(all_the_labels, PAR, 'all_cluster_IDs_xyz.dat')
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
-		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
+	# 	sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
 
-	transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
-	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
-	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig7')
+	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
+	# state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
+	# # transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig7')
 
 if __name__ == "__main__":
 	main()
