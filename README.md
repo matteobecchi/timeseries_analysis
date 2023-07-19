@@ -22,7 +22,7 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 `matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sklearn`, `sys`. 
 
 ## Gaussian fitting procedure
-1. The histogram of the timeseries is computed, using the `bins='auto'` option. 
+1. The histogram of the timeseries is computed, using the `bins='auto'` numpy option. 
 2. The histogram is smoothed with moving average with `window_size=3`. 
 3. The absolute maximum of the histogram is found. 
 4. Two Gaussian fits are performed:
