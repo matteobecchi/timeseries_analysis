@@ -174,14 +174,15 @@ def set_final_states(list_of_states):
 	mu = np.array([state[0][0] for state in list_of_states])
 	sigma = np.array([state[0][1] for state in list_of_states])
 	A = np.array([state[0][2] for state in list_of_states])
+	peak = A/sigma/np.sqrt(np.pi)
 
 	tmp_list = []
 	for s0 in range(len(list_of_states)):
 		for s1 in range(s0 + 1, len(list_of_states)):
 			# Check whether the criteria for considering a state as "final" is met.
-			if A[s0] > A[s1] and mu[s1] - mu[s0] < sigma[s0]:
+			if peak[s0] > peak[s1] and mu[s1] - mu[s0] < sigma[s0]:
 				tmp_list.append(s1)
-			elif A[s0] < A[s1] and mu[s1] - mu[s0] < sigma[s1]:
+			elif peak[s0] < peak[s1] and mu[s1] - mu[s0] < sigma[s1]:
 				tmp_list.append(s0)
 
 	# Step 2: Remove states that don't meet the "final" criterion from the 'list_of_states'.
