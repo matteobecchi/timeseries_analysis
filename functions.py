@@ -1,23 +1,17 @@
 import numpy as np
-import numpy.linalg as lin
 import matplotlib.pyplot as plt
 import sys
 import os
 import copy
 import math
-from scipy import stats
-from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
-from matplotlib.pyplot import imshow
 from matplotlib.colors import LogNorm
-from matplotlib import cm
 import plotly
 plotly.__version__
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
 import seaborn as sns
-from sklearn.preprocessing import normalize
 
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
@@ -264,23 +258,22 @@ def print_mol_labels1(all_the_labels, PAR, filename):
 			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
 			print(string, file=f)
 
-def print_mol_labels_fbf_gro(all_the_labels, PAR, filename):
+def print_mol_labels_fbf_gro(all_the_labels, filename):
 	print('* Print color IDs for Ovito...')
 	with open(filename, 'w') as f:
-		for i in range(all_the_labels.shape[0]):
-			string = str(all_the_labels[i][0])
-			for t in range(1, all_the_labels[i].size):
-				string += ' ' + str(all_the_labels[i][t])
-			print(string, file=f)
+		for labels in all_the_labels:
+			# Join the elements of 'labels' using a space as the separator and write to the file.
+			print(' '.join(map(str, labels)), file=f)
 
-def print_mol_labels_fbf_xyz(all_the_labels, PAR, filename):
+def print_mol_labels_fbf_xyz(all_the_labels, filename):
 	print('* Print color IDs for Ovito...')
 	with open(filename, 'w') as f:
 		for t in range(all_the_labels.shape[1]):
+			# Print two lines containing '#' to separate time steps.
 			print('#', file=f)
 			print('#', file=f)
-			for i in range(all_the_labels.shape[0]):
-				print(all_the_labels[i][t], file=f)
+			# Use np.savetxt to write the labels for each time step efficiently.
+			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
 def tmp_print_some_data(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
