@@ -12,7 +12,7 @@ The working directory must contain:
 
 From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
 
-The output figures will be saved in the folder `output_figures`. The files 
+The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which centralf value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging problems. The files `all_cluster_IDs.dat` and `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. 
 
 ## input_parameters.txt
 * `tau_window`: the amplidude of the time windows. 
@@ -36,3 +36,6 @@ The output figures will be saved in the folder `output_figures`. The files
  * the height of the peak is at least half the value of the maximum;
  * the relative uncertanty over the fit parameters is smaller than 0.5.
 6. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops. 
+
+## Aknowledgements
+The comments in the code wouldn't have been possible without the help of ChatGPT. 
