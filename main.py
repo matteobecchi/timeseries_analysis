@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
-import scipy.optimize
 from functions import *
 
 ### System specific parameters ###
@@ -10,7 +9,7 @@ t_units = r'[ns]'	# Units of measure of time
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
-show_plot = False
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -375,6 +374,8 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 		elif th[1] == 1:
 			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:black')
 		elif th[1] == 2:
+			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:blue')
+		elif th[1] == 3:
 			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:red')
 		if n < len(final_list) - 1:
 			times = np.linspace(t_lim[0], t_lim[1], 100)
