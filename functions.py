@@ -31,7 +31,11 @@ def read_input_parameters():
 		print('\tinput_parameters.txt file missing or wrongly formatted.')
 
 	# Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
-	PAR = [int(param[0]), int(param[1]), param[2], int(param[3])]
+	if len(param) == 4:
+		PAR = [int(param[0]), int(param[1]), param[2], int(param[3])]
+	elif len(param) == 5:
+		print('\tWARNING: overriding histogram binning')
+		PAR = [int(param[0]), int(param[1]), param[2], int(param[3]), int(param[4])]
 
 	# Step 5: Check if the shape of 'data_dir' array is (2, ).
 	# If yes, return 'data_dir' as an array along with 'PAR'.
