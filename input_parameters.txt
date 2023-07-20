@@ -1,0 +1,7 @@
+tau_window
+tau_delay
+t_conv
+example_ID
+
+### Substitute the previous line with the numerical values
+### Then REMOVE this two last lines
