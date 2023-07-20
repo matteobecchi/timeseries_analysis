@@ -16,7 +16,7 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 
 ## input_parameters.txt
 * `tau_window`: the amplidude of the time windows. Type='int'. 
-* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. Type='int'. Defaulf should be 0. 
+* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. Type='int'. Default should be 0. 
 * `t_conv`: convert number of frames in time units. Type='double'. 
 * `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. Type='int'. 
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. Type='int'. 
