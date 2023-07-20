@@ -4,6 +4,7 @@ import sys
 import os
 import copy
 import math
+import scipy.optimize
 from scipy.signal import savgol_filter
 from matplotlib.colors import LogNorm
 import plotly
@@ -197,6 +198,7 @@ def set_final_states(list_of_states):
 	mu = np.array([state[0][0] for state in list_of_states])
 	sigma = np.array([state[0][1] for state in list_of_states])
 	A = np.array([state[0][2] for state in list_of_states])
+	peak = A/sigma/np.sqrt(np.pi)
 
 	# Step 4: Calculate the final threshold values and their types based on the intercept between neighboring states.
 	for s in range(len(list_of_states) - 1):
@@ -204,7 +206,7 @@ def set_final_states(list_of_states):
 		b = -2*(mu[s]*sigma[s + 1]**2 - mu[s + 1]*sigma[s]**2)
 		c = (mu[s]*sigma[s + 1])**2 - (mu[s + 1]*sigma[s])**2 - (sigma[s]*sigma[s + 1])**2*np.log(A[s]*sigma[s + 1]/A[s + 1]/sigma[s])
 		Delta = b**2 - 4*a*c
-		# Determine the type of the threshold (0, 1, or 2) based on the discriminant. 
+		# Determine the type of the threshold (0, 1, 2 or 3). 
 		if Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
 			th_minus = (- b - np.sqrt(Delta))/(2*a)
@@ -212,17 +214,39 @@ def set_final_states(list_of_states):
 			intercept_minus = Gaussian(th_minus, mu[s], sigma[s], A[s])
 			if intercept_plus >= intercept_minus:
 				final_list.append([th_plus, 1])
+				if Gaussian(th_minus, mu[s], sigma[s], A[s]) > 0.01*np.max(peak):
+					final_list.append([th_minus, 2])
 			else:
 				final_list.append([th_minus, 1])
+				if Gaussian(th_plus, mu[s], sigma[s], A[s]) > 0.01*np.max(peak):
+					final_list.append([th_plus, 2])
 		else:
-			final_list.append([(mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1]), 2])
+			final_list.append([(mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1]), 3])
 	final_list.append([1.0, 0])
 
-	# Step 5: Find and remove swapped thresholds (thresholds with incorrect order).
+	# Remove the tresholds outside the interval [0, 1]
+	out_of_bounds = []
+	for n in range(len(final_list)):
+		if final_list[n][0] < 0.0 or final_list[n][0] > 1.0:
+			out_of_bounds.append(n)
+	for index in out_of_bounds[::-1]:
+		del final_list[index]
+
+	# Step 5: Sort the thresholds and add missing states.
 	final_list = np.array(final_list)
-	remove_indices = np.where(final_list[1:-1, 0] > final_list[2:, 0])[0] + 1
-	final_list = np.delete(final_list, remove_indices, axis=0)
-	final_list = final_list.tolist()
+	final_list = sorted(final_list, key=lambda x: x[0])
+	tmp_list_of_states = []
+	m = 0
+	for n in range(len(final_list) - 1):
+		if list_of_states[m][0][0] > final_list[n][0] and list_of_states[m][0][0] < final_list[n + 1][0]:
+			tmp_list_of_states.append(list_of_states[m])
+			m += 1
+		else:
+			new_mu = (final_list[n + 1][0] + final_list[n][0])/2
+			new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
+			new_A = 1.0
+			tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
+	list_of_states = tmp_list_of_states
 
 	# Step 6: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
