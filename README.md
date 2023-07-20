@@ -12,7 +12,7 @@ The working directory must contain:
 
 From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
 
-The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which centralf value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging problems. The files `all_cluster_IDs.dat` and `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. 
+The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging problems. The files `all_cluster_IDs.dat` and `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. 
 
 ## input_parameters.txt
 * `tau_window`: the amplidude of the time windows. 
@@ -21,7 +21,7 @@ The output figures will be saved in the folder `output_figures`. The file `final
 * `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. 
 
 ## Required Python 3 packages
-`matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sklearn`, `sys`. 
+`matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sys`. 
 
 ## Gaussian fitting procedure
 1. The histogram of the timeseries is computed, using the `bins='auto'` numpy option. 
