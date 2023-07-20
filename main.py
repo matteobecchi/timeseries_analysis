@@ -30,9 +30,8 @@ def all_the_input_stuff():
 	if PAR[0] > 3:
 		M = Savgol_filter(M_raw, PAR[0])
 	else:
-		M = [ moving_average(x, PAR[0]) for x in M_raw ]
-		# M = np.copy(M_raw)
-		print('\tWARNING: no polynomial data smoothing. ')
+		M = np.copy(M_raw)
+		print('\tWARNING: no data smoothing. ')
 
 	# Normalize the data to the range [0, 1].
 	SIG_MAX = np.max(M)
