@@ -9,6 +9,7 @@ A one-dimensional timeseries. Supported formats: .npy, .npz.
 The working directory must contain:
 * A text file called `input_parameters.txt` , whose format is explained below;
 * A text file called `data_direcotry.txt` containing the path to the input data files.
+
 Examples of this two files are contained in this repository. 
 
 From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
