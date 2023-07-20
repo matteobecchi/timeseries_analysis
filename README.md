@@ -8,17 +8,17 @@ A one-dimensional timeseries, computed on *N* particles for *T* frames. The inpu
 ## Usage
 The working directory must contain:
 * A text file called `input_parameters.txt` , whose format is explained below;
-* A text file called `data_direcotry.txt` containing the path to the input data files.
+* A text file called `data_directory.txt` containing the path to the input data files.
 
 Examples of this two files are contained in this repository. 
 
 From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
 
 ## input_parameters.txt
-* `tau_window`: the amplidude of the time windows. 
-* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. 
-* `t_conv`: convert number of frames in time units. 
-* `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. 
+* `tau_window`: the amplidude of the time windows. Integer number. 
+* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. Integer number. Defaulf should be 0. 
+* `t_conv`: convert number of frames in time units. Float number. 
+* `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. Integer number. 
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. 
 
 ## Output
