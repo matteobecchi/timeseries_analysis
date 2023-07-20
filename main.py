@@ -72,7 +72,10 @@ def plot_input_data(M, PAR, filename):
 
 	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins='auto', density=True)
+	bins='auto'
+	if len(PAR) == 5:
+		bins = PAR[4]
+	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
 	# Create a plot with two subplots (side-by-side)
@@ -103,13 +106,13 @@ def plot_input_data(M, PAR, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(M, filename):
+def gauss_fit_max(M, bins, filename):
 	print('* Gaussian fit...')
 	number_of_sigmas = 2.0
 	flat_M = M.flatten()
 
 	### 1. Histogram with 'auto' binning ###
-	counts, bins = np.histogram(flat_M, bins='auto', density=True)
+	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	gap = 1
 	if bins.size > 50:
 		gap = 3
@@ -308,7 +311,10 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	states_counter = 0
 	while True:
 		### Locate and fit maximum in the signal distribution
-		popt, th = gauss_fit_max(M1, 'output_figures/Fig1_' + str(iteration_id))
+		bins='auto'
+		if len(PAR) == 5:
+			bins=PAR[4]
+		popt, th = gauss_fit_max(M1, bins, 'output_figures/Fig1_' + str(iteration_id))
 		if len(popt) == 0:
 			break
 
@@ -692,7 +698,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	ax.set_xlabel(r'Duration $T$ [ns]')
 	ax.set_ylabel(r'Amplitude $A$')
 	ax.legend(*scatter.legend_elements())
-	fig.savefig(filename + 'a.png', dpi=600)
+	fig.savefig(filename + '.png', dpi=600)
 
 	if show_plot:
 		plt.show()
@@ -820,7 +826,7 @@ def main():
 	# plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
-	print_mol_labels_fbf_gro(all_the_labels, 'all_cluster_IDs.dat')
+	print_mol_labels_fbf_gro(all_the_labels, 'all_cluster_IDs_gro.dat')
 	print_mol_labels_fbf_xyz(all_the_labels, 'all_cluster_IDs_xyz.dat')
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):

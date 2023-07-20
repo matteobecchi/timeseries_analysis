@@ -28,7 +28,7 @@ The output figures will be saved in the folder `output_figures`. The file `final
 
 ## Gaussian fitting procedure
 1. The histogram of the timeseries is computed, using the `bins='auto'` numpy option. 
-2. The histogram is smoothed with moving average with `window_size=3`. 
+2. The histogram is smoothed with moving average with `window_size=3` (unless there are less that 50 bins, in wich case no smootinh occurs). 
 3. The absolute maximum of the histogram is found. 
 4. Two Gaussian fits are performed:
  * The first one inside the interval between the two minima surrounding the maximum. 
