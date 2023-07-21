@@ -9,7 +9,7 @@ t_units = r'[ns]'	# Units of measure of time
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
-show_plot = True
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -26,13 +26,14 @@ def all_the_input_stuff():
 	# Remove initial frames based on 'tau_delay'.
 	M_raw = M_raw[:, PAR[1]:]
 
-	# Apply filtering if 'tau_window' > 3, otherwise, keep the raw data.
-	if PAR[0] > 3:
-		# M = Savgol_filter(M_raw, PAR[0])
-		M = moving_average(M_raw, PAR[0])
-	else:
-		M = np.copy(M_raw)
-		print('\tWARNING: no data smoothing. ')
+	# Apply filtering on the data
+	M = moving_average(M_raw, PAR[0])
+	# # Apply filtering if 'tau_window' > 3, otherwise, keep the raw data.
+	# if PAR[0] > 3:
+	# 	M = Savgol_filter(M_raw, PAR[0])
+	# else:
+	# 	M = np.copy(M_raw)
+	# 	print('\tWARNING: no data smoothing. ')
 
 	# Normalize the data to the range [0, 1].
 	SIG_MAX = np.max(M)
@@ -338,11 +339,14 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
+	bins='auto'
+	if len(PAR) == 5:
+		bins=PAR[4]
 	n_states = len(list_of_states)
 
 	# Compute histogram of flattened M
 	flat_M = M.flatten()
-	counts, bins = np.histogram(flat_M, bins='auto', density=True)
+	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
 	# Create a 1x2 subplots with shared y-axis
@@ -357,9 +361,8 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	palette.append('#fde725')
 
 	# Define time and y-axis limits for the left subplot (ax[0])
-	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	time = np.linspace(t_lim[0], t_lim[1], M.shape[1])
+	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
 
 	# Plot the individual trajectories on the left subplot (ax[0])
 	if M.shape[1] > 1000:
@@ -374,6 +377,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 		ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
 
 	# Plot the horizontal lines and shaded regions to mark final_list thresholds
+	time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]), time[-1] + 0.05*(time[-1] - time[0]), 100)
 	for n, th in enumerate(final_list):
 		if th[1] == 0:
 			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), color='xkcd:black')
@@ -384,13 +388,13 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 		elif th[1] == 3:
 			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:red')
 		if n < len(final_list) - 1:
-			times = np.linspace(t_lim[0], t_lim[1], 100)
-			ax[0].fill_between(times, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
+			ax[0].fill_between(time2, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
 
 	# Set plot titles and axis labels
 	fig.suptitle(data_directory)
 	ax[0].set_ylabel('Normalized signal')
 	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
+	ax[0].set_xlim([time2[0], time2[-1]])
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
 
