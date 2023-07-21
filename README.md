@@ -17,7 +17,8 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 ## input_parameters.txt
 * `tau_window`: the amplidude of the time windows. 
 * `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. Default should be 0. 
-* `t_conv`: convert number of frames in time units (at the moment, ns are used). 
+* `t_conv`: convert number of frames in time units. 
+* `time_units`: a string indicating the time units (e.g., `ns`). 
 * `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. 
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
 

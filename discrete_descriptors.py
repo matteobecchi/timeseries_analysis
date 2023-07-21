@@ -5,11 +5,11 @@ import os
 from functions import *
 
 ### System specific parameters ###
-# t_units = r'[ns]'	# Units of measure of time
-show_plot = True
+t_units = r'[ns]'	# Units of measure of time
 
-### No need to changhe these ###
+### Usually no need to changhe these ###
 output_file = 'states_output.txt'
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -17,23 +17,14 @@ def all_the_input_stuff():
 
 	# Read raw data from the specified directory/files.
 	if type(data_directory) == str:
-		M_raw = read_data(data_directory)
+		M = read_data(data_directory)
 	else:
 		M0 = read_data(data_directory[0])
 		M1 = read_data(data_directory[1])
-		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
+		M = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 
 	# Remove initial frames based on 'tau_delay'.
-	M_raw = M_raw[:, PAR[1]:]
-
-	# Apply filtering on the data
-	M = moving_average(M_raw, PAR[0])
-	# # Apply filtering if 'tau_window' > 3, otherwise, keep the raw data.
-	# if PAR[0] > 3:
-	# 	M = Savgol_filter(M_raw, PAR[0])
-	# else:
-	# 	M = np.copy(M_raw)
-	# 	print('\tWARNING: no data smoothing. ')
+	M = M[:, PAR[1]:]
 
 	# Normalize the data to the range [0, 1].
 	SIG_MAX = np.max(M)
@@ -43,6 +34,7 @@ def all_the_input_stuff():
 	# Get the number of particles and total frames in the trajectory.
 	total_particles = M.shape[0]
 	total_time = M.shape[1]
+	total_states = np.unique(M).size
 
 	# Calculate the number of windows for the analysis.
 	num_windows = int(total_time / PAR[0])
@@ -50,12 +42,8 @@ def all_the_input_stuff():
 	# Print informative messages about trajectory details.
 	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
 	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[2]) + ' ns). ')
+	print('\t' + str(total_states) + ' possible environments are identified. ')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
-
-	# Initialize an array to store labels for each window.
-	all_the_labels = np.zeros((M.shape[0], num_windows))
-	 # Initialize an empty list to store unique states in each window.
-	list_of_states = []
 
 	### Create files for output
 	with open(output_file, 'w') as f:
@@ -64,7 +52,7 @@ def all_the_input_stuff():
 		os.makedirs('output_figures')
 
 	# Return required data for further analysis.
-	return M, PAR, data_directory, all_the_labels, list_of_states
+	return M, PAR, data_directory
 
 def plot_input_data(M, PAR, filename):
 	tau_window = PAR[0]
@@ -73,10 +61,7 @@ def plot_input_data(M, PAR, filename):
 
 	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
-	bins='auto'
-	if len(PAR) == 6:
-		bins = PAR[5]
-	counts, bins = np.histogram(flat_M, bins=bins, density=True)
+	counts, bins = np.histogram(flat_M, bins=15, density=True)
 	counts *= flat_M.size
 
 	# Create a plot with two subplots (side-by-side)
@@ -90,8 +75,8 @@ def plot_input_data(M, PAR, filename):
 
 	# Plot the individual trajectories in the first subplot (left side)
     # If there are more than 1000 frames, plot only every 10th frame for faster rendering
-	if M.shape[1] > 1000:
-		for mol in M[::10]:
+	if M.shape[0]*M.shape[1] > 10000:
+		for mol in M[::100]:
 			ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
 	else:
 		for mol in M:
@@ -99,7 +84,7 @@ def plot_input_data(M, PAR, filename):
 
 	# Set labels and titles for the plots
 	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + PAR[3])
+	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[1].set_xticklabels([])
 
 	if show_plot:
@@ -107,252 +92,60 @@ def plot_input_data(M, PAR, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(M, bins, filename):
-	print('* Gaussian fit...')
-	number_of_sigmas = 2.0
-	flat_M = M.flatten()
+def state_identification(M, PAR):
+	tau_window = PAR[0]
+	candidate_states = np.unique(M)
 
-	### 1. Histogram with 'auto' binning ###
-	counts, bins = np.histogram(flat_M, bins=bins, density=True)
-	gap = 1
-	if bins.size > 50:
-		gap = 3
+	valid_states = []
+	for S in candidate_states:
+		state_flag = 0
+		for i in range(M.shape[0]):
+			for w in range(int(M.shape[1]/tau_window)):
+				flag = 1
+				if all(xt == S for xt in M[i][w*tau_window:(w + 1)*tau_window]):
+					valid_states.append(S)
+					state_flag = 1
+					break
+			if state_flag == 1:
+				break
 
-	### 2. Smoothing with tau = 3 ###
-	counts = moving_average(counts, gap)
-	bins = moving_average(bins, gap)
+	if valid_states[-1] < 1.0:
+		valid_states.append(1.0)
 
-	### 3. Find the maximum ###
-	max_val = counts.max()
-	max_ind = counts.argmax()
+	print('\t' + str(len(valid_states)) + ' valid states identified. ')
 
-	### 4. Find the minima surrounding it ###
-	min_id0 = np.max([max_ind - gap, 0])
-	min_id1 = np.min([max_ind + gap, counts.size - 1])
-	while min_id0 > 0 and counts[min_id0] > counts[min_id0 - 1]:
-		min_id0 -= 1
-	while min_id1 < counts.size - 1 and counts[min_id1] > counts[min_id1 + 1]:
-		min_id1 += 1
+	th = []
+	th.append(0.0)
+	for n in range(len(valid_states) - 1):
+		th.append((valid_states[n] + valid_states[n + 1])/2)
+	th.append(1.0)
 
-	### 5. Try the fit between the minima and check its goodness ###
-	flag_min = 1
-	goodness_min = 5
-	Bins = bins[min_id0:min_id1]
-	Counts = counts[min_id0:min_id1]
-	mu0 = bins[max_ind]
-	sigma0 = (bins[min_id0] - bins[min_id1])/6
-	A0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
-	try:
-		popt_min, pcov = scipy.optimize.curve_fit(Gaussian, Bins, Counts, p0=[mu0, sigma0, A0])
-		if popt_min[1] < 0:
-			popt_min[1] = -popt_min[1]
-			popt_min[2] = -popt_min[2]
-		gauss_max = popt_min[2]*np.sqrt(np.pi)*popt_min[1]
-		if gauss_max < A0/2:
-			goodness_min -= 1
-		popt_min[2] *= flat_M.size
-		if popt_min[0] < Bins[0] or popt_min[0] > Bins[-1]:
-			goodness_min -= 1
-		if popt_min[1] > Bins[-1] - Bins[0]:
-			goodness_min -= 1
-		perr = np.sqrt(np.diag(pcov))
-		for j in range(len(perr)):
-			if perr[j]/popt_min[j] > 0.5:
-				goodness_min -= 1
-		if min_id1 - min_id0 <= gap:
-			goodness_min -= 1
-	except RuntimeError:
-		flag_min = 0
-	except TypeError:
-		flag_min = 0
-	except ValueError:
-		flag_min = 0
-
-	### 6. Find the inrterval of half height ###
-	half_id0 = np.max([max_ind - gap, 0])
-	half_id1 = np.min([max_ind + gap, counts.size - 1])
-	while half_id0 > 0 and counts[half_id0] > max_val/2:
-		half_id0 -= 1
-	while half_id1 < counts.size - 1 and counts[half_id1] > max_val/2:
-		half_id1 += 1
-
-	### 7. Try the fit between the minima and check its goodness ###
-	flag_half = 1
-	goodness_half = 5
-	Bins = bins[half_id0:half_id1]
-	Counts = counts[half_id0:half_id1]
-	mu0 = bins[max_ind]
-	sigma0 = (bins[half_id0] - bins[half_id1])/6
-	A0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
-	try:
-		popt_half, pcov = scipy.optimize.curve_fit(Gaussian, Bins, Counts, p0=[mu0, sigma0, A0])
-		if popt_half[1] < 0:
-			popt_half[1] = -popt_half[1]
-			popt_half[2] = -popt_half[2]
-		gauss_max = popt_half[2]*np.sqrt(np.pi)*popt_half[1]
-		if gauss_max < A0/2:
-			goodness_half -= 1
-		popt_half[2] *= flat_M.size
-		if popt_half[0] < Bins[0] or popt_half[0] > Bins[-1]:
-			goodness_half -= 1
-		if popt_half[1] > Bins[-1] - Bins[0]:
-			goodness_half -= 1
-		perr = np.sqrt(np.diag(pcov))
-		for j in range(len(perr)):
-			if perr[j]/popt_half[j] > 0.5:
-				goodness_half -= 1
-		if min_id1 - min_id0 < gap:
-			goodness_half -= 1
-	except RuntimeError:
-		flag_half = 0
-	except TypeError:
-		flag_half = 0
-	except ValueError:
-		flag_half = 0
-
-	### 8. Choose the best fit ###
-	goodness = goodness_min
-	if flag_min == 1 and flag_half == 0:
-		popt = popt_min
-	elif flag_min == 0 and flag_half == 1:
-		popt = popt_half
-		goodness = goodness_half
-	elif flag_min*flag_half == 1:
-		if goodness_min >= goodness_half:
-			popt = popt_min
-		else:
-			popt = popt_half
-			goodness = goodness_half
-	else:
-		print('\t WARNING: this fit is not converging.')
-		return [], []
-
-	print('\tGaussians parameters:')
-	with open(output_file, 'a') as f:
-		print('\n', file=f)
-		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, area = {popt[2]:.4f}')
-		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, area = {popt[2]:.4f}', file=f)
-		print('\tFit goodness = ' + str(goodness), file=f)
-
-	### Find the tresholds for state identification
-	th_inf = popt[0] - number_of_sigmas*popt[1]
-	th_sup = popt[0] + number_of_sigmas*popt[1]
-	th = [th_inf, th_sup]
-
-	### Plot the distribution and the fitted Gaussians
-	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	fig, ax = plt.subplots()
-	plot_histo(ax, counts, bins)
-	ax.set_xlim(y_lim)
-	tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
-	ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
-
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
-
-	return popt, th
-
-def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
-	print('* Finding stable windows...')
-
-	# Calculate the number of windows in the trajectory
-	number_of_windows = int(M.shape[1]/tau_window)
-
-	# Initialize an empty list to store non-stable windows
-	M2 = []
-
-	# Initialize a counter to keep track of the number of stable windows found
-	counter = 0
-
-	# Loop over each particle's trajectory
+	all_the_labels = np.zeros(M.shape)
 	for i, x in enumerate(M):
-		# Loop over each window in the trajectory
-		for w in range(number_of_windows):
-			# Check if the window is already assigned to a state with a label > 0
-			if all_the_labels[i][w] > 0.5:
-				# If yes, skip this window and continue to the next one
-				continue
-			else:
-				# If the window is not assigned to any state yet, extract the window's data
-				x_w = x[w*tau_window:(w + 1)*tau_window]
-				# Check if the window is stable (all data points within the specified range)
-				if np.amin(x_w) > th[0] and np.amax(x_w) < th[1]:
-					# If stable, assign the window to the current state offset and increment the counter
-					all_the_labels[i][w] = offset + 1
-					counter += 1
-				else:
-					# If not stable, add the window's data to the list of non-stable windows
-					M2.append(x_w)
+		for t, xt in enumerate(x):
+			for c in range(len(th) - 1):
+				if xt >= th[c] and xt <= th[c + 1]:
+					all_the_labels[i][t] = c
 
-	# Calculate the fraction of stable windows found
-	fw = counter/(all_the_labels.size)
+	return valid_states, th, all_the_labels
 
-	# Print the fraction of stable windows
-	with open(output_file, 'a') as f:
-		print(f'\tFraction of windows in state {offset} = {fw:.3}')
-		print(f'\tFraction of windows in state {offset} = {fw:.3}', file=f)
-	
-	# Update the fraction of stable windows for the current state in the list_of_states
-	list_of_states[-1][2] = fw
-
-	# Convert the list of non-stable windows to a NumPy array
-	M2 = np.array(M2)
-
-	# Calculate the fraction of stable windows with respect to the total number of windows
-	overall_fw = counter / (len(M) * number_of_windows)
-
-	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
-	return M2, overall_fw, list_of_states
-
-def iterative_search(M, PAR, all_the_labels, list_of_states):
-	M1 = M
-	iteration_id = 1
-	states_counter = 0
-	while True:
-		### Locate and fit maximum in the signal distribution
-		bins='auto'
-		if len(PAR) == 6:
-			bins=PAR[5]
-		popt, th = gauss_fit_max(M1, bins, 'output_figures/Fig1_' + str(iteration_id))
-		if len(popt) == 0:
-			break
-
-		list_of_states.append([popt, th, 0.0])
-
-		### Find the windows in which the trajectories are stable in the maximum
-		M2, c, list_of_states = find_stable_trj(M, PAR[0], th, list_of_states, all_the_labels, states_counter)
-
-		states_counter += 1
-		iteration_id += 1
-		### Exit the loop if no new stable windows are found
-		if c <= 0.0:
-			break
-		else:
-			M1 = M2
-
-	return relabel_states(all_the_labels, list_of_states)
-
-def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
+def plot_cumulative_figure(M, PAR, list_of_states, th, data_directory, filename):
 	print('* Printing cumulative figure...')
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
-	bins='auto'
-	if len(PAR) == 6:
-		bins=PAR[5]
 	n_states = len(list_of_states)
 
-	# Compute histogram of flattened M
+	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
+	bins = len(list_of_states)
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
-	# Create a 1x2 subplots with shared y-axis
+	# Create a subplot
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
 
-	# Plot the histogram on the right subplot (ax[1])
+	# Plot histogram in the second subplot (right side)
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
 
 	# Create a color palette for plotting states
@@ -361,40 +154,27 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	palette.append('#fde725')
 
 	# Define time and y-axis limits for the left subplot (ax[0])
+	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
-	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
+	time = np.linspace(t_lim[0], t_lim[1], M.shape[1])
 
 	# Plot the individual trajectories on the left subplot (ax[0])
-	if M.shape[1] > 1000:
-		for mol in M[::10]:
+	if M.shape[0]*M.shape[1] > 10000:
+		for mol in M[::100]:
 			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 	else:
 		for mol in M:
 			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
-	# Plot the Gaussian distributions of states on the right subplot (ax[1])
-	for S in range(n_states):
-		ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
-
-	# Plot the horizontal lines and shaded regions to mark final_list thresholds
-	time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]), time[-1] + 0.05*(time[-1] - time[0]), 100)
-	for n, th in enumerate(final_list):
-		if th[1] == 0:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), color='xkcd:black')
-		elif th[1] == 1:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:black')
-		elif th[1] == 2:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:blue')
-		elif th[1] == 3:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:red')
-		if n < len(final_list) - 1:
-			ax[0].fill_between(time2, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
+	# Plot the horizontal lines and shaded regions to mark list_of_states thresholds
+	times = np.linspace(t_lim[0], t_lim[1], 100)
+	for n in range(len(th) -1):
+		ax[0].fill_between(times, th[n], th[n + 1], color=palette[n], alpha=0.25)
 
 	# Set plot titles and axis labels
 	fig.suptitle(data_directory)
 	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + PAR[3])
-	ax[0].set_xlim([time2[0], time2[-1]])
+	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
 
@@ -407,7 +187,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	tau_window = PAR[0]
 	tau_delay = PAR[1]
 	t_conv = PAR[2]
-	example_ID = PAR[4]
+	example_ID = PAR[3]
 
 	# Get the signal of the example particle
 	signal = M[example_ID]
@@ -419,16 +199,15 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	fig, ax = plt.subplots()
 
 	# Create a colormap to map colors to the labels of the example particle
-	cmap = plt.get_cmap('viridis', np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
 	color = all_the_labels[example_ID]
 	ax.plot(times, signal, c='black', lw=0.1)
 
 	# Plot the signal as a line and scatter plot with colors based on the labels
-	ax.scatter(times, signal, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
+	ax.scatter(times, signal, c=color, s=4.0, vmin=0, vmax=int(np.max(all_the_labels)))
 
 	# Add title and labels to the axes
 	fig.suptitle('Example particle: ID = ' + str(example_ID))
-	ax.set_xlabel('Time ' + PAR[3])
+	ax.set_xlabel('Time ' + t_units)
 	ax.set_ylabel('Normalized signal')
 
 	if show_plot:
@@ -467,8 +246,8 @@ def plot_all_trajectory_with_histos(M, PAR, filename):
 		if i > 0:
 			axes[i].set_yticklabels([])
 
-	fig.suptitle('Example particle: ID = ' + str(PAR[4]))
-	ax4.set_xlabel('Time ' + PAR[3])
+	fig.suptitle('Example particle: ID = ' + str(PAR[3]))
+	ax4.set_xlabel('Time ' + t_units)
 	ax4.set_ylabel('Normalized signal')
 	ax4.set_xlim(t_lim)
 	if show_plot:
@@ -585,7 +364,7 @@ def transition_matrix(Delta, t_conv, all_the_labels, filename):
 		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
 
 	# Set titles and axis labels for the plot.
-	fig.suptitle(r'Transition probabilities, $\Delta t=$' + str(Delta*t_conv) + ' ' + PAR[3])
+	fig.suptitle(r'Transition probabilities, $\Delta t=$' + str(Delta*t_conv) + ' ' + t_units)
 	ax.set_xlabel('To...')
 	ax.set_ylabel('From...')
 	ax.xaxis.tick_top()
@@ -653,9 +432,9 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	print('* Computing some statistics on the enviroinments...')
 	tau_window = PAR[0]
 	t_conv = PAR[2]
-
 	data = []
 	labels = []
+
 	# Iterate through the molecules in M
 	for i, x in enumerate(M):
 		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
@@ -819,28 +598,21 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 		plt.show()
 
 def main():
-	M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
+	M, PAR, data_directory = all_the_input_stuff()
 	plot_input_data(M, PAR, 'output_figures/Fig0')
 
-	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
-	if len(list_of_states) == 0:
-		print('* No possible classification was found. ')
-		return
-	list_of_states, final_list = set_final_states(list_of_states)
-	all_the_labels = assign_final_states_to_single_frames(M, final_list)
+	list_of_states, th, all_the_labels = state_identification(M, PAR)
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'output_figures/Fig2')
-	# plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
+	plot_cumulative_figure(M, PAR, list_of_states, th, data_directory, 'output_figures/Fig2')
 	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
 
-	print_mol_labels_fbf_gro(all_the_labels, 'all_cluster_IDs_gro.dat')
+	# print_mol_labels_fbf_gro(all_the_labels, 'all_cluster_IDs_gro.dat')
 	print_mol_labels_fbf_xyz(all_the_labels, 'all_cluster_IDs_xyz.dat')
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
-		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
+	# 	sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
 
-	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
-	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
+	# state_statistics(M, PAR, all_the_labels, 'output_figures/Fig5')
 
 if __name__ == "__main__":
 	main()
