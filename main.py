@@ -9,7 +9,7 @@ t_units = r'[ns]'	# Units of measure of time
 
 ### Usually no need to changhe these ###
 output_file = 'states_output.txt'
-show_plot = False
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -224,7 +224,7 @@ def gauss_fit_max(M, bins, filename):
 			popt = popt_half
 			goodness = goodness_half
 	else:
-		print('\t ERROR: the fit is not converging.')
+		print('\t WARNING: this fit is not converging.')
 		return [], []
 
 	print('\tGaussians parameters:')

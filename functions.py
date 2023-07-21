@@ -74,7 +74,7 @@ def read_data(filename):
 		return M
 	# If the file format is not supported, print an error message and return None.
 	else:
-		print('Error: unsupported format for input file.')
+		print('\tERROR: unsupported format for input file.')
 		return None
 
 def Savgol_filter(M, window):
@@ -111,7 +111,7 @@ def moving_average(data, window):
 			tmp.append(np.convolve(x, weights, mode='valid'))
 		return np.array(tmp)
 	else:
-		print('\tError: impossible to performe moving average on the argument.')
+		print('\tERROR: impossible to performe moving average on the argument.')
 		return []
 
 def normalize_array(x):
