@@ -26,9 +26,10 @@ def all_the_input_stuff():
 	# Remove initial frames based on 'tau_delay'.
 	M_raw = M_raw[:, PAR[1]:]
 
-	# Apply Savitzky-Golay filtering if 'tau_window' > 3, otherwise, keep the raw data.
+	# Apply filtering if 'tau_window' > 3, otherwise, keep the raw data.
 	if PAR[0] > 3:
-		M = Savgol_filter(M_raw, PAR[0])
+		# M = Savgol_filter(M_raw, PAR[0])
+		M = moving_average(M_raw, PAR[0])
 	else:
 		M = np.copy(M_raw)
 		print('\tWARNING: no data smoothing. ')
@@ -125,9 +126,9 @@ def gauss_fit_max(M, bins, filename):
 	max_ind = counts.argmax()
 
 	### 4. Find the minima surrounding it ###
-	min_id0 = max_ind - gap
-	min_id1 = max_ind + gap
-	while counts[min_id0] > counts[min_id0 - 1] and min_id0 > 0:
+	min_id0 = np.max([max_ind - gap, 0])
+	min_id1 = np.min([max_ind + gap, bins.size - 1])
+	while counts[min_id0] > counts[min_id0 - 1] and min_id0 > 1:
 		min_id0 -= 1
 	while counts[min_id1] > counts[min_id1 + 1] and min_id1 < counts.size - 2:
 		min_id1 += 1
@@ -818,6 +819,9 @@ def main():
 	plot_input_data(M, PAR, 'output_figures/Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
+	if len(list_of_states) == 0:
+		print('* No possible classification was found. ')
+		return
 	list_of_states, final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
@@ -833,7 +837,6 @@ def main():
 
 	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
-	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig7')
 
 if __name__ == "__main__":
 	main()

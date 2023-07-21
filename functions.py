@@ -38,7 +38,7 @@ def read_input_parameters():
 		print('\tWARNING: overriding histogram binning')
 		PAR = [int(param[0]), int(param[1]), param[2], int(param[3]), int(param[4])]
 
-	print('DEBUG:', data_dir)
+	print('Reading data from', data_dir)
 
 	# Step 5: Check if the shape of 'data_dir' array is (2, ).
 	# If yes, return 'data_dir' as an array along with 'PAR'.
@@ -102,7 +102,17 @@ def moving_average(data, window):
 	# The result is a smoothed version of the 'data', where each point represents the weighted average of its neighbors.
 	# Mode ‘valid’ returns output of length max(M, N) - min(M, N) + 1. 
 	# The convolution product is only given for points where the signals overlap completely. Values outside the signal boundary have no effect.
-	return np.convolve(data, weights, mode='valid')
+	# If data.ndim == 2, return the smoothing on the columns
+	if data.ndim == 1:
+		return np.convolve(data, weights, mode='valid')
+	elif data.ndim == 2:
+		tmp = []
+		for x in data:
+			tmp.append(np.convolve(x, weights, mode='valid'))
+		return np.array(tmp)
+	else:
+		print('\tError: impossible to performe moving average on the argument.')
+		return []
 
 def normalize_array(x):
 	# Step 1: Calculate the mean value and the standard deviation of the input array 'x'.
