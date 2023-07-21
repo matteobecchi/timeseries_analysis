@@ -26,17 +26,17 @@ def read_input_parameters():
 		with open('input_parameters.txt', 'r') as file:
 			lines = file.readlines()
 			# Step 3: Convert the lines of text into a list of floating-point numbers (floats).
-			param = [float(line.strip()) for line in lines]
+			param = [line.strip() for line in lines]
 	except:
 		print('\tinput_parameters.txt file missing or wrongly formatted.')
 
 	# Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
 	# The fifth parameter, 'bins' is optional.  
-	if len(param) == 4:
-		PAR = [int(param[0]), int(param[1]), param[2], int(param[3])]
-	elif len(param) == 5:
+	if len(param) == 5:
+		PAR = [int(param[0]), int(param[1]), float(param[2]), r'[' + str(param[3]) + r']',  int(param[4])]
+	elif len(param) == 6:
 		print('\tWARNING: overriding histogram binning')
-		PAR = [int(param[0]), int(param[1]), param[2], int(param[3]), int(param[4])]
+		PAR = [int(param[0]), int(param[1]), float(param[2]), r'[' + str(param[3]) + r']', int(param[4]), int(param[5])]
 
 	print('Reading data from', data_dir)
 
