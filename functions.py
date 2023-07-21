@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pylab import *
 import sys
 import os
 import copy
@@ -66,11 +67,13 @@ def read_data(filename):
 			if M.shape[0] != 2048:
 				# If the number of rows is not 2048, transpose the data array to make it compatible.
 				M = M.T
+			print('\tOriginal data shape:', M.shape)
 			return M
 	# Step 5: Check if the filename ends with '.npy', indicating a NumPy binary file.
 	elif filename.endswith('.npy'):
 		# Step 6: Load the data from the '.npy' file directly into a NumPy array.
 		M = np.load(filename)
+		print('\tOriginal data shape:', M.shape)
 		return M
 	# If the file format is not supported, print an error message and return None.
 	else:
