@@ -127,10 +127,10 @@ def gauss_fit_max(M, bins, filename):
 
 	### 4. Find the minima surrounding it ###
 	min_id0 = np.max([max_ind - gap, 0])
-	min_id1 = np.min([max_ind + gap, bins.size - 1])
-	while counts[min_id0] > counts[min_id0 - 1] and min_id0 > 1:
+	min_id1 = np.min([max_ind + gap, counts.size - 1])
+	while min_id0 > 0 and counts[min_id0] > counts[min_id0 - 1]:
 		min_id0 -= 1
-	while counts[min_id1] > counts[min_id1 + 1] and min_id1 < counts.size - 2:
+	while min_id1 < counts.size - 1 and counts[min_id1] > counts[min_id1 + 1]:
 		min_id1 += 1
 
 	### 5. Try the fit between the minima and check its goodness ###
@@ -168,11 +168,11 @@ def gauss_fit_max(M, bins, filename):
 		flag_min = 0
 
 	### 6. Find the inrterval of half height ###
-	half_id0 = max_ind - gap
-	half_id1 = max_ind + gap
-	while counts[half_id0] > max_val/2 and half_id0 > 0:
+	half_id0 = np.max([max_ind - gap, 0])
+	half_id1 = np.min([max_ind + gap, counts.size - 1])
+	while half_id0 > 0 and counts[half_id0] > max_val/2:
 		half_id0 -= 1
-	while counts[half_id1] > max_val/2 and half_id1 < counts.size - 1:
+	while half_id1 < counts.size - 1 and counts[half_id1] > max_val/2:
 		half_id1 += 1
 
 	### 7. Try the fit between the minima and check its goodness ###
