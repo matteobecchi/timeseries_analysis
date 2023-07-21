@@ -259,10 +259,17 @@ def set_final_states(list_of_states):
 			tmp_list_of_states.append(list_of_states[m])
 			m += 1
 		else:
-			new_mu = (final_list[n + 1][0] + final_list[n][0])/2
-			new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
-			new_A = 1.0
-			tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
+			if list_of_states[m][0][0] >= final_list[n + 1][0]:
+				new_mu = (final_list[n][0] + final_list[n - 1][0])/2
+				new_sigma = (final_list[n][0] - final_list[n - 1][0])/2
+				new_A = 1.0
+				tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
+			else:
+				new_mu = (final_list[n][0] + final_list[n + 1][0])/2
+				new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
+				new_A = 1.0
+				tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
+			m += 1
 	list_of_states = tmp_list_of_states
 
 	# Step 6: Write the final states and final thresholds to text files.
