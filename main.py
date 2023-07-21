@@ -4,12 +4,8 @@ import sys
 import os
 from functions import *
 
-### System specific parameters ###
-# t_units = r'[ns]'	# Units of measure of time
-show_plot = True
-
-### No need to changhe these ###
 output_file = 'states_output.txt'
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -90,7 +86,7 @@ def plot_input_data(M, PAR, filename):
 
 	# Plot the individual trajectories in the first subplot (left side)
     # If there are more than 1000 frames, plot only every 10th frame for faster rendering
-	if M.shape[1] > 1000:
+	if M.shape[0]*M.shape[1] > 1000000:
 		for mol in M[::10]:
 			ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
 	else:
@@ -227,7 +223,6 @@ def gauss_fit_max(M, bins, filename):
 		print('\t WARNING: this fit is not converging.')
 		return [], []
 
-	print('\tGaussians parameters:')
 	with open(output_file, 'a') as f:
 		print('\n', file=f)
 		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, area = {popt[2]:.4f}')
@@ -365,7 +360,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
 
 	# Plot the individual trajectories on the left subplot (ax[0])
-	if M.shape[1] > 1000:
+	if M.shape[0]*M.shape[1] > 1000000:
 		for mol in M[::10]:
 			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 	else:
@@ -659,22 +654,27 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	# Iterate through the molecules in M
 	for i, x in enumerate(M):
 		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
-		x_t = np.array([M[i][0]])  # Initialize a temporary array to store data for the current environment
+		t0 = 0
 
-		# Iterate through the frames of the current molecule
-		for t in range(1, M.shape[1]):
-			# Check if the current frame has the same label as the previous one
-			if all_the_labels[i][t] == current_label:
-				x_t = np.append(x_t, M[i][t])  # Add data to the temporary array
-			else:
-				data.append([x_t.size*t_conv, np.mean(x_t), np.std(x_t)])  # Store statistics for the environment
-				labels.append(int(current_label))  # Store the label for the environment
-				x_t = np.array([M[i][t]])  # Start a new temporary array for the next environment
+		# Find the indices where the labels change
+		label_changes = np.where(all_the_labels[i][1:] != all_the_labels[i][:-1])[0] + 1
+
+		# Add the index of the last frame to label_changes
+		label_changes = np.append(label_changes, len(all_the_labels[i]))
+
+		# Iterate through the label changes and calculate statistics for each environment
+		for t in label_changes:
+			x_t = M[i][t0:t]  # Get the complete extent of the environment
+			data.append([x_t.size * t_conv, np.mean(x_t), np.std(x_t)])  # Store statistics for the environment
+			labels.append(int(current_label))  # Store the label for the environment
+
+			if t < len(M[i]):
 				current_label = all_the_labels[i][t]  # Update the current label
 
+			t0 = t
 	data = np.array(data)
 
-	# Characterization of the states using numpy functions
+	# Characterization of the states
 	state_points = []
 	for s in np.unique(labels):
 		ID_s = np.where(labels == s)[0]
