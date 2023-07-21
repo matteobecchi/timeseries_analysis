@@ -5,6 +5,7 @@ import os
 from functions import *
 
 output_file = 'states_output.txt'
+colormap = 'viridis'
 show_plot = True
 
 def all_the_input_stuff():
@@ -158,10 +159,13 @@ def gauss_fit_max(M, bins, filename):
 		if min_id1 - min_id0 <= gap:
 			goodness_min -= 1
 	except RuntimeError:
+		print('\tMin fit: Runtime error. ')
 		flag_min = 0
 	except TypeError:
+		print('\tMin fit: TypeError.')
 		flag_min = 0
 	except ValueError:
+		print('\tMin fit: ValueError.')
 		flag_min = 0
 
 	### 6. Find the inrterval of half height ###
@@ -200,10 +204,13 @@ def gauss_fit_max(M, bins, filename):
 		if min_id1 - min_id0 < gap:
 			goodness_half -= 1
 	except RuntimeError:
+		print('\tHalf fit: Runtime error. ')
 		flag_half = 0
 	except TypeError:
+		print('\tHalf fit: TypeError.')
 		flag_half = 0
 	except ValueError:
+		print('\tHalf fit: ValueError.')
 		flag_half = 0
 
 	### 8. Choose the best fit ###
@@ -220,7 +227,7 @@ def gauss_fit_max(M, bins, filename):
 			popt = popt_half
 			goodness = goodness_half
 	else:
-		print('\t WARNING: this fit is not converging.')
+		print('\tWARNING: this fit is not converging.')
 		return [], []
 
 	with open(output_file, 'a') as f:
@@ -351,9 +358,11 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
 
 	# Create a color palette for plotting states
-	palette = sns.color_palette('viridis', n_colors=n_states - 2).as_hex()
-	palette.insert(0, '#440154')
-	palette.append('#fde725')
+	palette = []
+	cmap = cm.get_cmap(colormap, n_states)
+	for i in range(cmap.N):
+		rgba = cmap(i)
+		palette.append(matplotlib.colors.rgb2hex(rgba))
 
 	# Define time and y-axis limits for the left subplot (ax[0])
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
@@ -414,7 +423,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	fig, ax = plt.subplots()
 
 	# Create a colormap to map colors to the labels of the example particle
-	cmap = plt.get_cmap('viridis', np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
+	cmap = plt.get_cmap(colormap, np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
 	color = all_the_labels[example_ID]
 	ax.plot(times, signal, c='black', lw=0.1)
 
@@ -527,9 +536,11 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
 
 	# Generate a color palette for the Sankey diagram.
-	palette = sns.color_palette('viridis', n_colors=n_states - 2).as_hex()
-	palette.insert(0, '#440154')
-	palette.append('#fde725')
+	palette = []
+	cmap = cm.get_cmap(colormap, n_states)
+	for i in range(cmap.N):
+		rgba = cmap(i)
+		palette.append(matplotlib.colors.rgb2hex(rgba))
 
 	# Tile the color palette to match the number of frames.
 	color = np.tile(palette, frame_list.size)
@@ -691,7 +702,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 
 	# Create a scatter plot of the data points
 	fig, ax = plt.subplots()
-	scatter = ax.scatter(data[:, 0], data[:, 1], c=labels, s=1.0, cmap='viridis')
+	scatter = ax.scatter(data[:, 0], data[:, 1], c=labels, s=1.0, cmap=colormap)
 
 	# Add error bars representing standard deviations of T and A
 	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[3], yerr=state_points_tr[4],
@@ -836,7 +847,7 @@ def main():
 	print_mol_labels_fbf_gro(all_the_labels, 'all_cluster_IDs_gro.dat')
 	print_mol_labels_fbf_xyz(all_the_labels, 'all_cluster_IDs_xyz.dat')
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300, 400])]):
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
 		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
 
 	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
