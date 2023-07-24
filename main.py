@@ -5,8 +5,9 @@ import os
 from functions import *
 
 output_file = 'states_output.txt'
-colormap = 'viridis'
-show_plot = True
+# colormap = 'viridis'
+colormap = 'rainbow'
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -57,8 +58,18 @@ def all_the_input_stuff():
 	### Create files for output
 	with open(output_file, 'w') as f:
 		print('# ' + str(PAR[0]) + ', ' + str(PAR[1]) + ', ' + str(PAR[2]), file=f)
-	if not os.path.exists('output_figures'):
-		os.makedirs('output_figures')
+	figures_folder = 'output_figures'
+	if not os.path.exists(figures_folder):
+		os.makedirs(figures_folder)
+	for filename in os.listdir(figures_folder):
+		try:
+			file_path = os.path.join(figures_folder, filename)
+			if os.path.isfile(file_path) or os.path.islink(file_path):
+				os.unlink(file_path)
+			elif os.path.isdir(file_path):
+				shutil.rmtree(file_path)
+		except Exception as e:
+			print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 	# Return required data for further analysis.
 	return M, PAR, data_directory, all_the_labels, list_of_states
@@ -849,9 +860,9 @@ def main():
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
 		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
+	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig4a')
 
-	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig5')
-	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig6')
+	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig5')
 
 if __name__ == "__main__":
 	main()
