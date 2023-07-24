@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from pylab import *
 import sys
 import os
+from pylab import *
 import copy
 import math
 import scipy.optimize
@@ -32,12 +32,14 @@ def read_input_parameters():
 		print('\tinput_parameters.txt file missing or wrongly formatted.')
 
 	# Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
-	# The fifth parameter, 'bins' is optional.  
+	# The fifth parameter, 'bins' is optional and shoul be avoided if possible. 
 	if len(param) == 5:
 		PAR = [int(param[0]), int(param[1]), float(param[2]), r'[' + str(param[3]) + r']',  int(param[4])]
 	elif len(param) == 6:
 		print('\tWARNING: overriding histogram binning')
 		PAR = [int(param[0]), int(param[1]), float(param[2]), r'[' + str(param[3]) + r']', int(param[4]), int(param[5])]
+	else:
+		print('\tinput_parameters.txt file wrongly formatted.')
 
 	print('Reading data from', data_dir)
 
