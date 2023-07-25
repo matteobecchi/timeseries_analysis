@@ -5,9 +5,9 @@ import os
 from functions import *
 
 output_file = 'states_output.txt'
-colormap = 'viridis'
-# colormap = 'rainbow'
-show_plot = False
+# colormap = 'viridis'
+colormap = 'rainbow'
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -570,7 +570,8 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 		fig.show()
 	fig.write_image(filename + '.png', scale=5.0)
 
-def transition_matrix(Delta, t_conv, all_the_labels, filename):
+def transition_matrix(Delta, PAR, all_the_labels, filename):
+	t_conv = PAR[2]
 	print('* Computing transition matrix...')
 	# Get the number of unique states in the all_the_labels array.
 	n_states = np.unique(all_the_labels).size
@@ -590,11 +591,15 @@ def transition_matrix(Delta, t_conv, all_the_labels, filename):
 	# Normalize the transition matrix 'T' to obtain transition probabilities 'N'.
 	N = T / T.sum(axis=1, keepdims=True)
 
+	# P, D = linalg.eig(N)
+	# print(D)
+	# print(-Delta*t_conv/np.log(P))
+
 	# Create a plot to visualize the transition probabilities.
 	fig, ax = plt.subplots(figsize=(10, 8))
 	# Display the transition probabilities as an image with a logarithmic color scale.
-	im = ax.imshow(N, cmap='viridis', norm=LogNorm(vmin=N[N > 0].min(), vmax=N.max()))
-	fig.colorbar(im, ax=ax, format='%.2f')
+	im = ax.imshow(N, cmap=colormap, norm=LogNorm(vmin=N[N > 0].min(), vmax=N.max()))
+	fig.colorbar(im, ax=ax, format='%.5f')
 
 	# Add text labels for each transition probability on the plot.
 	for (i, j), val in np.ndenumerate(N):
@@ -716,7 +721,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 
 	# Add error bars representing standard deviations of T and A
 	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[3], yerr=state_points_tr[4],
-		marker='o', ms=3.0, c='red', lw=0.0, elinewidth=1.0, capsize=2.5)
+		marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
 
 	# Set plot titles and labels
 	fig.suptitle('Dynamic enviroinment statistics')
@@ -859,7 +864,7 @@ def main():
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
 		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
-	# transition_matrix(1, PAR[2], all_the_labels, 'output_figures/Fig4a')
+	transition_matrix(10, PAR, all_the_labels, 'output_figures/Fig4a')
 
 	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig5')
 
