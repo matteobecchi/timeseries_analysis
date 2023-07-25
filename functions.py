@@ -264,23 +264,19 @@ def set_final_states(list_of_states):
 	final_list = np.array(final_list)
 	final_list = sorted(final_list, key=lambda x: x[0])
 	tmp_list_of_states = []
-	m = 0
+
 	for n in range(len(final_list) - 1):
-		if list_of_states[m][0][0] > final_list[n][0] and list_of_states[m][0][0] < final_list[n + 1][0]:
-			tmp_list_of_states.append(list_of_states[m])
-			m += 1
-		else:
-			if list_of_states[m][0][0] >= final_list[n + 1][0]:
-				new_mu = (final_list[n][0] + final_list[n - 1][0])/2
-				new_sigma = (final_list[n][0] - final_list[n - 1][0])/2
-				new_A = 1.0
-				tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
-			else:
-				new_mu = (final_list[n][0] + final_list[n + 1][0])/2
-				new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
-				new_A = 1.0
-				tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
-			m += 1
+		flag = 0
+		for state in list_of_states:
+			if state[0][0] > final_list[n][0] and state[0][0] < final_list[n + 1][0]:
+				tmp_list_of_states.append(state)
+				flag = 1
+				break
+		if flag == 0:
+			new_mu = (final_list[n][0] + final_list[n + 1][0])/2
+			new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
+			new_A = 1.0
+			tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
 	list_of_states = tmp_list_of_states
 
 	# Step 6: Write the final states and final thresholds to text files.
