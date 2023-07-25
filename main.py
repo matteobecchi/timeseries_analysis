@@ -7,7 +7,7 @@ from functions import *
 output_file = 'states_output.txt'
 colormap = 'viridis'
 # colormap = 'rainbow'
-show_plot = True
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -18,9 +18,6 @@ def all_the_input_stuff():
 		M_raw = read_data(data_directory)
 	else:
 		print('\tERROR: data_directory.txt is missing or wrongly formatted. ')
-		# M0 = read_data(data_directory[0])
-		# M1 = read_data(data_directory[1])
-		# M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 
 	# Remove initial frames based on 'tau_delay'.
 	M_raw = M_raw[:, PAR[1]:]

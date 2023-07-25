@@ -109,7 +109,7 @@ def moving_average(data, window):
 	# The result is a smoothed version of the 'data', where each point represents the weighted average of its neighbors.
 	# Mode ‘valid’ returns output of length max(M, N) - min(M, N) + 1. 
 	# The convolution product is only given for points where the signals overlap completely. Values outside the signal boundary have no effect.
-	# If data.ndim == 2, return the smoothing on the columns
+	# If data.ndim == 2, return the smoothing on the rows
 	if data.ndim == 1:
 		return np.convolve(data, weights, mode='valid')
 	elif data.ndim == 2:
