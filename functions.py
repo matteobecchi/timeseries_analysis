@@ -80,6 +80,10 @@ def read_data(filename):
 		print('\tOriginal data shape:', M.shape)
 		return M
 	# If the file format is not supported, print an error message and return None.
+	elif filename.endswith('.txt'):
+		M = np.loadtxt(filename)
+		print('\tOriginal data shape:', M.shape)
+		return M
 	else:
 		print('\tERROR: unsupported format for input file.')
 		return None

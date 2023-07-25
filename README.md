@@ -3,7 +3,7 @@ Code for identify dynamic environments and events from a time series
 (*t*SOAP, LENS...). 
 
 ## Input data
-A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz.
+A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt.
 
 ## Usage
 The working directory must contain:
