@@ -59,21 +59,23 @@ def read_data(filename):
 		with np.load(filename) as data:
 			lst = data.files  # Get the list of variable names saved in the '.npz' file.
 			M = np.array(data[lst[0]])  # Load the first variable (assumed to be the data) into a NumPy array.
-			# Step 3: Check if the data array has three dimensions.
-			if M.ndim == 3:
-				# If the data has three dimensions, stack it along the first axis to make it two-dimensional.
-				M = np.vstack(M)
-				# Transpose the data to have the desired shape (assumed to be (2048, num_samples)).
-				M = M.T
-			# Step 4: Check if the number of rows in the data array is not equal to 2048.
-			if M.shape[0] != 2048:
-				# If the number of rows is not 2048, transpose the data array to make it compatible.
-				M = M.T
+			##### ALL THE FOLLOWING HAS TO BE REMOVED, IT'S OLD STUFF #####
+			# # Step 3: Check if the data array has three dimensions.
+			# if M.ndim == 3:
+			# 	# If the data has three dimensions, stack it along the first axis to make it two-dimensional.
+			# 	M = np.vstack(M)
+			# 	# Transpose the data to have the desired shape (assumed to be (2048, num_samples)).
+			# 	M = M.T
+			# # Step 4: Check if the number of rows in the data array is not equal to 2048.
+			# if M.shape[0] != 2048:
+			# 	# If the number of rows is not 2048, transpose the data array to make it compatible.
+			# 	M = M.T
+			###############################################################
 			print('\tOriginal data shape:', M.shape)
 			return M
-	# Step 5: Check if the filename ends with '.npy', indicating a NumPy binary file.
+	# Step 3: Check if the filename ends with '.npy', indicating a NumPy binary file.
 	elif filename.endswith('.npy'):
-		# Step 6: Load the data from the '.npy' file directly into a NumPy array.
+		# Step 4: Load the data from the '.npy' file directly into a NumPy array.
 		M = np.load(filename)
 		print('\tOriginal data shape:', M.shape)
 		return M
