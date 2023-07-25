@@ -8,7 +8,7 @@ A one-dimensional timeseries, computed on *N* particles for *T* frames. The inpu
 ## Usage
 The working directory must contain:
 * A text file called `input_parameters.txt` , whose format is explained below;
-* A text file called `data_directory.txt` containing the path to the input data file(s).
+* A text file called `data_directory.txt` containing the path to the input data file.
 
 Examples of this two files are contained in this repository. 
 
