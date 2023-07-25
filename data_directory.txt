@@ -1,1 +1,1 @@
-${PATH_TO_DATA}/dataset.npz
+${PATH_TO_DATA}/dataset.npy
