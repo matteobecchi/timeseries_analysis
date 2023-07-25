@@ -5,9 +5,9 @@ import os
 from functions import *
 
 output_file = 'states_output.txt'
-# colormap = 'viridis'
-colormap = 'rainbow'
-show_plot = False
+colormap = 'viridis'
+# colormap = 'rainbow'
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -17,16 +17,18 @@ def all_the_input_stuff():
 	if type(data_directory) == str:
 		M_raw = read_data(data_directory)
 	else:
-		M0 = read_data(data_directory[0])
-		M1 = read_data(data_directory[1])
-		M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
+		print('\tERROR: data_directory.txt is missing or wrongly formatted. ')
+		# M0 = read_data(data_directory[0])
+		# M1 = read_data(data_directory[1])
+		# M_raw = np.array([ np.concatenate((M0[i], M1[i])) for i in range(len(M0)) ])
 
 	# Remove initial frames based on 'tau_delay'.
 	M_raw = M_raw[:, PAR[1]:]
 
 	# Apply filtering on the data
 	M = moving_average(M_raw, PAR[0])
-	# # Apply filtering if 'tau_window' > 3, otherwise, keep the raw data.
+	# Apply filtering if 'tau_window' > 3, otherwise, keep the raw data. 
+	# Savgol filer has problems. It creates values above and below the extrema of the original data. 
 	# if PAR[0] > 3:
 	# 	M = Savgol_filter(M_raw, PAR[0])
 	# else:
@@ -34,9 +36,9 @@ def all_the_input_stuff():
 	# 	print('\tWARNING: no data smoothing. ')
 
 	# Normalize the data to the range [0, 1].
-	SIG_MAX = np.max(M)
-	SIG_MIN = np.min(M)
-	M = (M - SIG_MIN)/(SIG_MAX - SIG_MIN)
+	sig_max = np.max(M)
+	sig_min = np.min(M)
+	M = (M - sig_min)/(sig_max - sig_min)
 
 	# Get the number of particles and total frames in the trajectory.
 	total_particles = M.shape[0]
