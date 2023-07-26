@@ -53,37 +53,24 @@ def read_input_parameters():
 
 def read_data(filename):
 	print('* Reading data...')
-	# Step 1: Check if the filename ends with '.npz', indicating a NumPy binary file.
-	if filename.endswith('.npz'):
-		# Step 2: Load the data from the '.npz' file using a context manager (to automatically close the file afterward).
-		with np.load(filename) as data:
-			lst = data.files  # Get the list of variable names saved in the '.npz' file.
-			M = np.array(data[lst[0]])  # Load the first variable (assumed to be the data) into a NumPy array.
-			##### ALL THE FOLLOWING HAS TO BE REMOVED, IT'S OLD STUFF #####
-			# # Step 3: Check if the data array has three dimensions.
-			# if M.ndim == 3:
-			# 	# If the data has three dimensions, stack it along the first axis to make it two-dimensional.
-			# 	M = np.vstack(M)
-			# 	# Transpose the data to have the desired shape (assumed to be (2048, num_samples)).
-			# 	M = M.T
-			# # Step 4: Check if the number of rows in the data array is not equal to 2048.
-			# if M.shape[0] != 2048:
-			# 	# If the number of rows is not 2048, transpose the data array to make it compatible.
-			# 	M = M.T
-			###############################################################
+	# Check if the filename ends with a supported format.
+	if filename.endswith(('.npz', '.npy', '.txt')):
+		try:
+			if filename.endswith('.npz'):
+				with np.load(filename) as data:
+					# Load the first variable (assumed to be the data) into a NumPy array.
+					data_name = data.files[0]
+					M = np.array(data[data_name])
+			elif filename.endswith('.npy'):
+				M = np.load(filename)
+			else: # .txt file
+				M = np.loadtxt(filename)
+			
 			print('\tOriginal data shape:', M.shape)
 			return M
-	# Step 3: Check if the filename ends with '.npy', indicating a NumPy binary file.
-	elif filename.endswith('.npy'):
-		# Step 4: Load the data from the '.npy' file directly into a NumPy array.
-		M = np.load(filename)
-		print('\tOriginal data shape:', M.shape)
-		return M
-	# If the file format is not supported, print an error message and return None.
-	elif filename.endswith('.txt'):
-		M = np.loadtxt(filename)
-		print('\tOriginal data shape:', M.shape)
-		return M
+		except Exception as e:
+			print(f'\tERROR: Failed to read data from {filename}. Reason: {e}')
+			return None
 	else:
 		print('\tERROR: unsupported format for input file.')
 		return None
@@ -106,24 +93,17 @@ def Savgol_filter(M, window):
 def moving_average(data, window):
 	# Step 1: Create a NumPy array 'weights' with the values 1.0 repeated 'window' times.
 	# Then, divide each element of 'weights' by the 'window' value to get the average weights.
-	weights = np.repeat(1.0, window) / window
+	weights = np.ones(window) / window
 
 	# Step 2: Apply the moving average filter to the 'data' array using the 'weights' array.
 	# The 'np.convolve' function performs a linear convolution between 'data' and 'weights'.
 	# The result is a smoothed version of the 'data', where each point represents the weighted average of its neighbors.
-	# Mode ‘valid’ returns output of length max(M, N) - min(M, N) + 1. 
-	# The convolution product is only given for points where the signals overlap completely. Values outside the signal boundary have no effect.
-	# If data.ndim == 2, return the smoothing on the rows
 	if data.ndim == 1:
 		return np.convolve(data, weights, mode='valid')
 	elif data.ndim == 2:
-		tmp = []
-		for x in data:
-			tmp.append(np.convolve(x, weights, mode='valid'))
-		return np.array(tmp)
+		return np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'), axis=1, arr=data)
 	else:
-		print('\tERROR: impossible to performe moving average on the argument.')
-		return []
+		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
 def normalize_array(x):
 	# Step 1: Calculate the mean value and the standard deviation of the input array 'x'.
@@ -159,42 +139,58 @@ def relabel_states(all_the_labels, list_of_states):
 	list_unique = np.unique(all_the_labels)
 
 	# Step 3: Relabel the states from 0 to n_states-1 based on their occurrence in 'all_the_labels'.
-	tmp1 = all_the_labels.copy()  # Create a copy of the 'all_the_labels' array to work with.
-	for i, l in enumerate(list_unique):
-		# Loop over each unique label 'l'.
-		for a in range(len(all_the_labels)):
-			for b in range(len(all_the_labels[a])):
-				if all_the_labels[a][b] == l:
-					tmp1[a][b] = i
+	# Create a dictionary to map unique labels to new indices.
+	label_to_index = {label: index for index, label in enumerate(list_unique)}
+	# Use vectorized indexing to relabel the states in 'all_the_labels'.
+	tmp1 = np.vectorize(label_to_index.get)(all_the_labels)
 
 	# Step 4: Order the states according to the mu values in the 'list1' array.
-	# Get the mu values from each state in 'list1' and store them in 'list_of_mu'.
-	list_of_mu = np.array([state[0][0] for state in list1])
-	# Create a copy of 'list_of_mu' to use for sorting while keeping the original 'list_of_mu' unchanged.
-	copy_of_list_of_mu = list_of_mu.copy()
-	# 'sorted_IDs' will store the sorted indices of 'list1' based on the mu values.
-	sorted_IDs = []
+	list1.sort(key=lambda state: state[0][0])
 
-	while len(copy_of_list_of_mu) > 0:
-		# Find the minimum mu value and its index in the 'copy_of_list_of_mu'.
-		min_mu = np.min(copy_of_list_of_mu)
-		ID_min = np.where(list_of_mu == min_mu)[0][0]
-		sorted_IDs.append(ID_min)
-		# Remove the minimum mu value from 'copy_of_list_of_mu'.
-		ID_min2 = np.where(copy_of_list_of_mu == min_mu)[0][0]
-		copy_of_list_of_mu = np.delete(copy_of_list_of_mu, ID_min2)
-
-	# Reorder the states in 'list1' and 'tmp1' based on 'sorted_IDs'.
-	list2 = [list1[ID] for ID in sorted_IDs]
+	# # Create 'tmp2' by relabeling the states based on the sorted order.
 	tmp2 = np.zeros_like(tmp1)
+	for old_label in list_unique:
+		tmp2[tmp1 == old_label] = label_to_index.get(old_label)
 
-	for i, l in enumerate(sorted_IDs):
-		for a in range(len(tmp1)):
-			for b in range(len(tmp1[a])):
-				if tmp1[a][b] == l:
-					tmp2[a][b] = i
+	### TO DELETE IF THERE ARE NO ISSUES ##############################################
+	# tmp1 = all_the_labels.copy()  # Create a copy of the 'all_the_labels' array to work with.
+	# for i, l in enumerate(list_unique):
+	# 	# Loop over each unique label 'l'.
+	# 	for a in range(len(all_the_labels)):
+	# 		for b in range(len(all_the_labels[a])):
+	# 			if all_the_labels[a][b] == l:
+	# 				tmp1[a][b] = i
 
-	return tmp2, list2
+	# # Get the mu values from each state in 'list1' and store them in 'list_of_mu'.
+	# list_of_mu = np.array([state[0][0] for state in list1])
+	# # Create a copy of 'list_of_mu' to use for sorting while keeping the original 'list_of_mu' unchanged.
+	# copy_of_list_of_mu = list_of_mu.copy()
+	# # 'sorted_IDs' will store the sorted indices of 'list1' based on the mu values.
+	# sorted_IDs = []
+
+	# while len(copy_of_list_of_mu) > 0:
+	# 	# Find the minimum mu value and its index in the 'copy_of_list_of_mu'.
+	# 	min_mu = np.min(copy_of_list_of_mu)
+	# 	ID_min = np.where(list_of_mu == min_mu)[0][0]
+	# 	sorted_IDs.append(ID_min)
+	# 	# Remove the minimum mu value from 'copy_of_list_of_mu'.
+	# 	ID_min2 = np.where(copy_of_list_of_mu == min_mu)[0][0]
+	# 	copy_of_list_of_mu = np.delete(copy_of_list_of_mu, ID_min2)
+
+	# # Reorder the states in 'list1' and 'tmp1' based on 'sorted_IDs'.
+	# list2 = [list1[ID] for ID in sorted_IDs]
+	# tmp2 = np.zeros_like(tmp1)
+
+	# for i, l in enumerate(sorted_IDs):
+	# 	for a in range(len(tmp1)):
+	# 		for b in range(len(tmp1[a])):
+	# 			if tmp1[a][b] == l:
+	# 				tmp2[a][b] = i
+
+	# return tmp2, list2
+	######################################################################################
+	
+	return tmp2, list1
 
 def set_final_states(list_of_states):
 	# Step 1: Define an arbitrary criterion to determine which states are considered "final."
@@ -348,4 +344,5 @@ def tmp_print_some_data(M, PAR, all_the_labels, filename):
 			for w in range(all_the_labels.shape[1]):
 				for t in range(tau_window):
 					print(M[i][w*tau_window + t], file=f)
+
 
