@@ -41,7 +41,7 @@ def read_input_parameters():
 	else:
 		print('\tinput_parameters.txt file wrongly formatted.')
 
-	print('Reading data from', data_dir)
+	print('* Reading data from', data_dir)
 
 	# Step 5: Check if the shape of 'data_dir' array is (2, ).
 	# If yes, return 'data_dir' as an array along with 'PAR'.
@@ -52,7 +52,6 @@ def read_input_parameters():
 		return str(data_dir), PAR
 
 def read_data(filename):
-	print('* Reading data...')
 	# Check if the filename ends with a supported format.
 	if filename.endswith(('.npz', '.npy', '.txt')):
 		try:
@@ -65,7 +64,6 @@ def read_data(filename):
 				M = np.load(filename)
 			else: # .txt file
 				M = np.loadtxt(filename)
-			
 			print('\tOriginal data shape:', M.shape)
 			return M
 		except Exception as e:
@@ -189,7 +187,7 @@ def relabel_states(all_the_labels, list_of_states):
 
 	# return tmp2, list2
 	######################################################################################
-	
+
 	return tmp2, list1
 
 def set_final_states(list_of_states):
@@ -215,14 +213,14 @@ def set_final_states(list_of_states):
 	for s in np.unique(tmp_list)[::-1]:
 		list_of_states.pop(s)
 
-	# Step 3: Create a new list 'final_list' to store the final threshold values and their types (0, 1, or 2).
+	# Step 3: Create a new list 'final_list' to store the final threshold values and their types (0, 1, 2 or 3).
 	final_list = []
 	final_list.append([0.0, 0])  # Initialize the list with the starting threshold.
 
 	mu = np.array([state[0][0] for state in list_of_states])
 	sigma = np.array([state[0][1] for state in list_of_states])
 	A = np.array([state[0][2] for state in list_of_states])
-	peak = A/sigma/np.sqrt(np.pi)
+	peak = A / sigma / np.sqrt(np.pi)
 
 	# Step 4: Calculate the final threshold values and their types based on the intercept between neighboring states.
 	for s in range(len(list_of_states) - 1):
@@ -249,12 +247,7 @@ def set_final_states(list_of_states):
 	final_list.append([1.0, 0])
 
 	# Remove the tresholds outside the interval [0, 1]
-	out_of_bounds = []
-	for n in range(len(final_list)):
-		if final_list[n][0] < 0.0 or final_list[n][0] > 1.0:
-			out_of_bounds.append(n)
-	for index in out_of_bounds[::-1]:
-		del final_list[index]
+	final_list = [entry for entry in final_list if 0.0 <= entry[0] <= 1.0]
 
 	# Step 5: Sort the thresholds and add missing states.
 	final_list = np.array(final_list)
@@ -310,16 +303,16 @@ def print_mol_labels1(all_the_labels, PAR, filename):
 			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
 			print(string, file=f)
 
-def print_mol_labels_fbf_gro(all_the_labels, filename):
+def print_mol_labels_fbf_gro(all_the_labels):
 	print('* Print color IDs for Ovito...')
-	with open(filename, 'w') as f:
+	with open('all_cluster_IDs_gro.dat', 'w') as f:
 		for labels in all_the_labels:
 			# Join the elements of 'labels' using a space as the separator and write to the file.
 			print(' '.join(map(str, labels)), file=f)
 
-def print_mol_labels_fbf_xyz(all_the_labels, filename):
+def print_mol_labels_fbf_xyz(all_the_labels):
 	print('* Print color IDs for Ovito...')
-	with open(filename, 'w') as f:
+	with open('all_cluster_IDs_xyz.dat', 'w') as f:
 		for t in range(all_the_labels.shape[1]):
 			# Print two lines containing '#' to separate time steps.
 			print('#', file=f)

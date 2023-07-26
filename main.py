@@ -1,7 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import sys
-import os
 from functions import *
 
 output_file = 'states_output.txt'
@@ -103,7 +99,7 @@ def plot_input_data(M, PAR, filename):
 
 	if show_plot:
 		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
 def gauss_fit_max(M, bins, filename):
@@ -400,7 +396,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 
 	if show_plot:
 		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
@@ -430,7 +426,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 
 	if show_plot:
 		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
 def plot_all_trajectory_with_histos(M, PAR, filename):
@@ -551,7 +547,7 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 
 	if show_plot:
 		fig.show()
-	fig.write_image(filename + '.png', scale=5.0)
+	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
 def transition_matrix(Delta, PAR, all_the_labels, filename):
 	t_conv = PAR[2]
@@ -602,7 +598,7 @@ def transition_matrix(Delta, PAR, all_the_labels, filename):
 
 	if show_plot:
 		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
 def tau_sigma(M, PAR, all_the_labels, filename):
@@ -738,11 +734,11 @@ def state_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	ax.set_xlabel(r'Duration $T$ [ns]')
 	ax.set_ylabel(r'Amplitude $A$')
 	ax.legend(*scatter.legend_elements())
-	fig.savefig(filename + '.png', dpi=600)
 
 	plt.show()
 	if show_plot:
 		plt.show()
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 
 def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Computing some statistics on the transitions...')
@@ -857,7 +853,7 @@ def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
 
 def main():
 	M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
-	plot_input_data(M, PAR, 'output_figures/Fig0')
+	plot_input_data(M, PAR, 'Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
 	if len(list_of_states) == 0:
@@ -866,18 +862,18 @@ def main():
 	list_of_states, final_list = set_final_states(list_of_states)
 	all_the_labels = assign_final_states_to_single_frames(M, final_list)
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'output_figures/Fig2')
-	# plot_all_trajectory_with_histos(M, PAR, 'output_figures/Fig2a')
-	plot_one_trajectory(M, PAR, all_the_labels, 'output_figures/Fig3')
+	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'Fig2')
+	# plot_all_trajectory_with_histos(M, PAR, 'Fig2a')
+	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
-	print_mol_labels_fbf_gro(all_the_labels, 'all_cluster_IDs_gro.dat')
-	print_mol_labels_fbf_xyz(all_the_labels, 'all_cluster_IDs_xyz.dat')
+	print_mol_labels_fbf_gro(all_the_labels)
+	print_mol_labels_fbf_xyz(all_the_labels)
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
-		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
-	transition_matrix(10, PAR, all_the_labels, 'output_figures/Fig4a')
+		sankey(all_the_labels, frame_list, 10, PAR[2], 'Fig4_' + str(i))
+	transition_matrix(PAR[0], PAR, all_the_labels, 'Fig4a')
 
-	state_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
+	state_statistics(M, PAR, all_the_labels, list_of_states, 'Fig5')
 
 if __name__ == "__main__":
 	main()
