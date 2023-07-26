@@ -6,8 +6,8 @@ from functions import *
 
 output_file = 'states_output.txt'
 # colormap = 'viridis'
-colormap = 'rainbow'
-show_plot = True
+colormap = 'copper'
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -56,33 +56,29 @@ def all_the_input_stuff():
 
 	### Create files for output
 	with open(output_file, 'w') as f:
-		print('# ' + str(PAR[0]) + ', ' + str(PAR[1]) + ', ' + str(PAR[2]), file=f)
+		f.write('# {0}, {1}, {2}'.format(*PAR))
 	figures_folder = 'output_figures'
 	if not os.path.exists(figures_folder):
 		os.makedirs(figures_folder)
 	for filename in os.listdir(figures_folder):
+		file_path = os.path.join(figures_folder, filename)
 		try:
-			file_path = os.path.join(figures_folder, filename)
-			if os.path.isfile(file_path) or os.path.islink(file_path):
-				os.unlink(file_path)
+			if os.path.isfile(file_path):
+				os.remove(file_path)
 			elif os.path.isdir(file_path):
 				shutil.rmtree(file_path)
 		except Exception as e:
-			print('Failed to delete %s. Reason: %s' % (file_path, e))
+			print(f'Failed to delete {file_path}. Reason: {e}')
 
 	# Return required data for further analysis.
 	return M, PAR, data_directory, all_the_labels, list_of_states
 
 def plot_input_data(M, PAR, filename):
-	tau_window = PAR[0]
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
+	tau_window, tau_delay, t_conv = PAR[0], PAR[1], PAR[2]
 
 	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
-	bins='auto'
-	if len(PAR) == 6:
-		bins = PAR[5]
+	bins = 'auto' if len(PAR) < 6 else PAR[5]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -96,13 +92,9 @@ def plot_input_data(M, PAR, filename):
 	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
 
 	# Plot the individual trajectories in the first subplot (left side)
-    # If there are more than 1000 frames, plot only every 10th frame for faster rendering
-	if M.shape[0]*M.shape[1] > 1000000:
-		for mol in M[::10]:
-			ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
-	else:
-		for mol in M:
-			ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
+	step = 10 if M.size > 1000000 else 1
+	for idx, mol in enumerate(M[::step]):
+		ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
 
 	# Set labels and titles for the plots
 	ax[0].set_ylabel('Normalized signal')
@@ -348,16 +340,12 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 
 def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
 	print('* Printing cumulative figure...')
-	tau_window = PAR[0]
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
-	bins='auto'
-	if len(PAR) == 6:
-		bins=PAR[5]
+	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[1], PAR[2], PAR[3]
 	n_states = len(list_of_states)
 
 	# Compute histogram of flattened M
 	flat_M = M.flatten()
+	bins = 'auto' if len(PAR) < 6 else PAR[5]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -379,35 +367,33 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
 
 	# Plot the individual trajectories on the left subplot (ax[0])
-	if M.shape[0]*M.shape[1] > 1000000:
-		for mol in M[::10]:
-			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-	else:
-		for mol in M:
-			ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
+	step = 10 if M.size > 1000000 else 1
+	for idx, mol in enumerate(M[::step]):
+		ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
 	# Plot the Gaussian distributions of states on the right subplot (ax[1])
 	for S in range(n_states):
 		ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
 
 	# Plot the horizontal lines and shaded regions to mark final_list thresholds
+	style_color_map = {
+		0: ('-', 'xkcd:black'),
+		1: ('--', 'xkcd:black'),
+		2: ('--', 'xkcd:blue'),
+		3: ('--', 'xkcd:red')
+	}
+
 	time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]), time[-1] + 0.05*(time[-1] - time[0]), 100)
 	for n, th in enumerate(final_list):
-		if th[1] == 0:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), color='xkcd:black')
-		elif th[1] == 1:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:black')
-		elif th[1] == 2:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:blue')
-		elif th[1] == 3:
-			ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle='--', color='xkcd:red')
+		linestyle, color = style_color_map.get(th[1], ('-', 'xkcd:black'))
+		ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle=linestyle, color=color)
 		if n < len(final_list) - 1:
 			ax[0].fill_between(time2, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
 
 	# Set plot titles and axis labels
 	fig.suptitle(data_directory)
 	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + PAR[3])
+	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[0].set_xlim([time2[0], time2[-1]])
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
@@ -418,16 +404,13 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	plt.close(fig)
 
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
-	tau_window = PAR[0]
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
-	example_ID = PAR[4]
+	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[1], PAR[2], PAR[3], PAR[4]
 
 	# Get the signal of the example particle
 	signal = M[example_ID]
 
 	# Create time values for the x-axis
-	times = np.arange(tau_delay, tau_delay + M.shape[1]) * t_conv
+	times = np.arange(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1]) * t_conv
 
 	# Create a figure and axes for the plot
 	fig, ax = plt.subplots()
@@ -442,7 +425,7 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 
 	# Add title and labels to the axes
 	fig.suptitle('Example particle: ID = ' + str(example_ID))
-	ax.set_xlabel('Time ' + PAR[3])
+	ax.set_xlabel('Time ' + t_units)
 	ax.set_ylabel('Normalized signal')
 
 	if show_plot:
@@ -598,7 +581,7 @@ def transition_matrix(Delta, PAR, all_the_labels, filename):
 	# Create a plot to visualize the transition probabilities.
 	fig, ax = plt.subplots(figsize=(10, 8))
 	# Display the transition probabilities as an image with a logarithmic color scale.
-	im = ax.imshow(N, cmap=colormap, norm=LogNorm(vmin=N[N > 0].min(), vmax=N.max()))
+	im = ax.imshow(N, cmap='plasma', norm=LogNorm(vmin=N[N > 0].min(), vmax=N.max()))
 	fig.colorbar(im, ax=ax, format='%.5f')
 
 	# Add text labels for each transition probability on the plot.
@@ -670,15 +653,16 @@ def tau_sigma(M, PAR, all_the_labels, filename):
 	if show_plot:
 		plt.show()
 
-def state_statistics(M, PAR, all_the_labels, filename):
+def state_statistics(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Computing some statistics on the enviroinments...')
-	tau_window = PAR[0]
-	t_conv = PAR[2]
+	tau_window, t_conv = PAR[0], PAR[2]
 
 	data = []
 	labels = []
 	# Iterate through the molecules in M
 	for i, x in enumerate(M):
+		mol_data = []
+		mol_labels = []
 		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
 		t0 = 0
 
@@ -691,13 +675,40 @@ def state_statistics(M, PAR, all_the_labels, filename):
 		# Iterate through the label changes and calculate statistics for each environment
 		for t in label_changes:
 			x_t = M[i][t0:t]  # Get the complete extent of the environment
-			data.append([x_t.size * t_conv, np.mean(x_t), np.std(x_t)])  # Store statistics for the environment
-			labels.append(int(current_label))  # Store the label for the environment
+			mol_data.append([x_t.size * t_conv, np.mean(x_t)])  # Store statistics for the environment
+			mol_labels.append(int(current_label))  # Store the label for the environment
 
 			if t < len(M[i]):
 				current_label = all_the_labels[i][t]  # Update the current label
 
 			t0 = t
+
+		### Here I want to remove the transitions which are too small (Chi2 distribution treshold) ###
+		tmp_j_to_del = []
+		for j in range(len(mol_data) - 1):
+			Delta = mol_data[j + 1][1] - mol_data[j][1]
+			sigma1 = list_of_states[mol_labels[j]][0][1]
+			sigma2 = list_of_states[mol_labels[j + 1]][0][1]
+			Chi2 = (Delta)**2/(sigma1**2 + sigma2**2)
+			if Chi2 < 1.5:
+				if mol_data[j][0] <= mol_data[j + 1][0]:
+					tmp_j_to_del.append(j)
+				else:
+					tmp_j_to_del.append(j + 1)
+		tmp_j_to_del.append(len(mol_data) - 1)
+
+		for j in tmp_j_to_del[::-1]:
+			if len(mol_data) > j:
+				mol_data.pop(j)
+				mol_labels.pop(j)
+
+		if len(data) == 0:
+			data = mol_data
+			labels = mol_labels
+		elif len(mol_data) > 0:
+			data = np.concatenate((data, mol_data))
+			labels = np.concatenate((labels, mol_labels))
+
 	data = np.array(data)
 
 	# Characterization of the states
@@ -705,8 +716,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	for s in np.unique(labels):
 		ID_s = np.where(labels == s)[0]
 		state_data = data[ID_s]
-		state_points.append([np.mean(state_data[:, 0]), np.mean(state_data[:, 1]), np.mean(state_data[:, 2]),
-			np.std(state_data[:, 0]), np.std(state_data[:, 1]), np.std(state_data[:, 2])])
+		state_points.append([np.mean(state_data[:, 0]), np.mean(state_data[:, 1]), np.std(state_data[:, 0]), np.std(state_data[:, 1])])
 	state_points_tr = np.array(state_points).T
 
 	# Append environment statistics to the output file
@@ -720,7 +730,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	scatter = ax.scatter(data[:, 0], data[:, 1], c=labels, s=1.0, cmap=colormap)
 
 	# Add error bars representing standard deviations of T and A
-	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[3], yerr=state_points_tr[4],
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3],
 		marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
 
 	# Set plot titles and labels
@@ -730,6 +740,7 @@ def state_statistics(M, PAR, all_the_labels, filename):
 	ax.legend(*scatter.legend_elements())
 	fig.savefig(filename + '.png', dpi=600)
 
+	plt.show()
 	if show_plot:
 		plt.show()
 
@@ -866,7 +877,7 @@ def main():
 		sankey(all_the_labels, frame_list, 10, PAR[2], 'output_figures/Fig4_' + str(i))
 	transition_matrix(10, PAR, all_the_labels, 'output_figures/Fig4a')
 
-	state_statistics(M, PAR, all_the_labels, 'output_figures/Fig5')
+	state_statistics(M, PAR, all_the_labels, list_of_states, 'output_figures/Fig5')
 
 if __name__ == "__main__":
 	main()
