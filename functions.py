@@ -103,6 +103,25 @@ def moving_average(data, window):
 	else:
 		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
+def moving_average_2D(data, L):
+	if L%2 == 0:
+		print('\tL must be an odd number.')
+		return
+	l = int((L - 1)/2)
+	tmp = np.empty(data.shape)
+	for i in range(data.shape[0]):
+		for j in range(data.shape[1]):
+			i0 = np.max([i - l, 0])
+			i1 = np.min([i + l + 1, data.shape[0]])
+			j0 = np.max([j - l, 0])
+			j1 = np.min([j + l + 1, data.shape[1]])
+			square = data[i0:i1,j0:j1]
+			if square.size > 0:
+				tmp[i][j] = np.sum(square)/square.size
+			else:
+				tmp[i][j] = 0.0
+	return np.array(tmp)
+
 def normalize_array(x):
 	# Step 1: Calculate the mean value and the standard deviation of the input array 'x'.
 	mean = np.mean(x)
@@ -128,6 +147,73 @@ def Gaussian(x, m, sigma, A):
 	# "A" is the Gaussian area
 	return np.exp(-((x - m)/sigma)**2)*A/(np.sqrt(np.pi)*sigma)
 
+def Gaussian_2D(r, mx, my, sigmax, sigmay, A):
+	# "m" is the Gaussians' mean value (2d array)
+	# "sigma" is the Gaussians' standard deviation matrix
+	# "A" is the Gaussian area
+	r[0] -= mx
+	r[1] -= my
+	arg = (r[0]/sigmax)**2 + (r[1]/sigmay)**2
+	norm = np.pi*sigmax*sigmay
+	gauss = np.exp(-arg)*A/norm
+	return gauss.ravel()
+
+def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, A):
+	# "m" is the Gaussians' mean value (2d array)
+	# "sigma" is the Gaussians' standard deviation matrix
+	# "A" is the Gaussian area
+	r[0] -= mx
+	r[1] -= my
+	arg = (r[0]/sigmax)**2 + (r[1]/sigmay)**2 + 2*r[0]*r[1]/sigmaxy**2
+	norm = np.pi*sigmax*sigmay/np.sqrt(1 - (sigmax*sigmay/sigmaxy**2)**2)
+	gauss = np.exp(-arg)*A/norm
+	return gauss.ravel()
+
+def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
+		flag = 1
+		goodness = 11
+		Xedges = xedges[minima[0]:minima[1]]
+		Yedges = yedges[minima[2]:minima[3]]
+		Counts = counts[minima[0]:minima[1],minima[2]:minima[3]]
+		mux0 = xedges[max_ind[0]]
+		muy0 = yedges[max_ind[1]]
+		sigmax0 = (xedges[minima[1]] - xedges[minima[0]])/3
+		sigmay0 = (yedges[minima[3]] - yedges[minima[2]])/3
+		A0 = counts[max_ind[0]][max_ind[1]]
+		x, y = np.meshgrid(Xedges, Yedges)
+		try:
+			popt, pcov = scipy.optimize.curve_fit(Gaussian_2D, (x, y), Counts.ravel(),
+				p0=[mux0, muy0, sigmax0, sigmay0, A0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, np.inf, np.inf, np.inf]))
+			if popt[4] < A0/2:
+				goodness -= 1
+			if popt[0] < Xedges[0] or popt[0] > Xedges[-1]:
+				goodness -= 1
+			if popt[1] < Yedges[0] or popt[1] > Yedges[-1]:
+				goodness -= 1
+			if popt[2] > Xedges[-1] - Xedges[0]:
+				goodness -= 1
+			if popt[3] > Yedges[-1] - Yedges[0]:
+				goodness -= 1
+			perr = np.sqrt(np.diag(pcov))
+			for j in range(len(perr)):
+				if perr[j]/popt[j] > 0.5:
+					goodness -= 1
+			if minima[1] - minima[0] <= gap or minima[3] - minima[2] <= gap:
+				goodness -= 1
+		except RuntimeError:
+			print('\tFit: Runtime error. ')
+			flag = 0
+			popt = []
+		except TypeError:
+			print('\tFit: TypeError.')
+			flag = 0
+			popt = []
+		except ValueError:
+			print('\tFit: ValueError.')
+			flag = 0
+			popt = []
+		return flag, goodness, popt
+
 def relabel_states(all_the_labels, list_of_states):
 	# Step 1: Remove empty states from the 'list_of_states' and keep only non-empty states.
 	# A non-empty state is one where the third element (index 2) is not equal to 0.0.
@@ -149,44 +235,6 @@ def relabel_states(all_the_labels, list_of_states):
 	tmp2 = np.zeros_like(tmp1)
 	for old_label in list_unique:
 		tmp2[tmp1 == old_label] = label_to_index.get(old_label)
-
-	### TO DELETE IF THERE ARE NO ISSUES ##############################################
-	# tmp1 = all_the_labels.copy()  # Create a copy of the 'all_the_labels' array to work with.
-	# for i, l in enumerate(list_unique):
-	# 	# Loop over each unique label 'l'.
-	# 	for a in range(len(all_the_labels)):
-	# 		for b in range(len(all_the_labels[a])):
-	# 			if all_the_labels[a][b] == l:
-	# 				tmp1[a][b] = i
-
-	# # Get the mu values from each state in 'list1' and store them in 'list_of_mu'.
-	# list_of_mu = np.array([state[0][0] for state in list1])
-	# # Create a copy of 'list_of_mu' to use for sorting while keeping the original 'list_of_mu' unchanged.
-	# copy_of_list_of_mu = list_of_mu.copy()
-	# # 'sorted_IDs' will store the sorted indices of 'list1' based on the mu values.
-	# sorted_IDs = []
-
-	# while len(copy_of_list_of_mu) > 0:
-	# 	# Find the minimum mu value and its index in the 'copy_of_list_of_mu'.
-	# 	min_mu = np.min(copy_of_list_of_mu)
-	# 	ID_min = np.where(list_of_mu == min_mu)[0][0]
-	# 	sorted_IDs.append(ID_min)
-	# 	# Remove the minimum mu value from 'copy_of_list_of_mu'.
-	# 	ID_min2 = np.where(copy_of_list_of_mu == min_mu)[0][0]
-	# 	copy_of_list_of_mu = np.delete(copy_of_list_of_mu, ID_min2)
-
-	# # Reorder the states in 'list1' and 'tmp1' based on 'sorted_IDs'.
-	# list2 = [list1[ID] for ID in sorted_IDs]
-	# tmp2 = np.zeros_like(tmp1)
-
-	# for i, l in enumerate(sorted_IDs):
-	# 	for a in range(len(tmp1)):
-	# 		for b in range(len(tmp1[a])):
-	# 			if tmp1[a][b] == l:
-	# 				tmp2[a][b] = i
-
-	# return tmp2, list2
-	######################################################################################
 
 	return tmp2, list1
 
@@ -255,13 +303,14 @@ def set_final_states(list_of_states):
 	tmp_list_of_states = []
 
 	for n in range(len(final_list) - 1):
-		flag = 0
+		possible_states = []
 		for state in list_of_states:
 			if state[0][0] > final_list[n][0] and state[0][0] < final_list[n + 1][0]:
-				tmp_list_of_states.append(state)
-				flag = 1
-				break
-		if flag == 0:
+				possible_states.append(state)
+		if len(possible_states) > 0:
+			biggest_state = max(possible_states, key = lambda element: element[0][2])
+			tmp_list_of_states.append(biggest_state)
+		else:
 			new_mu = (final_list[n][0] + final_list[n + 1][0])/2
 			new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
 			new_A = 1.0
@@ -279,6 +328,42 @@ def set_final_states(list_of_states):
 
 	# Step 7: Return the 'list_of_states' and 'final_list' as the output of the function.
 	return list_of_states, final_list
+
+def relabel_states_2D(all_the_labels, list_of_states):
+	### Step 1: sort according to the relevance, and remove possible empty states
+	sorted_indices = [index for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
+	sorted_states = sorted(list_of_states, key=lambda x: x[2], reverse=True)
+
+	# Step 2: relabel all the labels according to the new ordering
+	mapping = {label + 1: new_label for new_label, label in enumerate(sorted_indices)}
+	sorted_all_the_labels = np.vectorize(lambda x: mapping[x])(all_the_labels)
+
+	# Step 3: join states which are strongly overlapping
+	states_to_join = []
+	for i, s0 in enumerate(sorted_states):
+		for j, s1 in enumerate(sorted_states[i + 1:]):
+			C0, a0, b0 = s0[1][0], s0[0][2], s0[0][3]
+			C1, a1, b1 = s1[1][0], s1[0][2], s1[0][3]
+			C0_rescaled = (C0 - C1) / np.array(a1, b1)
+			C1_rescaled = (C1 - C0) / np.array(a0, b0)
+
+			if np.sum(C0_rescaled**2) <= 1.0 or np.sum(C1_rescaled**2) <= 1.0:
+				if s0[2] >= s1[2]:
+					states_to_join.append([j + i + 1, i])
+				else:
+					states_to_join.append([i, j + i + 1])
+
+	for S in range(np.unique(sorted_all_the_labels).size - 1, 0, -1):
+		for p in states_to_join:
+			if p[0] == S:
+				for i in range(sorted_all_the_labels.shape[0]):
+					for j in range(sorted_all_the_labels.shape[1]):
+						if sorted_all_the_labels[i][j] == S:
+							sorted_all_the_labels[i][j] = p[1]
+				break
+
+	final_states = [ state for n, state in enumerate(sorted_states) if np.any(np.unique(sorted_all_the_labels) == n) ]
+	return sorted_all_the_labels, final_states
 
 def assign_final_states_to_single_frames(M, final_list):
 	print('* Assigning labels to the single frames...')
@@ -317,6 +402,16 @@ def print_mol_labels_fbf_xyz(all_the_labels):
 			# Print two lines containing '#' to separate time steps.
 			print('#', file=f)
 			print('#', file=f)
+			# Use np.savetxt to write the labels for each time step efficiently.
+			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
+
+def print_mol_labels_fbf_lam(all_the_labels):
+	print('* Print color IDs for Ovito...')
+	with open('all_cluster_IDs_xyz.dat', 'w') as f:
+		for t in range(all_the_labels.shape[1]):
+			# Print nine lines containing '#' to separate time steps.
+			for k in range(9):
+				print('#', file=f)
 			# Use np.savetxt to write the labels for each time step efficiently.
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
