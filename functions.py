@@ -330,40 +330,43 @@ def set_final_states(list_of_states):
 	return list_of_states, final_list
 
 def relabel_states_2D(all_the_labels, list_of_states):
+	# print(np.unique(all_the_labels), len(list_of_states))
 	### Step 1: sort according to the relevance, and remove possible empty states
-	sorted_indices = [index for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
+	sorted_indices = [index+1 for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
 	sorted_states = sorted(list_of_states, key=lambda x: x[2], reverse=True)
 
 	# Step 2: relabel all the labels according to the new ordering
-	mapping = {label + 1: new_label for new_label, label in enumerate(sorted_indices)}
-	sorted_all_the_labels = np.vectorize(lambda x: mapping[x])(all_the_labels)
+	sorted_all_the_labels = np.empty(all_the_labels.shape)
+	for a, mol in enumerate(all_the_labels):
+		for b, mol_t in enumerate(mol):
+			for i0 in range(len(sorted_indices)):
+				if mol_t == sorted_indices[i0]:
+					sorted_all_the_labels[a][b] = i0 + 1
+					break
+				else:
+					sorted_all_the_labels[a][b] = 0
 
-	# Step 3: join states which are strongly overlapping
-	states_to_join = []
+	# Step 3: join strongly overlapping states
+	couples_to_join = []
 	for i, s0 in enumerate(sorted_states):
 		for j, s1 in enumerate(sorted_states[i + 1:]):
-			C0, a0, b0 = s0[1][0], s0[0][2], s0[0][3]
-			C1, a1, b1 = s1[1][0], s1[0][2], s1[0][3]
-			C0_rescaled = (C0 - C1) / np.array(a1, b1)
-			C1_rescaled = (C1 - C0) / np.array(a0, b0)
-
-			if np.sum(C0_rescaled**2) <= 1.0 or np.sum(C1_rescaled**2) <= 1.0:
-				if s0[2] >= s1[2]:
-					states_to_join.append([j + i + 1, i])
+			C0 = s0[1][0]
+			C1 = s1[1][0]
+			diff = np.abs(np.subtract(C1, C0))
+			if (diff[0] < np.max([s0[0][2], s1[0][2]]) and diff[1] < np.max([s0[0][3], s1[0][3]])):
+				if s0[2] > s1[2]:
+					couples_to_join.append([i, j + i + 1])
 				else:
-					states_to_join.append([i, j + i + 1])
+					couples_to_join.append([j + i + 1, i])
 
-	for S in range(np.unique(sorted_all_the_labels).size - 1, 0, -1):
-		for p in states_to_join:
-			if p[0] == S:
-				for i in range(sorted_all_the_labels.shape[0]):
-					for j in range(sorted_all_the_labels.shape[1]):
-						if sorted_all_the_labels[i][j] == S:
-							sorted_all_the_labels[i][j] = p[1]
-				break
+	for couple in couples_to_join:
+		for a in sorted_all_the_labels:
+			for b in a:
+				if b == couple[1] + 1:
+					b = couple[0] + 1
+	del sorted_states[couple[1]]
 
-	final_states = [ state for n, state in enumerate(sorted_states) if np.any(np.unique(sorted_all_the_labels) == n) ]
-	return sorted_all_the_labels, final_states
+	return sorted_all_the_labels, sorted_states
 
 def assign_final_states_to_single_frames(M, final_list):
 	print('* Assigning labels to the single frames...')
@@ -433,4 +436,81 @@ def tmp_print_some_data(M, PAR, all_the_labels, filename):
 				for t in range(tau_window):
 					print(M[i][w*tau_window + t], file=f)
 
+def letter_subplots(axes=None, letters=None, xoffset=-0.1, yoffset=1.0, **kwargs):
+    """Add letters to the corners of subplots (panels). By default each axis is
+    given an uppercase bold letter label placed in the upper-left corner.
+    Args
+        axes : list of pyplot ax objects. default plt.gcf().axes.
+        letters : list of strings to use as labels, default ["A", "B", "C", ...]
+        xoffset, yoffset : positions of each label relative to plot frame
+          (default -0.1,1.0 = upper left margin). Can also be a list of
+          offsets, in which case it should be the same length as the number of
+          axes.
+        Other keyword arguments will be passed to annotate() when panel letters
+        are added.
+    Returns:
+        list of strings for each label added to the axes
+    Examples:
+        Defaults:
+            >>> fig, axes = plt.subplots(1,3)
+            >>> letter_subplots() # boldfaced A, B, C
+        
+        Common labeling schemes inferred from the first letter:
+            >>> fig, axes = plt.subplots(1,4)        
+            >>> letter_subplots(letters='(a)') # panels labeled (a), (b), (c), (d)
+        Fully custom lettering:
+            >>> fig, axes = plt.subplots(2,1)
+            >>> letter_subplots(axes, letters=['(a.1)', '(b.2)'], fontweight='normal')
+        Per-axis offsets:
+            >>> fig, axes = plt.subplots(1,2)
+            >>> letter_subplots(axes, xoffset=[-0.1, -0.15])
+            
+        Matrix of axes:
+            >>> fig, axes = plt.subplots(2,2, sharex=True, sharey=True)
+            >>> letter_subplots(fig.axes) # fig.axes is a list when axes is a 2x2 matrix
+    """
 
+    # get axes:
+    if axes is None:
+        axes = plt.gcf().axes
+    # handle single axes:
+    try:
+        iter(axes)
+    except TypeError:
+        axes = [axes]
+
+    # set up letter defaults (and corresponding fontweight):
+    fontweight = "bold"
+    ulets = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'[:len(axes)])
+    llets = list('abcdefghijklmnopqrstuvwxyz'[:len(axes)])
+    if letters is None or letters == "A":
+        letters = ulets
+    elif letters == "(a)":
+        letters = [ "({})".format(lett) for lett in llets ]
+        fontweight = "normal"
+    elif letters == "(A)":
+        letters = [ "({})".format(lett) for lett in ulets ]
+        fontweight = "normal"
+    elif letters in ("lower", "lowercase", "a"):
+        letters = llets
+
+    # make sure there are x and y offsets for each ax in axes:
+    if isinstance(xoffset, (int, float)):
+        xoffset = [xoffset]*len(axes)
+    else:
+        assert len(xoffset) == len(axes)
+    if isinstance(yoffset, (int, float)):
+        yoffset = [yoffset]*len(axes)
+    else:
+        assert len(yoffset) == len(axes)
+
+    # defaults for annotate (kwargs is second so it can overwrite these defaults):
+    my_defaults = dict(fontweight=fontweight, fontsize='large', ha="center",
+                       va='center', xycoords='axes fraction', annotation_clip=False)
+    kwargs = dict( list(my_defaults.items()) + list(kwargs.items()))
+
+    list_txts = []
+    for ax,lbl,xoff,yoff in zip(axes,letters,xoffset,yoffset):
+        t = ax.annotate(lbl, xy=(xoff,yoff), **kwargs)
+        list_txts.append(t)
+    return list_txts
