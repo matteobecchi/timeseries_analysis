@@ -305,6 +305,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
 		if c <= 0.0 or M2.size == 0:
+			list_of_states.pop()
 			break
 		else:
 			M1 = M2
@@ -315,7 +316,7 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[1], PAR[2], PAR[3]
-	n_states = np.unique(all_the_labels).size
+	n_states = len(list_of_states) + 1
 
 	# Create a color palette for plotting states
 	palette = []
@@ -334,12 +335,14 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	for i, mol in enumerate(M[::step]):
 		colors = np.repeat(all_the_labels[i], tau_window)
 		ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
-			cmap=colormap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
+			cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
 
 	# Plot the Gaussian distributions of states on the right subplot (ax[1])
-	for S in list_of_states:
-		circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color='r', fill=False)
+	for S_id, S in enumerate(list_of_states):
+		circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color='red', fill=False)
+		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color='red', fill=False, linestyle='--')
+		# circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color=palette[S_id + 1], fill=False)
+		# circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color=palette[S_id + 1], fill=False, linestyle='--')
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
 
@@ -355,473 +358,47 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def plot_one_trajectory(M, PAR, all_the_labels, filename):
-	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[1], PAR[2], PAR[3], PAR[4]
+def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
+	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[1], PAR[2], PAR[3]
+	fig, ax = plt.subplots(1, 2, figsize=(9, 5))
 
-	# Get the signal of the example particle
-	signal = M[example_ID]
+	step = 10 if M.size > 1000000 else 1
+	time = np.linspace(tau_delay*t_conv, (tau_delay + M.shape[1])*t_conv, M.shape[1])
+	for idx, mol in enumerate(M[::step]):
+		ax[0].plot(time, mol[:,0], lw=0.1, color='blue')
+		ax[0].plot(time, mol[:,1], lw=0.1, color='orange')
+	ax[0].set_xlabel(r'Simulation time $t$')
+	ax[0].set_ylabel(r'Signals')
 
-	# Create time values for the x-axis
-	times = np.arange(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1]) * t_conv
-
-	# Create a figure and axes for the plot
-	fig, ax = plt.subplots()
-
-	# Create a colormap to map colors to the labels of the example particle
-	cmap = plt.get_cmap(colormap, np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
-	color = all_the_labels[example_ID]
-	ax.plot(times, signal, c='black', lw=0.1)
-
-	# Plot the signal as a line and scatter plot with colors based on the labels
-	ax.scatter(times, signal, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
-
-	# Add title and labels to the axes
-	fig.suptitle('Example particle: ID = ' + str(example_ID))
-	ax.set_xlabel('Time ' + t_units)
-	ax.set_ylabel('Normalized signal')
-
-	if show_plot:
-		plt.show()
-	fig.savefig('output_figures/' + filename + '.png', dpi=600)
-	plt.close(fig)
-
-def plot_all_trajectory_with_histos(M, PAR, filename):
-	tau_window = PAR[0]
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
-
-	fig = plt.figure()
-	ax0 = plt.subplot(2, 4, 1)
-	ax1 = plt.subplot(2, 4, 2)
-	ax2 = plt.subplot(2, 4, 3)
-	ax3 = plt.subplot(2, 4, 4)
-	ax4 = plt.subplot(2, 1, 2)
-	axes = [ax0, ax1, ax2, ax3, ax4]
-
-	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
-	time = np.linspace(t_lim[0], t_lim[1], M.shape[1])
-
-	if M.shape[1] > 1000:
-		for mol in M[::10]:
-			ax4.plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-	else:
-		for mol in M:
-			ax4.plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-
-	block_t = int(M.shape[1]/4)
-	for i in range(4):
-		part_signal = M[:, :(i + 1)*block_t].flatten()
-		counts, bins = np.histogram(part_signal, bins='auto', density=True)
-		axes[i].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
-		if i > 0:
-			axes[i].set_yticklabels([])
-
-	fig.suptitle('Example particle: ID = ' + str(PAR[4]))
-	ax4.set_xlabel('Time ' + PAR[3])
-	ax4.set_ylabel('Normalized signal')
-	ax4.set_xlim(t_lim)
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
-	plt.close(fig)
-
-def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
-	print('* Computing and plotting the averaged Sankey diagrams...')
-
-	# Check if the required frame range is within the bounds of the input data.
-	if frame_list[-1] + aver_window > all_the_labels.shape[1]:
-		print('\tERROR: the required frame range is out of bound.')
-		return
-
-	# Determine the number of unique states in the data.
-	n_states = np.unique(all_the_labels).size
-
-	# Create arrays to store the source, target, and value data for the Sankey diagram.
-	source = np.empty((frame_list.size - 1) * n_states**2)
-	target = np.empty((frame_list.size - 1) * n_states**2)
-	value = np.empty((frame_list.size - 1) * n_states**2)
-
-	# Initialize a counter variable.
-	c = 0
-
-	# Create temporary lists to store node labels for the Sankey diagram.
-	tmp_label1 = []
-	tmp_label2 = []
-
-	# Loop through the frame_list and calculate the transition matrix for each time window.
-	for i, t0 in enumerate(frame_list[:-1]):
-		# Calculate the time jump for the current time window.
-		t_jump = frame_list[i + 1] - frame_list[i]
-
-		# Initialize a matrix to store the transition counts between states.
-		T = np.zeros((n_states, n_states))
-	    
-		# Iterate through the current time window and increment the transition counts in T.
-		for t in range(t0, t0 + aver_window):
-			for L in all_the_labels:
-				T[int(L[t])][int(L[t + t_jump])] += 1
-
-		# Store the source, target, and value for the Sankey diagram based on T.
-		for n1 in range(len(T)):
-			for n2 in range(len(T[n1])):
-				source[c] = n1 + i * n_states
-				target[c] = n2 + (i + 1) * n_states
-				value[c] = T[n1][n2]
-				c += 1
-
-		# Calculate the starting and ending fractions for each state and store node labels.
-		for n in range(n_states):
-			starting_fraction = np.sum(T[n]) / np.sum(T)
-			ending_fraction = np.sum(T.T[n]) / np.sum(T)
-			if i == 0:
-				tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction * 100) + '%')
-			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction * 100) + '%')
-
-	# Concatenate the temporary labels to create the final node labels.
-	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
-
-	# Generate a color palette for the Sankey diagram.
-	palette = []
+	n_states = len(list_of_states) + 1
 	cmap = cm.get_cmap(colormap, n_states)
-	for i in range(cmap.N):
-		rgba = cmap(i)
-		palette.append(matplotlib.colors.rgb2hex(rgba))
+	step = 10 if M.size > 1000000 else 1
+	max_T = all_the_labels.shape[1]*tau_window
+	for i, mol in enumerate(M[::step]):
+		ax[1].plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
+	for i, mol in enumerate(M[::step]):
+		colors = np.repeat(all_the_labels[i], tau_window)
+		ax[1].scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
+			cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
 
-	# Tile the color palette to match the number of frames.
-	color = np.tile(palette, frame_list.size)
+	# Plot the Gaussian distributions of states on the right subplot (ax[1])
+	for S_id, S in enumerate(list_of_states):
+		circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color='red', fill=False)
+		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color='red', fill=False, linestyle='--')
+		ax[1].add_patch(circle1)
+		ax[1].add_patch(circle2)
 
-	# Create dictionaries to define the Sankey diagram nodes and links.
-	node = dict(label=label, pad=30, thickness=20, color=color)
-	link = dict(source=source, target=target, value=value)
+	# Set plot titles and axis labels
+	ax[1].set_xlabel('Signal 1')
+	ax[1].set_ylabel('Signal 2')
+	ax[1].set_xlim([0.0, 1.0])
+	ax[1].set_ylim([0.0, 1.0])
 
-	# Create the Sankey diagram using Plotly.
-	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
-	fig = go.Figure(Data)
-
-	# Add the title with the time information.
-	fig.update_layout(title='Frames: ' + str(frame_list * t_conv) + ' ns')
-
-	if show_plot:
-		fig.show()
-	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
-
-def transition_matrix(Delta, PAR, all_the_labels, filename):
-	t_conv = PAR[2]
-	print('* Computing transition matrix...')
-	# Get the number of unique states in the all_the_labels array.
-	n_states = np.unique(all_the_labels).size
-	# Initialize an empty matrix 'T' to store the transition counts.
-	T = np.zeros((n_states, n_states))
-
-	# Loop over each molecule trajectory in all_the_labels.
-	for mol in all_the_labels:
-		# Loop through the time steps of the trajectory.
-		for t in range(mol.size - Delta):
-			# Get the current state 'id0' and the state after 'Delta' steps 'id1'.
-			id0 = int(mol[t])
-			id1 = int(mol[t + Delta])
-			# Increment the corresponding transition count in the matrix 'T'.
-			T[id0][id1] += 1.0
-
-	# Normalize the transition matrix 'T' to obtain transition probabilities 'N'.
-	N = T / T.sum(axis=1, keepdims=True)
-
-	# P, D = linalg.eig(N)
-	# print(D)
-	# print(-Delta*t_conv/np.log(P))
-
-	# Create a plot to visualize the transition probabilities.
-	fig, ax = plt.subplots(figsize=(10, 8))
-	# Display the transition probabilities as an image with a logarithmic color scale.
-	im = ax.imshow(N, cmap='plasma', norm=LogNorm(vmin=N[N > 0].min(), vmax=N.max()))
-	fig.colorbar(im, ax=ax, format='%.5f')
-
-	# Add text labels for each transition probability on the plot.
-	for (i, j), val in np.ndenumerate(N):
-		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
-
-	# Set titles and axis labels for the plot.
-	fig.suptitle(r'Transition probabilities, $\Delta t=$' + str(Delta*t_conv) + ' ' + PAR[3])
-	ax.set_xlabel('To...')
-	ax.set_ylabel('From...')
-	ax.xaxis.tick_top()
-	ax.xaxis.set_label_position('top')
-	ax.set_xticks(np.arange(n_states))
-	ax.set_yticks(np.arange(n_states))
-	ax.set_xticklabels(range(n_states))
-	ax.set_yticklabels(range(n_states))
+	letter_subplots(ax)
 	plt.tight_layout()
-
 	if show_plot:
 		plt.show()
-	fig.savefig('output_figures/' + filename + '.png', dpi=600)
-	plt.close(fig)
-
-def tau_sigma(M, PAR, all_the_labels, filename):
-	tau_window = PAR[0]
-	T = M.shape[1]
-	number_of_windows = int(T/tau_window)
-	data = []
-	labels = []
-	wc = 0
-	for i, x in enumerate(M):
-		current_label = all_the_labels[i][0]
-		x_w = x[0:tau_window]
-		for w in range(1, number_of_windows):
-			 if all_the_labels[i][w] == current_label:
-			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
-			 else:
-			 	### Lag-1 autocorrelation for colored noise
-				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n Gaussian white noise
-			 	x_smean = x_w - np.mean(x_w)
-			 	alpha = 0.0
-			 	var = 1.0
-			 	try:
-			 		alpha, var, _ = wavelet.ar1(x_smean)
-			 		data.append([alpha, np.sqrt(var)])
-			 		labels.append(current_label)
-			 	except Warning:
-			 		wc += 1
-			 	x_w = x[tau_window*w:tau_window*(w + 1)]
-			 	current_label = all_the_labels[i][w]
-
-	print('\t-- ' + str(wc) + ' warnings generated --')
-	data = np.array(data).T
-	tau_c = 1/(1 - data[0])
-
-	figa, axa = plt.subplots(figsize=(7.5, 4.8))
-	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
-	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
-	axa.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
-	figa.savefig(filename + 'a.png', dpi=600)
-
-	figb, axb = plt.subplots(figsize=(7.5, 4.8))
-	axb.scatter(tau_c, data[1], c=labels, s=1.0)
-	axb.set_xlabel(r'Correlation time $\tau_c$ [ps]')
-	axb.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
-	# axb.legend()
-	figb.savefig(filename + 'b.png', dpi=600)
-	
-	if show_plot:
-		plt.show()
-
-def state_statistics(M, PAR, all_the_labels, list_of_states, filename):
-	print('* Computing some statistics on the enviroinments...')
-	tau_window, t_conv, t_units = PAR[0], PAR[2], PAR[3]
-
-	data = []
-	labels = []
-	# Iterate through the molecules in M
-	for i, x in enumerate(M):
-		mol_data = []
-		mol_data_full = []
-		mol_labels = []
-		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
-		t0 = 0
-
-		# Find the indices where the labels change
-		label_changes = np.where(all_the_labels[i][1:] != all_the_labels[i][:-1])[0] + 1
-
-		# Add the index of the last frame to label_changes
-		label_changes = np.append(label_changes, len(all_the_labels[i]))
-
-		# Iterate through the label changes and calculate statistics for each environment
-		for t in label_changes:
-			x_t = M[i][t0:t]  # Get the complete extent of the environment
-			mol_data.append([x_t.size * t_conv, np.mean(x_t)])  # Store statistics for the environment
-			mol_data_full.append(x_t)
-			mol_labels.append(int(current_label))  # Store the label for the environment
-
-			if t < len(M[i]):
-				current_label = all_the_labels[i][t]  # Update the current label
-
-			t0 = t
-
-		### Here I want to remove the transitions which are too small (Chi2 distribution treshold) ###
-		tmp_j_to_del = []
-		for j in range(len(mol_data) - 1):
-			Delta = mol_data[j + 1][1] - mol_data[j][1]
-			sigma1 = list_of_states[mol_labels[j]][0][1]
-			sigma2 = list_of_states[mol_labels[j + 1]][0][1]
-			Chi2 = Delta**2/(sigma1**2 + sigma2**2)
-			if Chi2 < 1.5:
-				if mol_data[j][0] <= mol_data[j + 1][0]:
-					tmp_j_to_del.append(j)
-				else:
-					tmp_j_to_del.append(j + 1)
-		tmp_j_to_del.append(len(mol_data) - 1)
-
-		mol_data = [mol_data[j] for j in range(len(mol_data)) if j not in tmp_j_to_del]
-		mol_labels = [mol_labels[j] for j in range(len(mol_labels)) if j not in tmp_j_to_del]
-
-		if len(data) == 0:
-			data = mol_data
-			labels = mol_labels
-		elif len(mol_data) > 0:
-			data = np.concatenate((data, mol_data))
-			labels = np.concatenate((labels, mol_labels))
-
-	data = np.array(data)
-
-	# Characterization of the states
-	state_points = []
-	for s in np.unique(labels):
-		ID_s = np.where(labels == s)[0]
-		state_data = data[ID_s]
-		state_points.append([np.mean(state_data[:, 0]), np.mean(state_data[:, 1]), np.std(state_data[:, 0]), np.std(state_data[:, 1])])
-	state_points_tr = np.array(state_points).T
-
-	# Append environment statistics to the output file
-	with open(output_file, 'a') as f:
-		print('\nEnviroinments\n', file=f)
-		for E in state_points:
-			print(E, file=f)
-
-	# Create a scatter plot of the data points
-	fig, ax = plt.subplots()
-
-	scatter = ax.scatter(data[:, 0], data[:, 1], c=labels, s=1.0, cmap=colormap)
-	# Add error bars representing standard deviations of T and A
-	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3],
-		marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
-
-	# Set plot titles and labels
-	fig.suptitle('Statistics of the dynamic enviroinments')
-	ax.set_xlabel(r'Duration $T$ ' + t_units)
-	ax.set_ylabel(r'Amplitude $A$')
-	ax.legend(*scatter.legend_elements())
-
-	if show_plot:
-		plt.show()
-	fig.savefig('output_figures/' + filename + '.png', dpi=600)
-
-def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
-	print('* Computing some statistics on the transitions...')
-	tau_window, t_conv, t_units = PAR[0], PAR[2], PAR[3]
-
-	data = []
-	labels = []
-	for i, x in enumerate(M):
-		mol_data = []
-		mol_labels = []
-		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
-		t0 = 0
-
-		# Find the indices where the labels change
-		label_changes = np.where(all_the_labels[i][1:] != all_the_labels[i][:-1])[0] + 1
-
-		# Add the index of the last frame to label_changes
-		label_changes = np.append(label_changes, len(all_the_labels[i]))
-
-		# Iterate through the label changes and calculate statistics for each environment
-		for t in label_changes:
-			x_t = M[i][t0:t]  # Get the complete extent of the environment
-			mol_data.append(x_t)  # Store the environment
-			mol_labels.append(int(current_label))  # Store the label for the environment
-
-			if t < len(M[i]):
-				current_label = all_the_labels[i][t]  # Update the current label
-
-			t0 = t
-
-		data.append(mol_data)
-		labels.append(mol_labels)
-
-	n_states = np.unique(all_the_labels).size
-
-	### Create dictionary
-	dictionary_21 = np.empty((n_states, n_states))
-	dictionary_12 = []
-	c = 0
-	for i in range(n_states):
-		for j in range(n_states):
-			if i != j:
-				dictionary_21[i][j] = c
-				c += 1
-				dictionary_12.append(str(i) + '-->' + str(j))
-
-	T = np.zeros((n_states, n_states))
-
-	transition_data = []
-	transition_labels = []
-	for i in range(len(data)):
-		for t in range(len(data[i]) - 1):
-			state0 = labels[i][t]
-			state1 = labels[i][t + 1]
-			mu0 = list_of_states[state0][0][0]
-			mu1 = list_of_states[state1][0][0]
-			sigma0 = list_of_states[state0][0][1]
-			sigma1 = list_of_states[state1][0][1]
-			Chi2 = (np.mean(data[i][t]) - np.mean(data[i][t + 1]))**2 / (sigma0**2 + sigma1**2)
-			if Chi2 > 1.0:
-				T[state0][state1] += 1
-				transition_data.append([data[i][t].size*t_conv, np.mean(data[i][t + 1]) - np.mean(data[i][t])])
-				transition_labels.append(dictionary_21[state0][state1])
-
-	# print(T)
-
-	transition_data_tr = np.array(transition_data).T
-	transition_labels = np.array(transition_labels)
-
-	state_points = []
-	for i in range(n_states):
-		for j in range(n_states):
-			s = dictionary_21[i][j]
-			ID_s = np.where(transition_labels == s)[0]
-			if ID_s.size == 0:
-				continue
-			T = np.mean(transition_data_tr[0][ID_s])
-			sigma_T = np.std(transition_data_tr[0][ID_s])
-			A = np.mean(transition_data_tr[1][ID_s])
-			sigma_A = np.std(transition_data_tr[1][ID_s])
-			color = dictionary_21[i][j]
-			if i > j:
-				color = dictionary_21[j][i]
-			state_points.append([T, A, sigma_T, sigma_A, color])
-	state_points_tr = np.array(state_points).T
-
-	with open(output_file, 'a') as f:
-		print('\nTransitions\n', file=f)
-		for E in state_points:
-			print(E, file=f)
-
-	fig, ax = plt.subplots()
-	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma', alpha=0.5)
-	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
-	ax.scatter(state_points_tr[0], state_points_tr[1], marker='s', s=30.0, c=state_points_tr[4], cmap='plasma')
-	fig.suptitle('Transitions statistics')
-	ax.set_xlabel(r'Waiting time $\Delta t$ ' + t_units)
-	ax.set_ylabel(r'Transition amplitude $\Delta A$')
-	handles, _ = scatter.legend_elements()
-	tmp = []
-	for fl in np.unique(transition_labels):
-		tmp.append(dictionary_12[int(fl)])
-	tmp = np.array(tmp)
-	ax.legend(handles, tmp)
-	# ax.set_xscale('log')
-	fig.savefig('output_figures/' + filename + '.png', dpi=600)
-
-	# fig1, ax1 = plt.subplots()
-	# fig2, ax2 = plt.subplots()
-	# for tr in [0.0, 2.0, 3.0, 5.0]:
-	# 	tmp_data = transition_data_tr[0][transition_labels == tr]
-	# 	counts, bins, _ = ax1.hist(tmp_data, bins='doane', density=True, histtype='step', label=dictionary_12[int(tr)])
-	# 	counts, bins, _ = ax2.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=dictionary_12[int(tr)])
-
-	# ax1.set_xlabel(r'Waiting time $\Delta t$ [ns]')
-	# ax1.set_ylabel(r'Probability density function PDF$(\Delta t)$')
-	# ax1.set_yscale('log')
-	# ax1.legend(loc='upper right')
-	# fig1.savefig(filename + 'a.png', dpi=600)
-
-	# ax2.set_xlabel(r'Waiting time $\Delta t$ [ns]')
-	# ax2.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
-	# ax2.set_xscale('log')
-	# ax2.legend(loc='lower right')
-	# fig2.savefig(filename + 'b.png', dpi=600)
-
-	if show_plot:
-		plt.show()
+	fig.savefig('Fig3.png', dpi=600)
 
 def main():
 	M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
@@ -833,18 +410,7 @@ def main():
 		return
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
-	# # plot_all_trajectory_with_histos(M, PAR, 'Fig2a')
-	# plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
-
-	# print_mol_labels_fbf_gro(all_the_labels)
-	# print_mol_labels_fbf_lam(all_the_labels)
-
-	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
-	# 	sankey(all_the_labels, frame_list, 10, PAR[2], 'Fig4_' + str(i))
-	# transition_matrix(PAR[0], PAR, all_the_labels, 'Fig4a')
-
-	# state_statistics(M, PAR, all_the_labels, list_of_states, 'Fig5')
-	# transition_statistics(M, PAR, all_the_labels, list_of_states, 'Fig5a')
+	plot_paper_figure(M, PAR, all_the_labels, list_of_states)
 
 if __name__ == "__main__":
 	main()
