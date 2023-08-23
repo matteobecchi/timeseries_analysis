@@ -156,7 +156,7 @@ def gauss_fit_max(M, bins, filename):
 	flag_min, goodness_min, popt_min = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
 	popt_min[4] *= flat_M.T[0].size
 
-	### 6. Find the inrterval of half height ###
+	### 6. Find the interval of half height ###
 	### Along x
 	half_idx0 = np.max([max_ind[0] - gap, 0])
 	half_idx1 = np.min([max_ind[0] + gap, counts.shape[0] - 1])

@@ -346,27 +346,41 @@ def relabel_states_2D(all_the_labels, list_of_states):
 				else:
 					sorted_all_the_labels[a][b] = 0
 
-	# Step 3: join strongly overlapping states
-	couples_to_join = []
+	# Step 3: merge strongly overlapping states
+	merge_pairs = []
 	for i, s0 in enumerate(sorted_states):
 		for j, s1 in enumerate(sorted_states[i + 1:]):
 			C0 = s0[1][0]
 			C1 = s1[1][0]
 			diff = np.abs(np.subtract(C1, C0))
 			if (diff[0] < np.max([s0[0][2], s1[0][2]]) and diff[1] < np.max([s0[0][3], s1[0][3]])):
-				if s0[2] > s1[2]:
-					couples_to_join.append([i, j + i + 1])
-				else:
-					couples_to_join.append([j + i + 1, i])
+				merge_pairs.append([i + 1, j + i + 2])
 
-	for couple in couples_to_join:
-		for a in sorted_all_the_labels:
-			for b in a:
-				if b == couple[1] + 1:
-					b = couple[0] + 1
-	del sorted_states[couple[1]]
+	state_mapping = {i: i for i in range(len(sorted_states) + 1)}
+	for s0, s1 in merge_pairs:
+		state_mapping[s1] = s0
+	updated_labels = np.empty(sorted_all_the_labels.shape)
+	for a, mol in enumerate(sorted_all_the_labels):
+		for b, label in enumerate(mol):
+			updated_labels[a][b] = state_mapping[label]
+	states_to_remove = set(s1 for s0, s1 in merge_pairs)
+	updated_states = [sorted_states[s] for s in range(len(sorted_states)) if s + 1 not in states_to_remove]
 
-	return sorted_all_the_labels, sorted_states
+	# Step 4: remove gaps in the labeling
+	current_labels = np.unique(updated_labels)
+	for i, mol in enumerate(updated_labels):
+		for t, l in enumerate(mol):
+			for m in range(len(current_labels)):
+				if l == current_labels[m]:
+					updated_labels[i][t] = m
+
+	# Step 5: print informations on the final states
+	with open('final_states.txt', 'w') as f:
+		print('#[Cx, Cy] a b', file=f)
+		for s in updated_states:
+			print('[' + str(s[0][0]) + ', ' +  str(s[0][1]) + ']', s[0][2], s[0][3], file=f)
+
+	return updated_labels, updated_states
 
 def assign_final_states_to_single_frames(M, final_list):
 	print('* Assigning labels to the single frames...')
