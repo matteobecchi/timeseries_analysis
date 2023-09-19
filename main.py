@@ -1,8 +1,8 @@
 from functions import *
 
 output_file = 'states_output.txt'
-# colormap = 'viridis'
-colormap = 'copper'
+colormap = 'viridis'
+# colormap = 'copper'
 show_plot = True
 
 def all_the_input_stuff():
