@@ -332,7 +332,7 @@ def set_final_states(list_of_states):
 def relabel_states_2D(all_the_labels, list_of_states):
 	# print(np.unique(all_the_labels), len(list_of_states))
 	### Step 1: sort according to the relevance, and remove possible empty states
-	sorted_indices = [index+1 for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
+	sorted_indices = [index + 1 for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
 	sorted_states = sorted(list_of_states, key=lambda x: x[2], reverse=True)
 
 	# Step 2: relabel all the labels according to the new ordering
@@ -392,6 +392,22 @@ def assign_final_states_to_single_frames(M, final_list):
 	all_the_labels = np.argmax(mask, axis=2)
 	# In case a value in M is outside the threshold range, the last label will be selected (len(final_list) - 1).
 	all_the_labels[~mask.any(axis=2)] = len(final_list) - 1
+	return all_the_labels
+
+def assign_final_states_to_single_frames_2D(M, final_list):
+	print('* Assigning labels to the single frames...')
+	# Create an array with the centers of the final states
+	centers = np.array([ state[1][0] for state in final_list ])
+	# For every point, compute the distance from all the centers
+	# D = np.array((M.shape[0], M.shape[1], len(centers)))
+	# for i, mol in enumerate(M):
+	# 	for t, mol_t in enumerate(mol):
+	# 		for j, c in enumerate(centers):
+	# 			D[i][t][j] = (mol_t[0] - c[0])**2 + (mol_t[1] - c[1])**2
+	M_expanded = M[:, :, np.newaxis, :]
+	centers_expanded = centers[np.newaxis, np.newaxis, :, :]
+	D = np.sum((M_expanded - centers_expanded) ** 2, axis=3)
+	all_the_labels = np.argmin(D, axis=2)
 	return all_the_labels
 
 def print_mol_labels1(all_the_labels, PAR, filename):

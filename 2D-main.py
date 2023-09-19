@@ -3,7 +3,7 @@ from functions import *
 output_file = 'states_output.txt'
 colormap = 'viridis'
 # colormap = 'copper'
-show_plot = False
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -327,17 +327,26 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 
 	fig, ax = plt.subplots(figsize=(6, 6))
 
-	# Plot the individual trajectories on the left subplot (ax[0])
+	# Plot the individual trajectories --- if labels are for windows
+	# step = 10 if M.size > 1000000 else 1
+	# max_T = all_the_labels.shape[1]*tau_window
+	# for i, mol in enumerate(M[::step]):
+	# 	ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
+	# for i, mol in enumerate(M[::step]):
+	# 	colors = np.repeat(all_the_labels[i], tau_window)
+	# 	ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
+	# 		cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
+
+	# Plot the individual trajectories --- if labels are for individual points
 	step = 10 if M.size > 1000000 else 1
-	max_T = all_the_labels.shape[1]*tau_window
+	max_T = all_the_labels.shape[1]
 	for i, mol in enumerate(M[::step]):
 		ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
 	for i, mol in enumerate(M[::step]):
-		colors = np.repeat(all_the_labels[i], tau_window)
-		ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
+		ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=all_the_labels[i],
 			cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
 
-	# Plot the Gaussian distributions of states on the right subplot (ax[1])
+	# Plot the Gaussian distributions of states
 	for S_id, S in enumerate(list_of_states):
 		circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color='red', fill=False)
 		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color='red', fill=False, linestyle='--')
@@ -352,7 +361,6 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	ax.set_xlim([0.0, 1.0])
 	ax.set_ylim([0.0, 1.0])
 
-	plt.show()
 	if show_plot:
 		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
@@ -364,21 +372,40 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
 
 	step = 10 if M.size > 1000000 else 1
 	time = np.linspace(tau_delay*t_conv, (tau_delay + M.shape[1])*t_conv, M.shape[1])
+	t_start = 100
+	t_stop = t_start + 100
 	for idx, mol in enumerate(M[::step]):
-		ax[0].plot(time, mol[:,0], lw=0.1, color='blue')
-		ax[0].plot(time, mol[:,1], lw=0.1, color='orange')
+		if idx > 0: continue	### For clarity, I'm showing only the signals related to the particle 0
+		ax[0].plot(time[t_start:t_stop], mol[:,0][t_start:t_stop], lw=1, color='blue')
+		ax[0].plot(time[t_start:t_stop], mol[:,1][t_start:t_stop], lw=1, color='orange')
+	alpha = 0.2
+	ax[0].axvspan(100, 117, alpha=alpha, facecolor='green')
+	ax[0].axvspan(125, 140, alpha=alpha, facecolor='red')
+	ax[0].axvspan(150, 165, alpha=alpha, facecolor='red')
+	ax[0].axvspan(170, 200, alpha=alpha, facecolor='green')
+	ax[0].set_ylim([0.0, 1.0])
 	ax[0].set_xlabel(r'Simulation time $t$')
 	ax[0].set_ylabel(r'Signals')
 
 	n_states = len(list_of_states) + 1
 	cmap = cm.get_cmap(colormap, n_states)
 	step = 10 if M.size > 1000000 else 1
-	max_T = all_the_labels.shape[1]*tau_window
+
+	### If labels are for the windows
+	# max_T = all_the_labels.shape[1]*tau_window
+	# for i, mol in enumerate(M[::step]):
+	# 	ax[1].plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
+	# for i, mol in enumerate(M[::step]):
+	# 	colors = np.repeat(all_the_labels[i], tau_window)
+	# 	ax[1].scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
+	# 		cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
+
+	### If labels are for the single points
+	max_T = all_the_labels.shape[1]
 	for i, mol in enumerate(M[::step]):
 		ax[1].plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
 	for i, mol in enumerate(M[::step]):
-		colors = np.repeat(all_the_labels[i], tau_window)
-		ax[1].scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
+		ax[1].scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=all_the_labels[i],
 			cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
 
 	# Plot the Gaussian distributions of states on the right subplot (ax[1])
@@ -396,8 +423,7 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
 
 	letter_subplots(ax)
 	plt.tight_layout()
-	if show_plot:
-		plt.show()
+	plt.show()
 	fig.savefig('Fig3.png', dpi=600)
 
 def main():
@@ -405,6 +431,8 @@ def main():
 	plot_input_data(M, PAR, 'Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
+	all_the_labels = assign_final_states_to_single_frames_2D(M, list_of_states)
+	
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
