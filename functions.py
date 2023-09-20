@@ -397,16 +397,14 @@ def assign_final_states_to_single_frames(M, final_list):
 def assign_final_states_to_single_frames_2D(M, final_list):
 	print('* Assigning labels to the single frames...')
 	# Create an array with the centers of the final states
-	centers = np.array([ state[1][0] for state in final_list ])
+	ell_centers = np.array([ state[1][0] for state in final_list ])
+	ell_axes = np.array([ [state[1][1], state[1][2]] for state in final_list ])
 	# For every point, compute the distance from all the centers
-	# D = np.array((M.shape[0], M.shape[1], len(centers)))
-	# for i, mol in enumerate(M):
-	# 	for t, mol_t in enumerate(mol):
-	# 		for j, c in enumerate(centers):
-	# 			D[i][t][j] = (mol_t[0] - c[0])**2 + (mol_t[1] - c[1])**2
 	M_expanded = M[:, :, np.newaxis, :]
-	centers_expanded = centers[np.newaxis, np.newaxis, :, :]
-	D = np.sum((M_expanded - centers_expanded) ** 2, axis=3)
+	centers_expanded = ell_centers[np.newaxis, np.newaxis, :, :]
+	axes_expanded = ell_axes[np.newaxis, np.newaxis, :, :]
+	D = np.sum(((M_expanded - centers_expanded)/axes_expanded) ** 2, axis=3)
+	# Find the center closest to each point. That will be its cluster. 
 	all_the_labels = np.argmin(D, axis=2)
 	return all_the_labels
 
