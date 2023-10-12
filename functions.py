@@ -141,6 +141,9 @@ def plot_histo(ax, counts, bins):
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
+def sigmoidal(x, A, alpha):
+	return 1 + (2*A - 2)/(1 + np.exp(x*alpha))
+
 def Gaussian(x, m, sigma, A):
 	# "m" is the Gaussians' mean value
 	# "sigma" is the Gaussians' standard deviation
