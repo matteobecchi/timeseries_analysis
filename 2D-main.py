@@ -3,7 +3,7 @@ from functions import *
 output_file = 'states_output.txt'
 colormap = 'viridis'
 # colormap = 'copper'
-show_plot = True
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -372,17 +372,17 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
 
 	step = 10 if M.size > 1000000 else 1
 	time = np.linspace(tau_delay*t_conv, (tau_delay + M.shape[1])*t_conv, M.shape[1])
-	t_start = 100
-	t_stop = t_start + 100
+	t_start = 0
+	t_stop = t_start + 1500
 	for idx, mol in enumerate(M[::step]):
 		if idx > 0: continue	### For clarity, I'm showing only the signals related to the particle 0
 		ax[0].plot(time[t_start:t_stop], mol[:,0][t_start:t_stop], lw=1, color='blue')
 		ax[0].plot(time[t_start:t_stop], mol[:,1][t_start:t_stop], lw=1, color='orange')
 	alpha = 0.2
-	ax[0].axvspan(100, 117, alpha=alpha, facecolor='green')
-	ax[0].axvspan(125, 140, alpha=alpha, facecolor='red')
-	ax[0].axvspan(150, 165, alpha=alpha, facecolor='red')
-	ax[0].axvspan(170, 200, alpha=alpha, facecolor='green')
+	ax[0].axvspan(0, 250, alpha=alpha, facecolor='green')
+	ax[0].axvspan(500, 750, alpha=alpha, facecolor='red')
+	ax[0].axvspan(1300, 1450, alpha=alpha, facecolor='red')
+	ax[0].axvspan(350, 400, alpha=alpha, facecolor='green')
 	ax[0].set_ylim([0.0, 1.0])
 	ax[0].set_xlabel(r'Simulation time $t$')
 	ax[0].set_ylabel(r'Signals')

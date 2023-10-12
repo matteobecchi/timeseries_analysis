@@ -238,8 +238,9 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp2, list1
 
-def set_final_states(list_of_states):
-	# Step 1: Define an arbitrary criterion to determine which states are considered "final."
+def set_final_states(list_of_states, all_the_labels):
+	old_to_new_map = []
+	# Step 1: Define a criterion to determine which states are considered "final."
 	# Iterate over pairs of states to compare their properties (mu, sigma, and amplitude).
 
 	mu = np.array([state[0][0] for state in list_of_states])
@@ -253,13 +254,28 @@ def set_final_states(list_of_states):
 			# Check whether the criteria for considering a state as "final" is met.
 			if peak[s0] > peak[s1] and mu[s1] - mu[s0] < sigma[s0]:
 				tmp_list.append(s1)
+				old_to_new_map.append([s1, s0])
 			elif peak[s0] < peak[s1] and mu[s1] - mu[s0] < sigma[s1]:
 				tmp_list.append(s0)
+				old_to_new_map.append([s0, s1])
 
 	# Step 2: Remove states that don't meet the "final" criterion from the 'list_of_states'.
 	# Note: The loop iterates in reverse to avoid index errors when removing elements.
 	for s in np.unique(tmp_list)[::-1]:
 		list_of_states.pop(s)
+	
+	list_of_states = sorted(list_of_states, key=lambda x: x[0][0])
+
+	# Relabel accorind to the new states
+	for i in range(len(all_the_labels)):
+		for w in range(len(all_the_labels[i])):
+			for j in range(len(old_to_new_map[::-1])):
+				if all_the_labels[i][w] == old_to_new_map[j][0] + 1:
+					all_the_labels[i][w] = old_to_new_map[j][1] + 1
+
+	list_unique = np.unique(all_the_labels)
+	label_to_index = {label: index for index, label in enumerate(list_unique)}
+	new_labels = np.vectorize(label_to_index.get)(all_the_labels)
 
 	# Step 3: Create a new list 'final_list' to store the final threshold values and their types (0, 1, 2 or 3).
 	final_list = []
@@ -274,7 +290,7 @@ def set_final_states(list_of_states):
 	for s in range(len(list_of_states) - 1):
 		a = sigma[s + 1]**2 - sigma[s]**2
 		b = -2*(mu[s]*sigma[s + 1]**2 - mu[s + 1]*sigma[s]**2)
-		c = (mu[s]*sigma[s + 1])**2 - (mu[s + 1]*sigma[s])**2 - (sigma[s]*sigma[s + 1])**2*np.log(A[s]*sigma[s + 1]/A[s + 1]/sigma[s])
+		c = (mu[s]*sigma[s + 1])**2 - (mu[s + 1]*sigma[s])**2 - ((sigma[s]*sigma[s + 1])**2)*np.log(A[s]*sigma[s + 1]/A[s + 1]/sigma[s])
 		Delta = b**2 - 4*a*c
 		# Determine the type of the threshold (0, 1, 2 or 3). 
 		if Delta >= 0:
@@ -284,12 +300,8 @@ def set_final_states(list_of_states):
 			intercept_minus = Gaussian(th_minus, mu[s], sigma[s], A[s])
 			if intercept_plus >= intercept_minus:
 				final_list.append([th_plus, 1])
-				if Gaussian(th_minus, mu[s], sigma[s], A[s]) > 0.01*np.max(peak):
-					final_list.append([th_minus, 2])
 			else:
 				final_list.append([th_minus, 1])
-				if Gaussian(th_plus, mu[s], sigma[s], A[s]) > 0.01*np.max(peak):
-					final_list.append([th_plus, 2])
 		else:
 			final_list.append([(mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1]), 3])
 	final_list.append([1.0, 0])
@@ -300,22 +312,6 @@ def set_final_states(list_of_states):
 	# Step 5: Sort the thresholds and add missing states.
 	final_list = np.array(final_list)
 	final_list = sorted(final_list, key=lambda x: x[0])
-	tmp_list_of_states = []
-
-	for n in range(len(final_list) - 1):
-		possible_states = []
-		for state in list_of_states:
-			if state[0][0] > final_list[n][0] and state[0][0] < final_list[n + 1][0]:
-				possible_states.append(state)
-		if len(possible_states) > 0:
-			biggest_state = max(possible_states, key = lambda element: element[0][2])
-			tmp_list_of_states.append(biggest_state)
-		else:
-			new_mu = (final_list[n][0] + final_list[n + 1][0])/2
-			new_sigma = (final_list[n + 1][0] - final_list[n][0])/2
-			new_A = 1.0
-			tmp_list_of_states.append([[new_mu, new_sigma, new_A], [final_list[n][0], final_list[n + 1][0]], 1.0])
-	list_of_states = tmp_list_of_states
 
 	# Step 6: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
@@ -327,7 +323,7 @@ def set_final_states(list_of_states):
 			print(th[0], file=f)
 
 	# Step 7: Return the 'list_of_states' and 'final_list' as the output of the function.
-	return list_of_states, final_list
+	return list_of_states, final_list, new_labels
 
 def relabel_states_2D(all_the_labels, list_of_states):
 	# print(np.unique(all_the_labels), len(list_of_states))
@@ -382,6 +378,11 @@ def relabel_states_2D(all_the_labels, list_of_states):
 
 	return updated_labels, updated_states
 
+def assign_single_frames(all_the_labels, tau_window):
+	print('* Assigning labels to the single frames...')
+	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
+	return new_labels
+
 def assign_final_states_to_single_frames(M, final_list):
 	print('* Assigning labels to the single frames...')
 	# Create an array of threshold values for comparison (shape: (1, len(final_list))).
@@ -397,15 +398,18 @@ def assign_final_states_to_single_frames(M, final_list):
 def assign_final_states_to_single_frames_2D(M, final_list):
 	print('* Assigning labels to the single frames...')
 	# Create an array with the centers of the final states
-	ell_centers = np.array([ state[1][0] for state in final_list ])
-	ell_axes = np.array([ [state[1][1], state[1][2]] for state in final_list ])
+	centers = np.array([ state[1][0] for state in final_list ])
+	axes = np.array([ [state[1][1], state[1][2]] for state in final_list ])
+
 	# For every point, compute the distance from all the centers
 	M_expanded = M[:, :, np.newaxis, :]
-	centers_expanded = ell_centers[np.newaxis, np.newaxis, :, :]
-	axes_expanded = ell_axes[np.newaxis, np.newaxis, :, :]
+	centers_expanded = centers[np.newaxis, np.newaxis, :, :]
+	axes_expanded = axes[np.newaxis, np.newaxis, :, :]
 	D = np.sum(((M_expanded - centers_expanded)/axes_expanded) ** 2, axis=3)
-	# Find the center closest to each point. That will be its cluster. 
+
+	# Find the center closest to each point. That will be its label. 
 	all_the_labels = np.argmin(D, axis=2)
+	
 	return all_the_labels
 
 def print_mol_labels1(all_the_labels, PAR, filename):
@@ -463,82 +467,3 @@ def tmp_print_some_data(M, PAR, all_the_labels, filename):
 			for w in range(all_the_labels.shape[1]):
 				for t in range(tau_window):
 					print(M[i][w*tau_window + t], file=f)
-
-def letter_subplots(axes=None, letters=None, xoffset=-0.1, yoffset=1.0, **kwargs):
-    """Add letters to the corners of subplots (panels). By default each axis is
-    given an uppercase bold letter label placed in the upper-left corner.
-    Args
-        axes : list of pyplot ax objects. default plt.gcf().axes.
-        letters : list of strings to use as labels, default ["A", "B", "C", ...]
-        xoffset, yoffset : positions of each label relative to plot frame
-          (default -0.1,1.0 = upper left margin). Can also be a list of
-          offsets, in which case it should be the same length as the number of
-          axes.
-        Other keyword arguments will be passed to annotate() when panel letters
-        are added.
-    Returns:
-        list of strings for each label added to the axes
-    Examples:
-        Defaults:
-            >>> fig, axes = plt.subplots(1,3)
-            >>> letter_subplots() # boldfaced A, B, C
-        
-        Common labeling schemes inferred from the first letter:
-            >>> fig, axes = plt.subplots(1,4)        
-            >>> letter_subplots(letters='(a)') # panels labeled (a), (b), (c), (d)
-        Fully custom lettering:
-            >>> fig, axes = plt.subplots(2,1)
-            >>> letter_subplots(axes, letters=['(a.1)', '(b.2)'], fontweight='normal')
-        Per-axis offsets:
-            >>> fig, axes = plt.subplots(1,2)
-            >>> letter_subplots(axes, xoffset=[-0.1, -0.15])
-            
-        Matrix of axes:
-            >>> fig, axes = plt.subplots(2,2, sharex=True, sharey=True)
-            >>> letter_subplots(fig.axes) # fig.axes is a list when axes is a 2x2 matrix
-    """
-
-    # get axes:
-    if axes is None:
-        axes = plt.gcf().axes
-    # handle single axes:
-    try:
-        iter(axes)
-    except TypeError:
-        axes = [axes]
-
-    # set up letter defaults (and corresponding fontweight):
-    fontweight = "bold"
-    ulets = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'[:len(axes)])
-    llets = list('abcdefghijklmnopqrstuvwxyz'[:len(axes)])
-    if letters is None or letters == "A":
-        letters = ulets
-    elif letters == "(a)":
-        letters = [ "({})".format(lett) for lett in llets ]
-        fontweight = "normal"
-    elif letters == "(A)":
-        letters = [ "({})".format(lett) for lett in ulets ]
-        fontweight = "normal"
-    elif letters in ("lower", "lowercase", "a"):
-        letters = llets
-
-    # make sure there are x and y offsets for each ax in axes:
-    if isinstance(xoffset, (int, float)):
-        xoffset = [xoffset]*len(axes)
-    else:
-        assert len(xoffset) == len(axes)
-    if isinstance(yoffset, (int, float)):
-        yoffset = [yoffset]*len(axes)
-    else:
-        assert len(yoffset) == len(axes)
-
-    # defaults for annotate (kwargs is second so it can overwrite these defaults):
-    my_defaults = dict(fontweight=fontweight, fontsize='large', ha="center",
-                       va='center', xycoords='axes fraction', annotation_clip=False)
-    kwargs = dict( list(my_defaults.items()) + list(kwargs.items()))
-
-    list_txts = []
-    for ax,lbl,xoff,yoff in zip(axes,letters,xoffset,yoffset):
-        t = ax.annotate(lbl, xy=(xoff,yoff), **kwargs)
-        list_txts.append(t)
-    return list_txts
