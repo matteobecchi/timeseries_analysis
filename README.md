@@ -1,6 +1,5 @@
 # timeseries_analysis
-Code for identify dynamic environments and events from a time series 
-(*t*SOAP, LENS...). 
+Code for unsupervised clustering of time-correlated data. 
 
 ## Input data
 A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt.
