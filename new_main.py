@@ -330,7 +330,8 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 		else:
 			M1 = M2
 
-	return relabel_states(all_the_labels, list_of_states), one_last_state
+	atl, lis = relabel_states(all_the_labels, list_of_states)
+	return atl, lis, one_last_state
 
 def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
 	print('* Printing cumulative figure...')
@@ -569,7 +570,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
-	list_of_states, final_list = set_final_states(list_of_states)
+	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
 	# all_the_labels = assign_final_states_to_single_frames(M, final_list)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
@@ -585,7 +586,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 
 def plot_TRA_analysis(M_raw, PAR, data_directory):
 	number_of_states = []
-	t_smooth_max = PAR[0]
+	t_smooth_max = 20
 	### The following is to have num_of_points log-spaced points
 	num_of_points = 10
 	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
@@ -609,8 +610,8 @@ def plot_TRA_analysis(M_raw, PAR, data_directory):
 	savetxt('number_of_states.txt', number_of_states)
 	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 
-	y_t = [ np.mean(np.array([ i for i in x if i != 0 ])) for x in number_of_states[:, 1:] ]
-	y_err = [ np.std(np.array([ i for i in x if i != 0 ])) for x in number_of_states[:, 1:] ]
+	y_t = [ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ]
+	y_err = [ np.std(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ]
 
 	fig, ax = plt.subplots()
 	ax.errorbar(x=tau_window, y=y_t, yerr=y_err)
@@ -623,7 +624,7 @@ def plot_TRA_analysis(M_raw, PAR, data_directory):
 def main():
 	M_raw, PAR, data_directory = all_the_input_stuff()
 	plot_TRA_analysis(M_raw, PAR, data_directory)
-	full_output_analysis(M_raw, 1, 10, PAR, data_directory)
+	full_output_analysis(M_raw, 1, PAR[0], PAR, data_directory)
 
 if __name__ == "__main__":
 	main()
