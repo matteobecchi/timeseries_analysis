@@ -562,11 +562,10 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	return len(list_of_states)
 
 def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
-	name = str(t_smooth) + '_' + str(tau_w) + '_'
 	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
-	plot_input_data(M, PAR, name + 'Fig0')
+	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
@@ -574,15 +573,15 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	# all_the_labels = assign_final_states_to_single_frames(M, final_list)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, name + 'Fig2')
+	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'Fig2')
 	# plot_all_trajectory_with_histos(M, PAR, name + 'Fig2a')
-	plot_one_trajectory(M, PAR, all_the_labels, name + 'Fig3')
+	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
 	print_mol_labels_fbf_gro(all_the_labels)
 	print_mol_labels_fbf_lam(all_the_labels)
 
 	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
-		sankey(all_the_labels, frame_list, 10, PAR[2], name + 'Fig4_' + str(i))
+		sankey(all_the_labels, frame_list, 10, PAR[2], 'Fig4_' + str(i))
 
 def plot_TRA_analysis(M_raw, PAR, data_directory):
 	number_of_states = []
@@ -597,34 +596,46 @@ def plot_TRA_analysis(M_raw, PAR, data_directory):
 
 	t_smooth = range(1, t_smooth_max + 1, int(t_smooth_max/10))
 
-	for tau_w in tau_window:
-		tmp = []
-		for t_s in t_smooth:
-			n_s = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
-			if n_s == None:
-				tmp.append(0)
-			else:
-				tmp.append(n_s)
-		number_of_states.append(np.concatenate(([tau_w], tmp)))
+	# for tau_w in tau_window:
+	# 	tmp = []
+	# 	for t_s in t_smooth:
+	# 		n_s = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+	# 		if n_s == None:
+	# 			tmp.append(0)
+	# 		else:
+	# 			tmp.append(n_s)
+	# 	number_of_states.append(np.concatenate(([tau_w], tmp)))
 
-	savetxt('number_of_states.txt', number_of_states)
-	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	# savetxt('number_of_states.txt', number_of_states)
+	number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 
-	y_t = [ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ]
-	y_err = [ np.std(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ]
+	y_t = np.array([ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
+	y_err = np.array([ np.std(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
 
 	fig, ax = plt.subplots()
-	ax.errorbar(x=tau_window, y=y_t, yerr=y_err)
-	# ax.errorbar(x=tau_window, y=np.mean(number_of_states, axis=1), yerr=np.std(number_of_states, axis=1))
-	ax.set_xlabel(r'Analysis time window $\tau_{window}$')
+	time = [ t*PAR[2] for t in tau_window ]
+	# ax.errorbar(x=time, y=y_t, yerr=y_err, marker='o')
+
+	ax.plot(time, y_t, marker='o')
+	err_inf = y_t - y_err
+	err_sup = y_t + y_err
+	ax.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
+	x_fit = np.linspace(time[0]/2, time[-1]*2, 1000)
+	popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t)
+	y_fit = sigmoidal(x_fit, *popt)
+	ax.plot(x_fit, y_fit, linestyle='--', color='dimgray')
+	print('Asymptotic number of environments = ', popt[0], '(', np.sqrt(pcov[0][0]), ')')
+
+	ax.set_xlabel(r'Analysis time window $\tau_w$ [ns]')
 	ax.set_ylabel(r'Number of environments')
+	ax.set_xscale('log')
 	plt.show()
 	fig.savefig('Time_resolution_analysis.png', dpi=600)
 
 def main():
 	M_raw, PAR, data_directory = all_the_input_stuff()
 	plot_TRA_analysis(M_raw, PAR, data_directory)
-	full_output_analysis(M_raw, 1, PAR[0], PAR, data_directory)
+	# full_output_analysis(M_raw, 1, PAR[0], PAR, data_directory)
 
 if __name__ == "__main__":
 	main()
