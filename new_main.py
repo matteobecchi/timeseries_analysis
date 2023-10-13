@@ -15,7 +15,7 @@ def all_the_input_stuff():
 		print('\tERROR: data_directory.txt is missing or wrongly formatted. ')
 
 	# Remove initial frames based on 'tau_delay'.
-	M_raw = M_raw[:, PAR[1]:]
+	M_raw = M_raw[:, PAR[2]:]
 
 	### Create files for output
 	with open(output_file, 'w') as f:
@@ -53,8 +53,8 @@ def preparing_the_data(M_raw, t_smooth, tau_window, PAR):
 
 	# Print informative messages about trajectory details.
 	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
-	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[2]) + ' ns). ')
-	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*PAR[2]) + ' ns). ')
+	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[3]), str(PAR[4]) + ')')
+	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*PAR[3]), str(PAR[4]) + ')')
 
 	# Initialize an array to store labels for each window.
 	all_the_labels = np.zeros((M.shape[0], num_windows))
@@ -65,11 +65,12 @@ def preparing_the_data(M_raw, t_smooth, tau_window, PAR):
 	return M, all_the_labels, list_of_states
 
 def plot_input_data(M, PAR, filename):
-	tau_window, tau_delay, t_conv = PAR[0], PAR[1], PAR[2]
+	# Extract relevant parameters from PAR
+	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
 
 	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
-	bins = 'auto' if len(PAR) < 6 else PAR[5]
+	bins = 'auto' if len(PAR) < 7 else PAR[6]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -89,7 +90,7 @@ def plot_input_data(M, PAR, filename):
 
 	# Set labels and titles for the plots
 	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + PAR[3])
+	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[1].set_xticklabels([])
 
 	if show_plot:
@@ -308,11 +309,12 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 	M1 = M
 	iteration_id = 1
 	states_counter = 0
+	one_last_state = False
 	while True:
 		### Locate and fit maximum in the signal distribution
 		bins='auto'
-		if len(PAR) == 6:
-			bins=PAR[5]
+		if len(PAR) == 7:
+			bins=PAR[6]
 		popt, th = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if len(popt) == 0:
 			break
@@ -335,12 +337,12 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 
 def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
 	print('* Printing cumulative figure...')
-	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[1], PAR[2], PAR[3]
+	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
 	n_states = len(list_of_states)
 
 	# Compute histogram of flattened M
 	flat_M = M.flatten()
-	bins = 'auto' if len(PAR) < 6 else PAR[5]
+	bins = 'auto' if len(PAR) < 7 else PAR[6]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -399,13 +401,14 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	plt.close(fig)
 
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
-	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[1], PAR[2], PAR[3], PAR[4]
+	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[2], PAR[3], PAR[4], PAR[5]
 
 	# Get the signal of the example particle
-	signal = M[example_ID]
+	signal = M[example_ID][:all_the_labels.shape[1]]
 
 	# Create time values for the x-axis
 	times = np.arange(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1]) * t_conv
+	times = times[:all_the_labels.shape[1]]
 
 	# Create a figure and axes for the plot
 	fig, ax = plt.subplots()
@@ -558,8 +561,10 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 		print('* No possible classification was found. ')
 		return
 	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
-
-	return len(list_of_states)
+	if one_last_state:
+		return len(list_of_states) + 1
+	else:
+		return len(list_of_states)
 
 def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
@@ -580,21 +585,21 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	print_mol_labels_fbf_gro(all_the_labels)
 	print_mol_labels_fbf_lam(all_the_labels)
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
-		sankey(all_the_labels, frame_list, 10, PAR[2], 'Fig4_' + str(i))
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
+		sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 
-def plot_TRA_analysis(M_raw, PAR, data_directory):
+def TRA_analysis(M_raw, PAR, data_directory):
 	number_of_states = []
-	t_smooth_max = 20
+	t_smooth_max = 10
 	### The following is to have num_of_points log-spaced points
-	num_of_points = 10
+	num_of_points = 20
 	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
 	tmp = [ int(base**n) + 1 for n in range(1, num_of_points + 1) ]
 	tau_window = []
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
-
-	t_smooth = range(1, t_smooth_max + 1, int(t_smooth_max/10))
+	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
+	print('* t_smooth used:', t_smooth)
 
 	# for tau_w in tau_window:
 	# 	tmp = []
@@ -609,33 +614,12 @@ def plot_TRA_analysis(M_raw, PAR, data_directory):
 	# savetxt('number_of_states.txt', number_of_states)
 	number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 
-	y_t = np.array([ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
-	y_err = np.array([ np.std(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
-
-	fig, ax = plt.subplots()
-	time = [ t*PAR[2] for t in tau_window ]
-	# ax.errorbar(x=time, y=y_t, yerr=y_err, marker='o')
-
-	ax.plot(time, y_t, marker='o')
-	err_inf = y_t - y_err
-	err_sup = y_t + y_err
-	ax.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
-	x_fit = np.linspace(time[0]/2, time[-1]*2, 1000)
-	popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t)
-	y_fit = sigmoidal(x_fit, *popt)
-	ax.plot(x_fit, y_fit, linestyle='--', color='dimgray')
-	print('Asymptotic number of environments = ', popt[0], '(', np.sqrt(pcov[0][0]), ')')
-
-	ax.set_xlabel(r'Analysis time window $\tau_w$ [ns]')
-	ax.set_ylabel(r'Number of environments')
-	ax.set_xscale('log')
-	plt.show()
-	fig.savefig('Time_resolution_analysis.png', dpi=600)
+	plot_TRA_figure(number_of_states, tau_window, PAR[3], 'Time_resolution_analysis')
 
 def main():
 	M_raw, PAR, data_directory = all_the_input_stuff()
-	plot_TRA_analysis(M_raw, PAR, data_directory)
-	# full_output_analysis(M_raw, 1, PAR[0], PAR, data_directory)
+	TRA_analysis(M_raw, PAR, data_directory)
+	full_output_analysis(M_raw, 10, PAR[0], PAR, data_directory)
 
 if __name__ == "__main__":
 	main()

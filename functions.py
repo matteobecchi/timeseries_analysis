@@ -33,11 +33,11 @@ def read_input_parameters():
 
 	# Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
 	# The fifth parameter, 'bins' is optional and shoul be avoided if possible. 
-	if len(param) == 5:
-		PAR = [int(param[0]), int(param[1]), float(param[2]), r'[' + str(param[3]) + r']',  int(param[4])]
-	elif len(param) == 6:
+	if len(param) == 6:
+		PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']',  int(param[5])]
+	elif len(param) == 7:
 		print('\tWARNING: overriding histogram binning')
-		PAR = [int(param[0]), int(param[1]), float(param[2]), r'[' + str(param[3]) + r']', int(param[4]), int(param[5])]
+		PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']', int(param[5]), int(param[6])]
 	else:
 		print('\tinput_parameters.txt file wrongly formatted.')
 
@@ -104,23 +104,23 @@ def moving_average(data, window):
 		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
 def moving_average_2D(data, L):
-	if L%2 == 0:
-		print('\tL must be an odd number.')
-		return
-	l = int((L - 1)/2)
-	tmp = np.empty(data.shape)
+	# Check if L is an odd number
+	if L % 2 == 0:
+		raise ValueError("L must be an odd number.")
+	l = (L - 1) // 2  # Calculate the half-width of the moving window
+	tmp = np.zeros_like(data, dtype=float)  # Initialize the result array with zeros
 	for i in range(data.shape[0]):
 		for j in range(data.shape[1]):
-			i0 = np.max([i - l, 0])
-			i1 = np.min([i + l + 1, data.shape[0]])
-			j0 = np.max([j - l, 0])
-			j1 = np.min([j + l + 1, data.shape[1]])
-			square = data[i0:i1,j0:j1]
+			# Calculate the indices for the moving window
+			i0 = max(i - l, 0)
+			i1 = min(i + l + 1, data.shape[0])
+			j0 = max(j - l, 0)
+			j1 = min(j + l + 1, data.shape[1])
+			square = data[i0:i1,j0:j1]  # Extract the subarray within the moving window
+			# Calculate the average if the subarray is not empty
 			if square.size > 0:
-				tmp[i][j] = np.sum(square)/square.size
-			else:
-				tmp[i][j] = 0.0
-	return np.array(tmp)
+				tmp[i, j] = square.mean()
+	return tmp
 
 def normalize_array(x):
 	# Step 1: Calculate the mean value and the standard deviation of the input array 'x'.
@@ -141,8 +141,8 @@ def plot_histo(ax, counts, bins):
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
-def sigmoidal(x, A, alpha):
-	return 1 + (2*A - 2)/(1 + np.exp(x*alpha))
+def sigmoidal(x, A, B, alpha):
+	return B + A/(1 + np.exp(x*alpha))
 
 def Gaussian(x, m, sigma, A):
 	# "m" is the Gaussians' mean value
@@ -173,49 +173,64 @@ def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, A):
 	return gauss.ravel()
 
 def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
-		flag = 1
-		goodness = 11
-		Xedges = xedges[minima[0]:minima[1]]
-		Yedges = yedges[minima[2]:minima[3]]
-		Counts = counts[minima[0]:minima[1],minima[2]:minima[3]]
-		mux0 = xedges[max_ind[0]]
-		muy0 = yedges[max_ind[1]]
-		sigmax0 = (xedges[minima[1]] - xedges[minima[0]])/3
-		sigmay0 = (yedges[minima[3]] - yedges[minima[2]])/3
-		A0 = counts[max_ind[0]][max_ind[1]]
-		x, y = np.meshgrid(Xedges, Yedges)
-		try:
-			popt, pcov = scipy.optimize.curve_fit(Gaussian_2D, (x, y), Counts.ravel(),
-				p0=[mux0, muy0, sigmax0, sigmay0, A0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, np.inf, np.inf, np.inf]))
-			if popt[4] < A0/2:
+	# Initialize flag and goodness variables
+	flag = 1
+	goodness = 11
+
+	# Extract relevant data within the specified minima
+	Xedges = xedges[minima[0]:minima[1]]
+	Yedges = yedges[minima[2]:minima[3]]
+	Counts = counts[minima[0]:minima[1],minima[2]:minima[3]]
+
+	# Initial parameter guesses
+	mux0 = xedges[max_ind[0]]
+	muy0 = yedges[max_ind[1]]
+	sigmax0 = (xedges[minima[1]] - xedges[minima[0]])/3
+	sigmay0 = (yedges[minima[3]] - yedges[minima[2]])/3
+	A0 = counts[max_ind[0]][max_ind[1]]
+
+	# Create a meshgrid for fitting
+	x, y = np.meshgrid(Xedges, Yedges)
+	try:
+		# Attempt to fit a 2D Gaussian using curve_fit
+		popt, pcov = scipy.optimize.curve_fit(Gaussian_2D, (x, y), Counts.ravel(),
+			p0=[mux0, muy0, sigmax0, sigmay0, A0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, np.inf, np.inf, np.inf]))
+
+		# Check goodness of fit and update the goodness variable
+		if popt[4] < A0/2:
+			goodness -= 1
+		if popt[0] < Xedges[0] or popt[0] > Xedges[-1]:
+			goodness -= 1
+		if popt[1] < Yedges[0] or popt[1] > Yedges[-1]:
+			goodness -= 1
+		if popt[2] > Xedges[-1] - Xedges[0]:
+			goodness -= 1
+		if popt[3] > Yedges[-1] - Yedges[0]:
+			goodness -= 1
+
+		# Calculate parameter errors
+		perr = np.sqrt(np.diag(pcov))
+		for j in range(len(perr)):
+			if perr[j]/popt[j] > 0.5:
 				goodness -= 1
-			if popt[0] < Xedges[0] or popt[0] > Xedges[-1]:
-				goodness -= 1
-			if popt[1] < Yedges[0] or popt[1] > Yedges[-1]:
-				goodness -= 1
-			if popt[2] > Xedges[-1] - Xedges[0]:
-				goodness -= 1
-			if popt[3] > Yedges[-1] - Yedges[0]:
-				goodness -= 1
-			perr = np.sqrt(np.diag(pcov))
-			for j in range(len(perr)):
-				if perr[j]/popt[j] > 0.5:
-					goodness -= 1
-			if minima[1] - minima[0] <= gap or minima[3] - minima[2] <= gap:
-				goodness -= 1
-		except RuntimeError:
-			print('\tFit: Runtime error. ')
-			flag = 0
-			popt = []
-		except TypeError:
-			print('\tFit: TypeError.')
-			flag = 0
-			popt = []
-		except ValueError:
-			print('\tFit: ValueError.')
-			flag = 0
-			popt = []
-		return flag, goodness, popt
+
+		# Check if the fitting interval is too small in either dimension
+		if minima[1] - minima[0] <= gap or minima[3] - minima[2] <= gap:
+			goodness -= 1
+
+	except RuntimeError:
+		print('\tFit: Runtime error. ')
+		flag = 0
+		popt = []
+	except TypeError:
+		print('\tFit: TypeError.')
+		flag = 0
+		popt = []
+	except ValueError:
+		print('\tFit: ValueError.')
+		flag = 0
+		popt = []
+	return flag, goodness, popt
 
 def relabel_states(all_the_labels, list_of_states):
 	# Step 1: Remove empty states from the 'list_of_states' and keep only non-empty states.
@@ -264,7 +279,8 @@ def set_final_states(list_of_states, all_the_labels):
 
 	# Step 2: Remove states that don't meet the "final" criterion from the 'list_of_states'.
 	# Note: The loop iterates in reverse to avoid index errors when removing elements.
-	for s in np.unique(tmp_list)[::-1]:
+	tmp_list = np.unique(tmp_list)[::-1]
+	for s in tmp_list:
 		list_of_states.pop(s)
 	
 	list_of_states = sorted(list_of_states, key=lambda x: x[0][0])
@@ -321,7 +337,7 @@ def set_final_states(list_of_states, all_the_labels):
 	with open('final_states.txt', 'w') as f:
 		for state in list_of_states:
 			print(state[0][0], state[0][1], state[0][2], file=f)
-	with open('final_tresholds.txt', 'w') as f:
+	with open('final_thresholds.txt', 'w') as f:
 		for th in final_list:
 			print(th[0], file=f)
 
@@ -414,6 +430,41 @@ def assign_final_states_to_single_frames_2D(M, final_list):
 	all_the_labels = np.argmin(D, axis=2)
 	
 	return all_the_labels
+
+def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
+	y_t = np.array([ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
+	y_err = np.array([ np.std(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
+
+	fig, ax = plt.subplots()
+	time = [ t*t_conv for t in tau_window ]
+
+	ax.plot(time, y_t, marker='o')
+	err_inf = y_t - y_err
+	err_sup = y_t + y_err
+	ax.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
+	x_fit = np.linspace(time[0]/2, time[-1]*2, 1000)
+	popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t, bounds=([0, 0, 0], [np.inf, np.inf, np.inf]))
+	y_fit = sigmoidal(x_fit, *popt)
+	ax.plot(x_fit, y_fit, linestyle='--', color='dimgray')
+	
+	print('Asymptotic number of environments: ')
+	print(popt[0]/2 + popt[1], '(', np.sqrt(pcov[0][0])/2 + np.sqrt(pcov[1][1]), ')')
+	print(popt[1], '(', np.sqrt(pcov[1][1]), ')')
+
+	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+	ax2 = ax.twiny()
+	ax2.set_xlabel(r'Analysis time window $\tau_w$ [frames]', weight='bold')
+	ax2.set_xscale('log')
+
+	ax.set_xlabel(r'Analysis time window $\tau_w$ [ns]', weight='bold')
+	ax.set_ylabel(r'Number of environments', weight='bold')
+	ax.set_xscale('log')
+
+	ax.set_xlim(time[0]/2, time[-1]*2)
+	ax2.set_xlim(tau_window[0]/2, tau_window[-1]*2)
+
+	plt.show()
+	fig.savefig(filename + '.png', dpi=600)
 
 def print_mol_labels1(all_the_labels, PAR, filename):
 	print('* Print color IDs for Ovito...')
