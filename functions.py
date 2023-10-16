@@ -177,29 +177,29 @@ def custom_fit(dim, max_ind, minima, edges, counts, gap):
 	goodness = 5
 
 	# Extract relevant data within the specified minima
-	Edges = xedges[minima[2*dim]:minima[2*dim + 1]]
+	Edges = edges[minima[2*dim]:minima[2*dim + 1]]
 	Counts = counts
 	for d in range(counts.ndim):
 		if d != dim:
 			Counts = np.sum(Counts, axis=d)
+	Counts = Counts[minima[2*dim]:minima[2*dim + 1]]
 
 	# Initial parameter guesses
-	mu0 = Edges[max_ind]
-	sigma0 = (Edges[minima[2*dim + 1]] - xedges[minima[2*dim]])/2
-	A0 = Counts[max_ind]
+	mu0 = edges[max_ind]
+	sigma0 = (edges[minima[2*dim + 1]] - edges[minima[2*dim]])/2
+	A0 = max(Counts)*np.sqrt(np.pi)*sigma0
 
-	# Create a meshgrid for fitting
 	try:
 		# Attempt to fit a Gaussian using curve_fit
 		popt, pcov = scipy.optimize.curve_fit(Gaussian, Edges, Counts,
 			p0=[mu0, sigma0, A0], bounds=([0.0, 0.0, 0.0], [1.0, np.inf, np.inf]))
 
 		# Check goodness of fit and update the goodness variable
-		if popt[2] < A0/2:
-			goodness -= 1
 		if popt[0] < Edges[0] or popt[0] > Edges[-1]:
 			goodness -= 1
 		if popt[1] > Edges[-1] - Edges[0]:
+			goodness -= 1
+		if popt[2] < A0/2:
 			goodness -= 1
 
 		# Calculate parameter errors
@@ -422,7 +422,7 @@ def relabel_states_2D(all_the_labels, list_of_states):
 			C0 = s0[1][0]
 			C1 = s1[1][0]
 			diff = np.abs(np.subtract(C1, C0))
-			if (diff[0] < np.max([s0[0][2], s1[0][2]]) and diff[1] < np.max([s0[0][3], s1[0][3]])):
+			if (diff[0] < np.max([s0[1][1][0], s1[1][1][0]]) and diff[1] < np.max([s0[1][1][1], s1[1][1][1]])):
 				merge_pairs.append([i + 1, j + i + 2])
 
 	state_mapping = {i: i for i in range(len(sorted_states) + 1)}
@@ -468,22 +468,10 @@ def assign_final_states_to_single_frames(M, final_list):
 	all_the_labels[~mask.any(axis=2)] = len(final_list) - 1
 	return all_the_labels
 
-def assign_final_states_to_single_frames_2D(M, final_list):
+def assign_final_states_to_single_frames_2D(M, all_the_labels, tau_window, final_list):
 	print('* Assigning labels to the single frames...')
-	# Create an array with the centers of the final states
-	centers = np.array([ state[1][0] for state in final_list ])
-	axes = np.array([ [state[1][1], state[1][2]] for state in final_list ])
-
-	# For every point, compute the distance from all the centers
-	M_expanded = M[:, :, np.newaxis, :]
-	centers_expanded = centers[np.newaxis, np.newaxis, :, :]
-	axes_expanded = axes[np.newaxis, np.newaxis, :, :]
-	D = np.sum(((M_expanded - centers_expanded)/axes_expanded) ** 2, axis=3)
-
-	# Find the center closest to each point. That will be its label. 
-	all_the_labels = np.argmin(D, axis=2)
-	
-	return all_the_labels
+	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
+	return new_labels
 
 def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
 	y_t = np.array([ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
