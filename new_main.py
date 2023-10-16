@@ -590,7 +590,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 
 def TRA_analysis(M_raw, PAR, data_directory):
 	number_of_states = []
-	t_smooth_max = 10
+	t_smooth_max = 20
 	### The following is to have num_of_points log-spaced points
 	num_of_points = 20
 	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)

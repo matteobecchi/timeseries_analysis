@@ -2,39 +2,41 @@ from functions import *
 
 output_file = 'states_output.txt'
 colormap = 'viridis'
-# colormap = 'copper'
 show_plot = False
+# dimensions = 2
 
 def all_the_input_stuff():
 	# Read input parameters from files.
 	data_directory, PAR = read_input_parameters()
 
-	# Read raw data from the specified directory/files.
-	M0_raw = read_data(data_directory[0])
-	M1_raw = read_data(data_directory[1])
+	tmp_M = []
+	for d in range(len(data_directory)):
+		# Read raw data from the specified directory/files.
+		M_raw = read_data(data_directory[d])
 
-	# Remove initial frames based on 'tau_delay'.
-	M0_raw = M0_raw[:, PAR[1]:]
-	M1_raw = M1_raw[:, PAR[1]:]
+		# Remove initial frames based on 'tau_delay'.
+		M_raw = M_raw[:, PAR[1]:]
 
-	# Apply filtering on the data
-	M0 = moving_average(M0_raw, PAR[0])
-	M1 = moving_average(M1_raw, PAR[0])
+		# Apply filtering on the data
+		m = moving_average(M_raw, PAR[0])
 
-	# Normalize the data to the range [0, 1].
-	sig_max = np.max(M0)
-	sig_min = np.min(M0)
-	M0 = (M0 - sig_min)/(sig_max - sig_min)
-	sig_max = np.max(M1)
-	sig_min = np.min(M1)
-	M1 = (M1 - sig_min)/(sig_max - sig_min)
+		# Normalize the data to the range [0, 1].
+		sig_max = np.max(m)
+		sig_min = np.min(m)
+		m = (m - sig_min)/(sig_max - sig_min)
+
+		tmp_M.append(m)
 
 	# Get the number of particles and total frames in the trajectory.
-	if M0.shape != M1.shape :
-		print('ERROR: The two signals do not correspond. Abort.')
-		return 
+	for d in range(len(tmp_M) - 1):
+		if tmp_M[d].shape != tmp_M[d + 1].shape :
+			print('ERROR: The signals do not correspond. Abort.')
+			return 
 
-	M = np.array([ [ [M0[n][t], M1[n][t]] for t in range(M0.shape[1]) ] for n in range(M0.shape[0]) ])
+	tmp_M = np.array(tmp_M)
+	M = np.transpose(tmp_M, axes=(1, 2, 0))
+
+	# M = np.array([ [ [M0[n][t], M1[n][t]] for t in range(M0.shape[1]) ] for n in range(M0.shape[0]) ])
 	total_particles = M.shape[0]
 	total_time = M.shape[1]
 
@@ -73,40 +75,41 @@ def all_the_input_stuff():
 def plot_input_data(M, PAR, filename):
 	tau_window, tau_delay, t_conv = PAR[0], PAR[1], PAR[2]
 
-	# Flatten the M matrix and compute histogram counts and bins
-	flat_M0 = M[:,:,0].flatten()
-	bins = 'auto' if len(PAR) < 6 else PAR[5]
-	counts0, bins0 = np.histogram(flat_M0, bins=bins, density=True)
-	counts0 *= flat_M0.size
+	Bins = []
+	Counts = []
+	for d in range(M.shape[2]):
+		# Flatten the M matrix and compute histogram counts and bins
+		flat_M = M[:,:,d].flatten()
+		bins = 'auto' if len(PAR) < 7 else PAR[6]
+		counts0, bins0 = np.histogram(flat_M, bins=bins, density=True)
+		counts0 *= flat_M.size
+		Bins.append(bins0)
+		Counts.append(counts0)
 
-	flat_M1 = M[:,:,1].flatten()
-	bins = 'auto' if len(PAR) < 6 else PAR[5]
-	counts1, bins1 = np.histogram(flat_M0, bins=bins, density=True)
-	counts1 *= flat_M1.size
-
-	# Create a plot with two subplots (side-by-side)
 	fig = plt.figure(figsize=(9, 9))
-	grid = fig.add_gridspec(4, 4)
-	ax1 = fig.add_subplot(grid[0:1, 0:3])
-	ax2 = fig.add_subplot(grid[1:4, 0:3])
-	ax3 = fig.add_subplot(grid[1:4, 3:4])
-	ax1.get_shared_x_axes().join(ax1, ax2)
-	ax3.get_shared_y_axes().join(ax3, ax2)
-	ax1.set_xticklabels([])
-	ax3.set_yticklabels([])
-	
-	# Plot histograms
-	ax1.stairs(counts0, bins0, fill=True)
-	ax3.stairs(counts1, bins1, fill=True, orientation='horizontal')
+	if M.shape[2] == 2:
+		# Create a plot with two subplots (side-by-side)
+		grid = fig.add_gridspec(4, 4)
+		ax1 = fig.add_subplot(grid[0:1, 0:3])
+		ax2 = fig.add_subplot(grid[1:4, 0:3])
+		ax3 = fig.add_subplot(grid[1:4, 3:4])
+		ax1.get_shared_x_axes().join(ax1, ax2)
+		ax3.get_shared_y_axes().join(ax3, ax2)
+		ax1.set_xticklabels([])
+		ax3.set_yticklabels([])
+		
+		# Plot histograms
+		ax1.stairs(Counts[0], Bins[0], fill=True)
+		ax3.stairs(Counts[1], Bins[1], fill=True, orientation='horizontal')
 
-	# Plot the individual trajectories in the first subplot (left side)
-	step = 10 if M.size > 1000000 else 1
-	for idx, mol in enumerate(M[::step]):
-		ax2.plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+		# Plot the individual trajectories in the first subplot (left side)
+		step = 10 if M.size > 1000000 else 1
+		for idx, mol in enumerate(M[::step]):
+			ax2.plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
 
-	# Set labels and titles for the plots
-	ax2.set_ylabel('Signal 1')
-	ax2.set_xlabel('Signal 2')
+		# Set labels and titles for the plots
+		ax2.set_ylabel('Signal 1')
+		ax2.set_xlabel('Signal 2')
 
 	if show_plot:
 		plt.show()
@@ -116,10 +119,10 @@ def plot_input_data(M, PAR, filename):
 def gauss_fit_max(M, bins, filename):
 	print('* Gaussian fit...')
 	number_of_sigmas = 2.0
-	flat_M = np.reshape(M, (M.shape[0]*M.shape[1], 2), order='F')
+	flat_M = np.reshape(M, (M.shape[0]*M.shape[1], M.shape[2]), order='F')
 
 	### 1. Histogram with 'auto' binning ###
-	counts, xedges, yedges = np.histogram2d(flat_M.T[0], flat_M.T[1], bins=50, density=True)
+	counts, xedges, yedges = np.histogram2d(flat_M.T[0], flat_M.T[1], bins=bins, density=True)
 	gap = 1
 	if xedges.size > 40 and yedges.size > 40:
 		gap = 3
@@ -128,50 +131,62 @@ def gauss_fit_max(M, bins, filename):
 	counts = moving_average_2D(counts, gap)
 
 	### 3. Find the maximum ###
+	def find_max_index(data):
+		max_val = data.max()
+		max_indices = np.argwhere(data == max_val)
+		return max_indices[0]
+
 	max_val = counts.max()
-	for i, c1 in enumerate(counts):
-		for j, c2 in enumerate(c1):
-			if c2 == max_val:
-				max_ind = [i, j]
-				break
+	max_ind = find_max_index(counts)
 
 	### 4. Find the minima surrounding it ###
-	### Along x ###
-	min_idx0 = np.max([max_ind[0] - gap, 0])
-	min_idx1 = np.min([max_ind[0] + gap, counts.shape[0] - 1])
-	while min_idx0 > 0 and counts[min_idx0][max_ind[1]] > counts[min_idx0 - 1][max_ind[1]]:
-		min_idx0 -= 1
-	while min_idx1 < counts.shape[0] - 1 and counts[min_idx1][max_ind[1]] > counts[min_idx1 + 1][max_ind[1]]:
-		min_idx1 += 1
-	### Along y ###
-	min_idy0 = np.max([max_ind[1] - gap, 0])
-	min_idy1 = np.min([max_ind[1] + gap, counts.shape[1] - 1])
-	while min_idy0 > 0 and counts[max_ind[0]][min_idy0] > counts[max_ind[0]][min_idy0 - 1]:
-		min_idy0 -= 1
-	while min_idy1 < counts.shape[1] - 1 and counts[max_ind[0]][min_idy1] > counts[max_ind[0]][min_idy1 + 1]:
-		min_idy1 += 1
-	minima = [min_idx0, min_idx1, min_idy0, min_idy1]
+	def find_minima_around_max(data, max_ind, gap):
+		minima = []
+
+		for dim in range(data.ndim):
+			min_id0 = max(max_ind[dim] - gap, 0)
+			min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
+
+			tmp_c = np.swapaxes(data, 0, dim)
+			tmp_max = np.concatenate((max_ind[:dim], max_ind[dim + 1:]))
+			while min_id0 > 0 and data[min_id0, tmp_max] > data[min_id0 - 1, tmp_max]:
+				min_id0 -= 1
+
+			while min_id1 < data.shape[dim] - 1 and data[min_id1, tmp_max] > data[min_id1 + 1, tmp_max]:
+				min_id1 += 1
+
+			minima.extend([min_id0, min_id1])
+
+		return minima
+
+	minima = find_minima_around_max(counts, max_ind, gap)
 
 	### 5. Try the fit between the minima and check its goodness ###
 	flag_min, goodness_min, popt_min = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
 	popt_min[4] *= flat_M.T[0].size
 
 	### 6. Find the interval of half height ###
-	### Along x
-	half_idx0 = np.max([max_ind[0] - gap, 0])
-	half_idx1 = np.min([max_ind[0] + gap, counts.shape[0] - 1])
-	while half_idx0 > 0 and counts[half_idx0][[max_ind[1]]] > max_val/2:
-		half_idx0 -= 1
-	while half_idx1 < counts.shape[0] - 1 and counts[half_idx1][max_ind[1]] > max_val/2:
-		half_idx1 += 1
-	## Along y
-	half_idy0 = np.max([max_ind[1] - gap, 0])
-	half_idy1 = np.min([max_ind[1] + gap, counts.shape[1] - 1])
-	while half_idy0 > 0 and counts[max_ind[0]][half_idy0] > max_val/2:
-		half_idy0 -= 1
-	while half_idy1 < counts.shape[1] - 1 and counts[max_ind[0]][half_idy1] > max_val/2:
-		half_idy1 += 1
-	minima = [half_idx0, half_idx1, half_idy0, half_idy1]
+	def find_half_height_around_max(data, max_ind, gap):
+		max_val = data.max()
+		minima = []
+
+		for dim in range(data.ndim):
+			half_id0 = max(max_ind[dim] - gap, 0)
+			half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
+
+			tmp_c = np.swapaxes(data, 0, dim)
+			tmp_max = np.concatenate((max_ind[:dim], max_ind[dim + 1:]))
+			while half_id0 > 0 and data[half_id0, tmp_max] > max_val/2:
+				half_id0 -= 1
+
+			while half_id1 < data.shape[dim] and data[half_id1, tmp_max] > max_val/2:
+				half_id1 += 1
+
+			minima.extend([half_id0, half_id1])
+
+		return minima
+
+	minima = find_half_height_around_max(counts, max_ind, gap)
 
 	### 7. Try the fit between the minima and check its goodness ###
 	flag_half, goodness_half, popt_half = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
@@ -290,8 +305,8 @@ def iterative_search(M, PAR, all_the_labels, list_of_states):
 	while True:
 		### Locate and fit maximum in the signal distribution
 		bins='auto'
-		if len(PAR) == 6:
-			bins=PAR[5]
+		if len(PAR) == 7:
+			bins = PAR[6]
 		popt, ellipse = gauss_fit_max(M1, bins, 'output_figures/Fig1_' + str(iteration_id))
 		if len(popt) == 0:
 			break
@@ -421,7 +436,7 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
 	ax[1].set_xlim([0.0, 1.0])
 	ax[1].set_ylim([0.0, 1.0])
 
-	letter_subplots(ax)
+	# letter_subplots(ax)
 	plt.tight_layout()
 	plt.show()
 	fig.savefig('Fig3.png', dpi=600)
