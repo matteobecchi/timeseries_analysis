@@ -3,7 +3,6 @@ from functions import *
 output_file = 'states_output.txt'
 colormap = 'viridis'
 show_plot = False
-# dimensions = 2
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -119,12 +118,13 @@ def plot_input_data(M, PAR, filename):
 def gauss_fit_max(M, bins, filename):
 	print('* Gaussian fit...')
 	number_of_sigmas = 2.0
-	flat_M = np.reshape(M, (M.shape[0]*M.shape[1], M.shape[2]), order='F')
+	flat_M = M.reshape((M.shape[0]*M.shape[1], M.shape[2]))
 
 	### 1. Histogram with 'auto' binning ###
-	counts, xedges, yedges = np.histogram2d(flat_M.T[0], flat_M.T[1], bins=bins, density=True)
+	counts, edges = np.histogramdd(flat_M, bins=bins, density=True)
+	# counts, xedges, yedges = np.histogram2d(flat_M.T[0], flat_M.T[1], bins=bins, density=True)
 	gap = 1
-	if xedges.size > 40 and yedges.size > 40:
+	if np.all([e.size > 40 for e in edges]):
 		gap = 3
 
 	### 2. Smoothing with tau = 3 ###
@@ -162,8 +162,12 @@ def gauss_fit_max(M, bins, filename):
 	minima = find_minima_around_max(counts, max_ind, gap)
 
 	### 5. Try the fit between the minima and check its goodness ###
-	flag_min, goodness_min, popt_min = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
-	popt_min[4] *= flat_M.T[0].size
+	# flag_min, goodness_min, popt_min = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
+	popt_min = []
+	for dim in range(M.shape[2]):
+		flag_min, goodness_min, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
+		popt[2] *= flat_M.T[0].size
+		popt_min.extend(popt)
 
 	### 6. Find the interval of half height ###
 	def find_half_height_around_max(data, max_ind, gap):
@@ -189,8 +193,11 @@ def gauss_fit_max(M, bins, filename):
 	minima = find_half_height_around_max(counts, max_ind, gap)
 
 	### 7. Try the fit between the minima and check its goodness ###
-	flag_half, goodness_half, popt_half = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
-	popt_half[4] *= flat_M.T[0].size
+	popt_half = []
+	for dim in range(M.shape[2]):
+		flag_half, goodness_half, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
+		popt[2] *= flat_M.T[0].size
+		popt_half.extend(popt)
 
 	### 8. Choose the best fit ###
 	goodness = goodness_min
@@ -211,26 +218,27 @@ def gauss_fit_max(M, bins, filename):
 
 	with open(output_file, 'a') as f:
 		print('\n', file=f)
-		print(f'\tmu = [{popt[0]:.4f}, {popt[1]:.4f}], sigma = [{popt[2]:.4f}, {popt[3]:.4f}], area = {popt[4]:.4f}')
-		print(f'\tmu = [{popt[0]:.4f}, {popt[1]:.4f}], sigma = [{popt[2]:.4f}, {popt[3]:.4f}], area = {popt[4]:.4f}', file=f)
+		print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}')
+		print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}', file=f)
 		print('\tFit goodness = ' + str(goodness), file=f)
 
 	### Find the tresholds for state identification
-	C = np.array([popt[0], popt[1]])
-	a = number_of_sigmas*popt[2]
-	b = number_of_sigmas*popt[3]
-	ellipse = [C, a, b]
+	C, a = [], []
+	for dim in range(M.shape[2]):
+		C.append(popt[3*dim])
+		a.append(number_of_sigmas*popt[3*dim + 1])
+	ellipse = [C, a]
 
-	### Plot the distribution and the fitted Gaussians
+	### Plot the distribution and the fitted Gaussians -- this clearly works only with 2-dimensional data
 	fig, ax = plt.subplots(figsize=(6, 6))
 	im = matplotlib.image.NonUniformImage(ax, interpolation='nearest')
-	xcenters = (xedges[:-1] + xedges[1:]) / 2
-	ycenters = (yedges[:-1] + yedges[1:]) / 2
+	xcenters = (edges[0][:-1] + edges[0][1:]) / 2
+	ycenters = (edges[1][:-1] + edges[1][1:]) / 2
 	im.set_data(xcenters, ycenters, counts.T)
 	ax.add_image(im)
-	ax.scatter(popt[0], popt[1], s=8.0, c='red')
-	circle1 = matplotlib.patches.Ellipse(C, popt[2], popt[3], color='r', fill=False)
-	circle2 = matplotlib.patches.Ellipse(C, a, b, color='r', fill=False)
+	ax.scatter(C[0], C[1], s=8.0, c='red')
+	circle1 = matplotlib.patches.Ellipse(C, a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+	circle2 = matplotlib.patches.Ellipse(C, a[0], a[1], color='r', fill=False)
 	ax.add_patch(circle1)
 	ax.add_patch(circle2)
 	ax.set_xlim([0.0, 1.0])
@@ -268,7 +276,8 @@ def find_stable_trj(M, tau_window, ellipse, list_of_states, all_the_labels, offs
 				r_w = r[w*tau_window:(w + 1)*tau_window]
 				# Check if the window is stable (all data points within the specified ellispe)
 				shifted = r_w - ellipse[0]
-				rescaled = shifted / np.array([ellipse[1], ellipse[2]])
+				rescaled = shifted / np.array(ellipse[1])
+				# rescaled = shifted / np.array([ellipse[1], ellipse[2]])
 				squared_distances = np.sum(rescaled**2, axis=1)
 				if np.max(squared_distances) <= 1.0:
 					# If stable, assign the window to the current state offset and increment the counter
@@ -342,16 +351,6 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 
 	fig, ax = plt.subplots(figsize=(6, 6))
 
-	# Plot the individual trajectories --- if labels are for windows
-	# step = 10 if M.size > 1000000 else 1
-	# max_T = all_the_labels.shape[1]*tau_window
-	# for i, mol in enumerate(M[::step]):
-	# 	ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
-	# for i, mol in enumerate(M[::step]):
-	# 	colors = np.repeat(all_the_labels[i], tau_window)
-	# 	ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
-	# 		cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
-
 	# Plot the individual trajectories --- if labels are for individual points
 	step = 10 if M.size > 1000000 else 1
 	max_T = all_the_labels.shape[1]
@@ -363,10 +362,8 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 
 	# Plot the Gaussian distributions of states
 	for S_id, S in enumerate(list_of_states):
-		circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color='red', fill=False)
-		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color='red', fill=False, linestyle='--')
-		# circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color=palette[S_id + 1], fill=False)
-		# circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color=palette[S_id + 1], fill=False, linestyle='--')
+		circle1 = matplotlib.patches.Ellipse(S[1][0], S[1][1][0]/2.0, S[1][1][1]/2.0, color='red', fill=False)
+		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1][0], S[1][1][1], color='red', fill=False, linestyle='--')
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
 
@@ -406,15 +403,6 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
 	cmap = cm.get_cmap(colormap, n_states)
 	step = 10 if M.size > 1000000 else 1
 
-	### If labels are for the windows
-	# max_T = all_the_labels.shape[1]*tau_window
-	# for i, mol in enumerate(M[::step]):
-	# 	ax[1].plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
-	# for i, mol in enumerate(M[::step]):
-	# 	colors = np.repeat(all_the_labels[i], tau_window)
-	# 	ax[1].scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=colors,
-	# 		cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
-
 	### If labels are for the single points
 	max_T = all_the_labels.shape[1]
 	for i, mol in enumerate(M[::step]):
@@ -425,8 +413,8 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states):
 
 	# Plot the Gaussian distributions of states on the right subplot (ax[1])
 	for S_id, S in enumerate(list_of_states):
-		circle1 = matplotlib.patches.Ellipse(S[1][0], S[0][2], S[0][3], color='red', fill=False)
-		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1], S[1][2], color='red', fill=False, linestyle='--')
+		circle1 = matplotlib.patches.Ellipse(S[1][0], S[1][1][0]/2.0, S[1][1][1]/2.0, color='red', fill=False)
+		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1][0], S[1][1][1], color='red', fill=False, linestyle='--')
 		ax[1].add_patch(circle1)
 		ax[1].add_patch(circle2)
 
@@ -446,8 +434,8 @@ def main():
 	plot_input_data(M, PAR, 'Fig0')
 
 	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
-	all_the_labels = assign_final_states_to_single_frames_2D(M, list_of_states)
-	
+	all_the_labels = assign_final_states_to_single_frames_2D(M, all_the_labels, PAR[0], list_of_states)
+
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
