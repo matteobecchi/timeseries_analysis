@@ -15,6 +15,8 @@ import plotly.io as pio
 import plotly.express as px
 import seaborn as sns
 
+dimensions = 2
+
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
 	try:
@@ -32,7 +34,7 @@ def read_input_parameters():
 		print('\tinput_parameters.txt file missing or wrongly formatted.')
 
 	# Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
-	# The fifth parameter, 'bins' is optional and shoul be avoided if possible. 
+	# The sixth parameter, 'bins' is optional and shoul be avoided if possible. 
 	if len(param) == 6:
 		PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']',  int(param[5])]
 	elif len(param) == 7:
@@ -46,7 +48,7 @@ def read_input_parameters():
 	# Step 5: Check if the shape of 'data_dir' array is (2, ).
 	# If yes, return 'data_dir' as an array along with 'PAR'.
 	# Otherwise, return 'data_dir' as a string along with 'PAR'.
-	if data_dir.shape == (2, ):
+	if data_dir.shape[0] > 1:
 		return data_dir, PAR
 	else:
 		return str(data_dir), PAR
@@ -104,23 +106,20 @@ def moving_average(data, window):
 		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
 def moving_average_2D(data, L):
-	# Check if L is an odd number
-	if L % 2 == 0:
+	if L % 2 == 0:								# Check if L is an odd number
 		raise ValueError("L must be an odd number.")
-	l = (L - 1) // 2  # Calculate the half-width of the moving window
-	tmp = np.zeros_like(data, dtype=float)  # Initialize the result array with zeros
-	for i in range(data.shape[0]):
-		for j in range(data.shape[1]):
-			# Calculate the indices for the moving window
-			i0 = max(i - l, 0)
-			i1 = min(i + l + 1, data.shape[0])
-			j0 = max(j - l, 0)
-			j1 = min(j + l + 1, data.shape[1])
-			square = data[i0:i1,j0:j1]  # Extract the subarray within the moving window
-			# Calculate the average if the subarray is not empty
-			if square.size > 0:
-				tmp[i, j] = square.mean()
-	return tmp
+	half_width = (L - 1) // 2					# Calculate the half-width of the moving window
+	result = np.zeros_like(data, dtype=float)	# Initialize the result array with zeros
+	num_dims = data.ndim						# Get the number of dimensions in the input data
+
+	for index in np.ndindex(data.shape):
+		slices = tuple(slice(max(0, i - half_width), min(data.shape[dim], i + half_width + 1)) for dim, i in enumerate(index))
+		subarray = data[slices]
+		# Calculate the average if the subarray is not empty
+		if subarray.size > 0:
+			result[index] = subarray.mean()
+
+	return result
 
 def normalize_array(x):
 	# Step 1: Calculate the mean value and the standard deviation of the input array 'x'.
@@ -171,6 +170,61 @@ def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, A):
 	norm = np.pi*sigmax*sigmay/np.sqrt(1 - (sigmax*sigmay/sigmaxy**2)**2)
 	gauss = np.exp(-arg)*A/norm
 	return gauss.ravel()
+
+def custom_fit(dim, max_ind, minima, edges, counts, gap):
+	# Initialize flag and goodness variables
+	flag = 1
+	goodness = 5
+
+	# Extract relevant data within the specified minima
+	Edges = xedges[minima[2*dim]:minima[2*dim + 1]]
+	Counts = counts
+	for d in range(counts.ndim):
+		if d != dim:
+			Counts = np.sum(Counts, axis=d)
+
+	# Initial parameter guesses
+	mu0 = Edges[max_ind]
+	sigma0 = (Edges[minima[2*dim + 1]] - xedges[minima[2*dim]])/2
+	A0 = Counts[max_ind]
+
+	# Create a meshgrid for fitting
+	try:
+		# Attempt to fit a Gaussian using curve_fit
+		popt, pcov = scipy.optimize.curve_fit(Gaussian, Edges, Counts,
+			p0=[mu0, sigma0, A0], bounds=([0.0, 0.0, 0.0], [1.0, np.inf, np.inf]))
+
+		# Check goodness of fit and update the goodness variable
+		if popt[2] < A0/2:
+			goodness -= 1
+		if popt[0] < Edges[0] or popt[0] > Edges[-1]:
+			goodness -= 1
+		if popt[1] > Edges[-1] - Edges[0]:
+			goodness -= 1
+
+		# Calculate parameter errors
+		perr = np.sqrt(np.diag(pcov))
+		for j in range(len(perr)):
+			if perr[j]/popt[j] > 0.5:
+				goodness -= 1
+
+		# Check if the fitting interval is too small in either dimension
+		if minima[2*dim + 1] - minima[2*dim] <= gap:
+			goodness -= 1
+
+	except RuntimeError:
+		print('\tFit: Runtime error. ')
+		flag = 0
+		popt = []
+	except TypeError:
+		print('\tFit: TypeError.')
+		flag = 0
+		popt = []
+	except ValueError:
+		print('\tFit: ValueError.')
+		flag = 0
+		popt = []
+	return flag, goodness, popt
 
 def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
 	# Initialize flag and goodness variables
