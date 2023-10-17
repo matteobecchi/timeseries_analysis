@@ -15,8 +15,6 @@ import plotly.io as pio
 import plotly.express as px
 import seaborn as sns
 
-dimensions = 2
-
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
 	try:
@@ -48,10 +46,12 @@ def read_input_parameters():
 	# Step 5: Check if the shape of 'data_dir' array is (2, ).
 	# If yes, return 'data_dir' as an array along with 'PAR'.
 	# Otherwise, return 'data_dir' as a string along with 'PAR'.
-	if data_dir.shape[0] > 1:
-		return data_dir, PAR
-	else:
-		return str(data_dir), PAR
+	return str(data_dir), PAR
+
+	# if isinstance(data_dir, str):
+	# 	return str(data_dir), PAR
+	# else:
+	# 	return data_dir, PAR		
 
 def read_data(filename):
 	# Check if the filename ends with a supported format.

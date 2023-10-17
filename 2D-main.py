@@ -85,9 +85,9 @@ def plot_input_data(M, PAR, filename):
 		Bins.append(bins0)
 		Counts.append(counts0)
 
-	fig = plt.figure(figsize=(9, 9))
 	if M.shape[2] == 2:
 		# Create a plot with two subplots (side-by-side)
+		fig = plt.figure(figsize=(9, 9))
 		grid = fig.add_gridspec(4, 4)
 		ax1 = fig.add_subplot(grid[0:1, 0:3])
 		ax2 = fig.add_subplot(grid[1:4, 0:3])
@@ -109,6 +109,23 @@ def plot_input_data(M, PAR, filename):
 		# Set labels and titles for the plots
 		ax2.set_ylabel('Signal 1')
 		ax2.set_xlabel('Signal 2')
+
+	elif M.shape[2] == 3:
+		fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
+		
+		# Plot the individual trajectories
+		step = 10 if M.size > 1000000 else 1
+		for idx, mol in enumerate(M[::step]):
+			ax[0][0].plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+			ax[0][1].plot(mol[:,0], mol[:,2], color='black', lw=0.1, alpha=0.5, rasterized=True)
+			ax[1][0].plot(mol[:,1], mol[:,2], color='black', lw=0.1, alpha=0.5, rasterized=True)
+
+		# Set labels and titles for the plots
+		ax[0][0].set_ylabel('Signal 1')
+		ax[0][1].set_xlabel('Signal 3')
+		ax[1][0].set_xlabel('Signal 2')
+		ax[1][0].set_ylabel('Signal 3')
+		ax[1][1].axis('off')
 
 	if show_plot:
 		plt.show()
@@ -230,19 +247,56 @@ def gauss_fit_max(M, bins, filename):
 	ellipse = [C, a]
 
 	### Plot the distribution and the fitted Gaussians -- this clearly works only with 2-dimensional data
-	fig, ax = plt.subplots(figsize=(6, 6))
-	im = matplotlib.image.NonUniformImage(ax, interpolation='nearest')
-	xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-	ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-	im.set_data(xcenters, ycenters, counts.T)
-	ax.add_image(im)
-	ax.scatter(C[0], C[1], s=8.0, c='red')
-	circle1 = matplotlib.patches.Ellipse(C, a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-	circle2 = matplotlib.patches.Ellipse(C, a[0], a[1], color='r', fill=False)
-	ax.add_patch(circle1)
-	ax.add_patch(circle2)
-	ax.set_xlim([0.0, 1.0])
-	ax.set_ylim([0.0, 1.0])
+	if M.shape[2] == 2:
+		fig, ax = plt.subplots(figsize=(6, 6))
+		im = matplotlib.image.NonUniformImage(ax, interpolation='nearest')
+		xcenters = (edges[0][:-1] + edges[0][1:]) / 2
+		ycenters = (edges[1][:-1] + edges[1][1:]) / 2
+		im.set_data(xcenters, ycenters, counts.T)
+		ax.add_image(im)
+		ax.scatter(C[0], C[1], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse(C, a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse(C, a[0], a[1], color='r', fill=False)
+		ax.add_patch(circle1)
+		ax.add_patch(circle2)
+		ax.set_xlim([0.0, 1.0])
+		ax.set_ylim([0.0, 1.0])
+	elif M.shape[2] == 3:
+		fig, ax = plt.subplots(2, 2, figsize=(6, 6))
+		xcenters = (edges[0][:-1] + edges[0][1:]) / 2
+		ycenters = (edges[1][:-1] + edges[1][1:]) / 2
+		zcenters = (edges[2][:-1] + edges[2][1:]) / 2
+
+		im = matplotlib.image.NonUniformImage(ax[0][0], interpolation='nearest')
+		im.set_data(xcenters, ycenters, counts.T)
+		ax[0][0].add_image(im)
+		ax[0][0].scatter(C[0], C[1], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse([C[0], C[1]], a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([C[0], C[1]], a[0], a[1], color='r', fill=False)
+		ax[0][0].add_patch(circle1)
+		ax[0][0].add_patch(circle2)
+
+		im = matplotlib.image.NonUniformImage(ax[0][1], interpolation='nearest')
+		im.set_data(zcenters, ycenters, counts.T)
+		ax[0][1].add_image(im)
+		ax[0][1].scatter(C[2], C[1], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse([C[2], C[1]], a[2]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([C[2], C[1]], a[2], a[1], color='r', fill=False)
+		ax[0][1].add_patch(circle1)
+		ax[0][1].add_patch(circle2)
+
+		im = matplotlib.image.NonUniformImage(ax[1][0], interpolation='nearest')
+		im.set_data(xcenters, zcenters, counts.T)
+		ax[1][0].add_image(im)
+		ax[1][0].scatter(C[0], C[2], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse([C[0], C[2]], a[0]/number_of_sigmas, a[2]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([C[0], C[2]], a[0], a[2], color='r', fill=False)
+		ax[1][0].add_patch(circle1)
+		ax[1][0].add_patch(circle2)
+
+		for a in ax:
+			a.set_xlim([0.0, 1.0])
+			a.set_ylim([0.0, 1.0])
 
 	if show_plot:
 		plt.show()

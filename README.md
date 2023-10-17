@@ -15,7 +15,7 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 
 ## input_parameters.txt
 * `tau_window`: the length of the time window (in number of frames). 
-* `t_smooth`: the length of the smoothing window (in number of frames) for the moving average. 
+* `t_smooth`: the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. 
 * `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. Default should be 0. 
 * `t_conv`: converts number of frames in time units. 
 * `time_units`: a string indicating the time units (e.g., `ns`). 
@@ -23,7 +23,7 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
 
 ## Output
-The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. The files `all_cluster_IDs_gro.dat` and `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. The figure `Time_resolution_analysis.png` shows the number of identified states as a function of `tau_window`. 
+The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. The files `all_cluster_IDs_gro.dat` and `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. The figure `Time_resolution_analysis.png` shows the number of identified states as a function of `tau_window`, averaged over different `t_smooth`. 
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sys`. 
