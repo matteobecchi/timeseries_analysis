@@ -78,7 +78,7 @@ def plot_input_data(M, PAR, filename):
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
 
 	# Plot histogram in the second subplot (right side)
-	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
+	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 
 	# Compute the time array for the x-axis of the first subplot (left side)
 	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
@@ -601,25 +601,25 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
 	print('* t_smooth used:', t_smooth)
 
-	# for tau_w in tau_window:
-	# 	tmp = []
-	# 	for t_s in t_smooth:
-	# 		n_s = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
-	# 		if n_s == None:
-	# 			tmp.append(0)
-	# 		else:
-	# 			tmp.append(n_s)
-	# 	number_of_states.append(np.concatenate(([tau_w], tmp)))
+	for tau_w in tau_window:
+		tmp = []
+		for t_s in t_smooth:
+			n_s = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+			if n_s == None:
+				tmp.append(0)
+			else:
+				tmp.append(n_s)
+		number_of_states.append(np.concatenate(([tau_w], tmp)))
 
-	# savetxt('number_of_states.txt', number_of_states)
-	number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	savetxt('number_of_states.txt', number_of_states)
+	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 
 	plot_TRA_figure(number_of_states, tau_window, PAR[3], 'Time_resolution_analysis')
 
 def main():
 	M_raw, PAR, data_directory = all_the_input_stuff()
 	TRA_analysis(M_raw, PAR, data_directory)
-	full_output_analysis(M_raw, 10, PAR[0], PAR, data_directory)
+	full_output_analysis(M_raw, PAR[1], PAR[0], PAR, data_directory)
 
 if __name__ == "__main__":
 	main()
