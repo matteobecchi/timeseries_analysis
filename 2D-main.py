@@ -2,7 +2,7 @@ from functions import *
 
 output_file = 'states_output.txt'
 colormap = 'viridis'
-show_plot = False
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -111,21 +111,18 @@ def plot_input_data(M, PAR, filename):
 		ax2.set_xlabel('Signal 2')
 
 	elif M.shape[2] == 3:
-		fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
+		fig = plt.figure(figsize=(6, 6))
+		ax = plt.axes(projection='3d')
 		
 		# Plot the individual trajectories
-		step = 10 if M.size > 1000000 else 1
+		step = 1 if M.size > 1000000 else 1
 		for idx, mol in enumerate(M[::step]):
-			ax[0][0].plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
-			ax[0][1].plot(mol[:,0], mol[:,2], color='black', lw=0.1, alpha=0.5, rasterized=True)
-			ax[1][0].plot(mol[:,1], mol[:,2], color='black', lw=0.1, alpha=0.5, rasterized=True)
+			ax.plot(mol[:,0], mol[:,1], mol[:,2], color='black', marker='o', ms=0.5, lw=0.2, alpha=1.0, rasterized=True)
 
 		# Set labels and titles for the plots
-		ax[0][0].set_ylabel('Signal 1')
-		ax[0][1].set_xlabel('Signal 3')
-		ax[1][0].set_xlabel('Signal 2')
-		ax[1][0].set_ylabel('Signal 3')
-		ax[1][1].axis('off')
+		ax.set_xlabel('Signal 1')
+		ax.set_ylabel('Signal 2')
+		ax.set_zlabel('Signal 3')
 
 	if show_plot:
 		plt.show()
@@ -160,16 +157,17 @@ def gauss_fit_max(M, bins, filename):
 	def find_minima_around_max(data, max_ind, gap):
 		minima = []
 
-		for dim in range(data.ndim):
+		D = data.ndim
+		for dim in range(D):
 			min_id0 = max(max_ind[dim] - gap, 0)
 			min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-			tmp_c = np.swapaxes(data, 0, dim)
-			tmp_max = np.concatenate((max_ind[:dim], max_ind[dim + 1:]))
-			while min_id0 > 0 and data[min_id0, tmp_max] > data[min_id0 - 1, tmp_max]:
+			tmp_max = tuple([max_ind[i] for i in range(D) if i != dim])
+
+			while min_id0 > 0 and data[tuple([min_id0] + list(tmp_max))] > data[tuple([min_id0 - 1] + list(tmp_max))]:
 				min_id0 -= 1
 
-			while min_id1 < data.shape[dim] - 1 and data[min_id1, tmp_max] > data[min_id1 + 1, tmp_max]:
+			while min_id1 < data.shape[dim] - 1 and data[tuple([min_id1] + list(tmp_max))] > data[tuple([min_id1 + 1] + list(tmp_max))]:
 				min_id1 += 1
 
 			minima.extend([min_id0, min_id1])
@@ -179,7 +177,6 @@ def gauss_fit_max(M, bins, filename):
 	minima = find_minima_around_max(counts, max_ind, gap)
 
 	### 5. Try the fit between the minima and check its goodness ###
-	# flag_min, goodness_min, popt_min = fit_2D(max_ind, minima, xedges, yedges, counts, gap)
 	popt_min = []
 	for dim in range(M.shape[2]):
 		flag_min, goodness_min, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
@@ -191,16 +188,17 @@ def gauss_fit_max(M, bins, filename):
 		max_val = data.max()
 		minima = []
 
-		for dim in range(data.ndim):
+		D = data.ndim
+		for dim in range(D):
 			half_id0 = max(max_ind[dim] - gap, 0)
 			half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-			tmp_c = np.swapaxes(data, 0, dim)
-			tmp_max = np.concatenate((max_ind[:dim], max_ind[dim + 1:]))
-			while half_id0 > 0 and data[half_id0, tmp_max] > max_val/2:
+			tmp_max = tuple([max_ind[i] for i in range(D) if i != dim])
+
+			while half_id0 > 0 and data[tuple([half_id0] + list(tmp_max))] > max_val/2:
 				half_id0 -= 1
 
-			while half_id1 < data.shape[dim] and data[half_id1, tmp_max] > max_val/2:
+			while half_id1 < data.shape[dim] - 1 and data[tuple([half_id1] + list(tmp_max))] > max_val/2:
 				half_id1 += 1
 
 			minima.extend([half_id0, half_id1])
@@ -233,12 +231,6 @@ def gauss_fit_max(M, bins, filename):
 		print('\tWARNING: this fit is not converging.')
 		return [], []
 
-	with open(output_file, 'a') as f:
-		print('\n', file=f)
-		print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}')
-		print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}', file=f)
-		print('\tFit goodness = ' + str(goodness), file=f)
-
 	### Find the tresholds for state identification
 	C, a = [], []
 	for dim in range(M.shape[2]):
@@ -248,6 +240,12 @@ def gauss_fit_max(M, bins, filename):
 
 	### Plot the distribution and the fitted Gaussians -- this clearly works only with 2-dimensional data
 	if M.shape[2] == 2:
+		with open(output_file, 'a') as f:
+			print('\n', file=f)
+			print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}')
+			print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}', file=f)
+			print('\tFit goodness = ' + str(goodness), file=f)
+
 		fig, ax = plt.subplots(figsize=(6, 6))
 		im = matplotlib.image.NonUniformImage(ax, interpolation='nearest')
 		xcenters = (edges[0][:-1] + edges[0][1:]) / 2
@@ -262,13 +260,19 @@ def gauss_fit_max(M, bins, filename):
 		ax.set_xlim([0.0, 1.0])
 		ax.set_ylim([0.0, 1.0])
 	elif M.shape[2] == 3:
+		with open(output_file, 'a') as f:
+			print('\n', file=f)
+			print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}')
+			print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}', file=f)
+			print('\tFit goodness = ' + str(goodness), file=f)
+
 		fig, ax = plt.subplots(2, 2, figsize=(6, 6))
 		xcenters = (edges[0][:-1] + edges[0][1:]) / 2
 		ycenters = (edges[1][:-1] + edges[1][1:]) / 2
 		zcenters = (edges[2][:-1] + edges[2][1:]) / 2
 
 		im = matplotlib.image.NonUniformImage(ax[0][0], interpolation='nearest')
-		im.set_data(xcenters, ycenters, counts.T)
+		im.set_data(xcenters, ycenters, np.sum(counts, axis=0))
 		ax[0][0].add_image(im)
 		ax[0][0].scatter(C[0], C[1], s=8.0, c='red')
 		circle1 = matplotlib.patches.Ellipse([C[0], C[1]], a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
@@ -277,7 +281,7 @@ def gauss_fit_max(M, bins, filename):
 		ax[0][0].add_patch(circle2)
 
 		im = matplotlib.image.NonUniformImage(ax[0][1], interpolation='nearest')
-		im.set_data(zcenters, ycenters, counts.T)
+		im.set_data(zcenters, ycenters, np.sum(counts, axis=1))
 		ax[0][1].add_image(im)
 		ax[0][1].scatter(C[2], C[1], s=8.0, c='red')
 		circle1 = matplotlib.patches.Ellipse([C[2], C[1]], a[2]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
@@ -286,7 +290,7 @@ def gauss_fit_max(M, bins, filename):
 		ax[0][1].add_patch(circle2)
 
 		im = matplotlib.image.NonUniformImage(ax[1][0], interpolation='nearest')
-		im.set_data(xcenters, zcenters, counts.T)
+		im.set_data(xcenters, zcenters, np.sum(counts, axis=2))
 		ax[1][0].add_image(im)
 		ax[1][0].scatter(C[0], C[2], s=8.0, c='red')
 		circle1 = matplotlib.patches.Ellipse([C[0], C[2]], a[0]/number_of_sigmas, a[2]/number_of_sigmas, color='r', fill=False)
@@ -295,11 +299,12 @@ def gauss_fit_max(M, bins, filename):
 		ax[1][0].add_patch(circle2)
 
 		for a in ax:
-			a.set_xlim([0.0, 1.0])
-			a.set_ylim([0.0, 1.0])
+			for b in a:
+				b.set_xlim([0.0, 1.0])
+				b.set_ylim([0.0, 1.0])
 
-	if show_plot:
-		plt.show()
+	# if show_plot:
+	#  	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -403,29 +408,32 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		rgba = cmap(i)
 		palette.append(matplotlib.colors.rgb2hex(rgba))
 
-	fig, ax = plt.subplots(figsize=(6, 6))
+	fig = plt.figure(figsize=(6, 6))
+	ax = plt.axes(projection='3d')
 
 	# Plot the individual trajectories --- if labels are for individual points
-	step = 10 if M.size > 1000000 else 1
+	step = 1 if M.size > 1000000 else 1
 	max_T = all_the_labels.shape[1]
 	for i, mol in enumerate(M[::step]):
-		ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.1, alpha=0.5, rasterized=True, zorder=0)
-	for i, mol in enumerate(M[::step]):
-		ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=all_the_labels[i],
+		ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=all_the_labels[i],
 			cmap=cmap, vmin=0.0, vmax=np.max(np.unique(all_the_labels)), s=0.5, rasterized=True)
 
 	# Plot the Gaussian distributions of states
 	for S_id, S in enumerate(list_of_states):
-		circle1 = matplotlib.patches.Ellipse(S[1][0], S[1][1][0]/2.0, S[1][1][1]/2.0, color='red', fill=False)
-		circle2 = matplotlib.patches.Ellipse(S[1][0], S[1][1][0], S[1][1][1], color='red', fill=False, linestyle='--')
-		ax.add_patch(circle1)
-		ax.add_patch(circle2)
+		[mux, muy, muz] = S[1][0]
+		[a, b, c] = S[1][1]
+		u = np.linspace(0, 2*np.pi, 100)
+		v = np.linspace(0, np.pi, 100)
+		x = a*np.outer(np.cos(u), np.sin(v)) + mux
+		y = b*np.outer(np.sin(u), np.sin(v)) + muy
+		z = c*np.outer(np.ones_like(u), np.cos(v)) + muz
+		ax.plot_surface(x, y, z, alpha=0.25, color=palette[S_id])
 
 	# Set plot titles and axis labels
 	ax.set_xlabel('Signal 1')
 	ax.set_ylabel('Signal 2')
-	ax.set_xlim([0.0, 1.0])
-	ax.set_ylim([0.0, 1.0])
+	ax.set_zlabel('Signal 3')
 
 	if show_plot:
 		plt.show()
@@ -495,7 +503,7 @@ def main():
 		return
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
-	plot_paper_figure(M, PAR, all_the_labels, list_of_states)
+#	plot_paper_figure(M, PAR, all_the_labels, list_of_states)
 
 if __name__ == "__main__":
 	main()

@@ -43,15 +43,10 @@ def read_input_parameters():
 
 	print('* Reading data from', data_dir)
 
-	# Step 5: Check if the shape of 'data_dir' array is (2, ).
-	# If yes, return 'data_dir' as an array along with 'PAR'.
-	# Otherwise, return 'data_dir' as a string along with 'PAR'.
-	return str(data_dir), PAR
-
-	# if isinstance(data_dir, str):
-	# 	return str(data_dir), PAR
-	# else:
-	# 	return data_dir, PAR		
+	if data_dir.size == 1:
+		return str(data_dir), PAR
+	else:
+		return data_dir, PAR		
 
 def read_data(filename):
 	# Check if the filename ends with a supported format.
@@ -178,10 +173,8 @@ def custom_fit(dim, max_ind, minima, edges, counts, gap):
 
 	# Extract relevant data within the specified minima
 	Edges = edges[minima[2*dim]:minima[2*dim + 1]]
-	Counts = counts
-	for d in range(counts.ndim):
-		if d != dim:
-			Counts = np.sum(Counts, axis=d)
+	all_axes = tuple(i for i in range(counts.ndim) if i != dim)
+	Counts = np.sum(counts, axis=all_axes)
 	Counts = Counts[minima[2*dim]:minima[2*dim + 1]]
 
 	# Initial parameter guesses
@@ -300,6 +293,10 @@ def relabel_states(all_the_labels, list_of_states):
 	# Use vectorized indexing to relabel the states in 'all_the_labels'.
 	tmp1 = np.vectorize(label_to_index.get)(all_the_labels)
 
+	for a in range(len(tmp1)):
+		for b in range(len(tmp1[a])):
+			tmp1[a][b] = list_unique[tmp1[a][b]]
+
 	# Step 4: Order the states according to the mu values in the 'list1' array.
 	list1.sort(key=lambda state: state[0][0])
 
@@ -399,7 +396,6 @@ def set_final_states(list_of_states, all_the_labels):
 	return list_of_states, final_list, new_labels
 
 def relabel_states_2D(all_the_labels, list_of_states):
-	# print(np.unique(all_the_labels), len(list_of_states))
 	### Step 1: sort according to the relevance, and remove possible empty states
 	sorted_indices = [index + 1 for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
 	sorted_states = sorted(list_of_states, key=lambda x: x[2], reverse=True)
@@ -422,7 +418,7 @@ def relabel_states_2D(all_the_labels, list_of_states):
 			C0 = s0[1][0]
 			C1 = s1[1][0]
 			diff = np.abs(np.subtract(C1, C0))
-			if (diff[0] < np.max([s0[1][1][0], s1[1][1][0]]) and diff[1] < np.max([s0[1][1][1], s1[1][1][1]])):
+			if np.all(diff < [ max(s0[1][1][k], s1[1][1][k]) for k in range(diff.size) ]):
 				merge_pairs.append([i + 1, j + i + 2])
 
 	state_mapping = {i: i for i in range(len(sorted_states) + 1)}
@@ -445,9 +441,19 @@ def relabel_states_2D(all_the_labels, list_of_states):
 
 	# Step 5: print informations on the final states
 	with open('final_states.txt', 'w') as f:
-		print('#[Cx, Cy] a b', file=f)
+		print('#center_coords, semiaxis', file=f)
 		for s in updated_states:
-			print('[' + str(s[0][0]) + ', ' +  str(s[0][1]) + ']', s[0][2], s[0][3], file=f)
+			C = s[1][0]
+			centers = '[' + str(C[0]) + ', '
+			for ck in C[1:-1]:
+				centers += str(ck) + ', '
+			centers += str(C[-1]) + ']'
+			A = s[1][1]
+			axis = '[' + str(A[0]) + ', '
+			for ck in A[1:-1]:
+				axis += str(ck) + ', '
+			axis += str(A[-1]) + ']'
+			print(centers, axis, file=f)
 
 	return updated_labels, updated_states
 
@@ -474,24 +480,27 @@ def assign_final_states_to_single_frames_2D(M, all_the_labels, tau_window, final
 	return new_labels
 
 def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
-	y_t = np.array([ np.mean(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
-	y_err = np.array([ np.std(np.array([ i for i in x[1:] if i != 0 ])) for x in number_of_states ])
-
-	fig, ax = plt.subplots()
+	y_t = np.array([ np.mean(np.array([ i for i in x if i != 0 ])) for x in number_of_states ])
+	y_err = np.array([ np.std(np.array([ i for i in x if i != 0 ])) for x in number_of_states ])
 	time = [ t*t_conv for t in tau_window ]
 
-	ax.plot(time, y_t, marker='o')
+	fig, ax = plt.subplots()
+
+	color = next(ax._get_lines.prop_cycler)['color']
+	ax.plot(time, y_t, marker='o', lw=0.0, c=color)
 	err_inf = y_t - y_err
 	err_sup = y_t + y_err
 	ax.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
-	x_fit = np.linspace(time[0]/2, time[-1]*2, 1000)
+	x_fit = np.linspace(time[0]/2, time[-1]*2, 10000)
 	popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t, bounds=([0, 0, 0], [np.inf, np.inf, np.inf]))
+	x_fit = np.logspace(np.log10(time[0]/2), np.log10(time[-1]*2), num=100)
 	y_fit = sigmoidal(x_fit, *popt)
-	ax.plot(x_fit, y_fit, linestyle='--', color='dimgray')
+	ax.plot(x_fit, y_fit, linestyle='--', c=color)
 	
 	print('Asymptotic number of environments: ')
 	print(popt[0]/2 + popt[1], '(', np.sqrt(pcov[0][0])/2 + np.sqrt(pcov[1][1]), ')')
 	print(popt[1], '(', np.sqrt(pcov[1][1]), ')')
+	print(1/popt[2], '(', np.sqrt(pcov[2][2])/(popt[2]**2), ')')
 
 	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 	ax2 = ax.twiny()
@@ -507,6 +516,28 @@ def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
 
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
+
+	fig, ax = plt.subplots()
+
+	for i, data in enumerate(np.array(number_of_states).T[1:]):
+		color = next(ax._get_lines.prop_cycler)['color']
+		ax.plot(time, data, marker='o', c=color)
+		
+	ax.legend()
+	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+	ax2 = ax.twiny()
+	ax2.set_xlabel(r'Analysis time window $\tau_w$ [frames]', weight='bold')
+	ax2.set_xscale('log')
+
+	ax.set_xlabel(r'Analysis time window $\tau_w$ [ns]', weight='bold')
+	ax.set_ylabel(r'Number of environments', weight='bold')
+	ax.set_xscale('log')
+
+	ax.set_xlim(time[0]/2, time[-1]*2)
+	ax2.set_xlim(tau_window[0]/2, tau_window[-1]*2)
+
+	plt.show()
+	fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def print_mol_labels1(all_the_labels, PAR, filename):
 	print('* Print color IDs for Ovito...')
@@ -538,7 +569,7 @@ def print_mol_labels_fbf_xyz(all_the_labels):
 
 def print_mol_labels_fbf_lam(all_the_labels):
 	print('* Print color IDs for Ovito...')
-	with open('all_cluster_IDs_xyz.dat', 'w') as f:
+	with open('all_cluster_IDs_lam.dat', 'w') as f:
 		for t in range(all_the_labels.shape[1]):
 			# Print nine lines containing '#' to separate time steps.
 			for k in range(9):
