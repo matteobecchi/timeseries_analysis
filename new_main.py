@@ -559,8 +559,18 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
+		# We need to free the memory otherwise it accumulates
+		del M_raw
+		del M
+		del all_the_labels
 		return
 	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
+
+	# We need to free the memory otherwise it accumulates
+	del M_raw
+	del M
+	del all_the_labels
+
 	if one_last_state:
 		return len(list_of_states) + 1
 	else:
@@ -582,11 +592,10 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	# plot_all_trajectory_with_histos(M, PAR, name + 'Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
-	print_mol_labels_fbf_gro(all_the_labels)
-	print_mol_labels_fbf_lam(all_the_labels)
+	print_mol_labels_fbf_xyz(all_the_labels)
 
-	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
-		sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
+	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
+	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 
 def TRA_analysis(M_raw, PAR, data_directory):
 	number_of_states = []
@@ -599,6 +608,8 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
+	t_smooth = [10]### This line has to be removed
+	# t_smooth = [6, 8, 10, 12, 14, 16]### This line has to be removed
 	print('* t_smooth used:', t_smooth)
 
 	for tau_w in tau_window:
@@ -612,6 +623,7 @@ def TRA_analysis(M_raw, PAR, data_directory):
 		number_of_states.append(np.concatenate(([tau_w], tmp)))
 
 	savetxt('number_of_states.txt', number_of_states)
+	number_of_states = np.array(number_of_states)[:, 1:]
 	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 
 	plot_TRA_figure(number_of_states, tau_window, PAR[3], 'Time_resolution_analysis')
