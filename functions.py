@@ -95,7 +95,7 @@ def moving_average(data, window):
 	# The result is a smoothed version of the 'data', where each point represents the weighted average of its neighbors.
 	if data.ndim == 1:
 		return np.convolve(data, weights, mode='valid')
-	elif data.ndim == 2:
+	elif data.ndim >= 2:
 		return np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'), axis=1, arr=data)
 	else:
 		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
@@ -421,13 +421,22 @@ def relabel_states_2D(all_the_labels, list_of_states):
 			if np.all(diff < [ max(s0[1][1][k], s1[1][1][k]) for k in range(diff.size) ]):
 				merge_pairs.append([i + 1, j + i + 2])
 
+	for p0 in range(len(merge_pairs)):
+		for p1 in range(p0 + 1, len(merge_pairs)):
+			if merge_pairs[p1][0] == merge_pairs[p0][1]:
+				merge_pairs[p1][0] = merge_pairs[p0][0]
+
 	state_mapping = {i: i for i in range(len(sorted_states) + 1)}
 	for s0, s1 in merge_pairs:
 		state_mapping[s1] = s0
+
 	updated_labels = np.empty(sorted_all_the_labels.shape)
 	for a, mol in enumerate(sorted_all_the_labels):
 		for b, label in enumerate(mol):
-			updated_labels[a][b] = state_mapping[label]
+			try:
+				updated_labels[a][b] = state_mapping[label]
+			except:
+				print(state_mapping)
 	states_to_remove = set(s1 for s0, s1 in merge_pairs)
 	updated_states = [sorted_states[s] for s in range(len(sorted_states)) if s + 1 not in states_to_remove]
 
@@ -480,39 +489,43 @@ def assign_final_states_to_single_frames_2D(M, all_the_labels, tau_window, final
 	return new_labels
 
 def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
-	y_t = np.array([ np.mean(np.array([ i for i in x if i != 0 ])) for x in number_of_states ])
-	y_err = np.array([ np.std(np.array([ i for i in x if i != 0 ])) for x in number_of_states ])
-	time = [ t*t_conv for t in tau_window ]
+	tmp_y_t = [ np.mean(np.array([ i for i in x if i != 0 ])) for x in number_of_states ]
+	tmp_y_err = [ np.std(np.array([ i for i in x if i != 0 ])) for x in number_of_states ]
+	tmp_time = [ t*t_conv for t in tau_window ]
+
+	y_t = np.array([ el for el in tmp_y_t if math.isnan(el) == False ])
+	y_err = np.array([ tmp_y_err[t] for t in range(len(tmp_y_t)) if math.isnan(tmp_y_t[t]) == False ])
+	time = [ tmp_time[t] for t in range(len(tmp_y_t)) if math.isnan(tmp_y_t[t]) == False ]
 
 	fig, ax = plt.subplots()
 
 	color = next(ax._get_lines.prop_cycler)['color']
-	ax.plot(time, y_t, marker='o', lw=0.0, c=color)
+	ax.plot(time, y_t, marker='o', c=color)
 	err_inf = y_t - y_err
 	err_sup = y_t + y_err
 	ax.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
-	x_fit = np.linspace(time[0]/2, time[-1]*2, 10000)
-	popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t, bounds=([0, 0, 0], [np.inf, np.inf, np.inf]))
-	x_fit = np.logspace(np.log10(time[0]/2), np.log10(time[-1]*2), num=100)
-	y_fit = sigmoidal(x_fit, *popt)
-	ax.plot(x_fit, y_fit, linestyle='--', c=color)
+	# x_fit = np.linspace(time[0]/2, time[-1]*2, 10000)
+	# popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t, bounds=([0, 0, 0], [np.inf, np.inf, np.inf]))
+	# x_fit = np.logspace(np.log10(time[0]/2), np.log10(time[-1]*2), num=100)
+	# y_fit = sigmoidal(x_fit, *popt)
+	# ax.plot(x_fit, y_fit, linestyle='--', c=color)
 	
-	print('Asymptotic number of environments: ')
-	print(popt[0]/2 + popt[1], '(', np.sqrt(pcov[0][0])/2 + np.sqrt(pcov[1][1]), ')')
-	print(popt[1], '(', np.sqrt(pcov[1][1]), ')')
-	print(1/popt[2], '(', np.sqrt(pcov[2][2])/(popt[2]**2), ')')
+	# print('Asymptotic number of environments: ')
+	# print(popt[0]/2 + popt[1], '(', np.sqrt(pcov[0][0])/2 + np.sqrt(pcov[1][1]), ')')
+	# print(popt[1], '(', np.sqrt(pcov[1][1]), ')')
+	# print(1/popt[2], '(', np.sqrt(pcov[2][2])/(popt[2]**2), ')')
 
 	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 	ax2 = ax.twiny()
-	ax2.set_xlabel(r'Analysis time window $\tau_w$ [frames]', weight='bold')
+	ax2.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
 	ax2.set_xscale('log')
 
-	ax.set_xlabel(r'Analysis time window $\tau_w$ [ns]', weight='bold')
-	ax.set_ylabel(r'Number of environments', weight='bold')
+	ax.set_xlabel(r'Time resolution $\tau$ [ns]', weight='bold')
+	ax.set_ylabel(r'Number of states', weight='bold')
 	ax.set_xscale('log')
 
 	ax.set_xlim(time[0]/2, time[-1]*2)
-	ax2.set_xlim(tau_window[0]/2, tau_window[-1]*2)
+	ax2.set_xlim(time[0]/(2*t_conv), time[-1]*2/t_conv)
 
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
@@ -521,23 +534,23 @@ def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
 
 	for i, data in enumerate(np.array(number_of_states).T[1:]):
 		color = next(ax._get_lines.prop_cycler)['color']
-		ax.plot(time, data, marker='o', c=color)
+		ax.plot(tmp_time, data, marker='o', c=color, label=str(i + 1))
 		
 	ax.legend()
 	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 	ax2 = ax.twiny()
-	ax2.set_xlabel(r'Analysis time window $\tau_w$ [frames]', weight='bold')
+	ax2.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
 	ax2.set_xscale('log')
 
-	ax.set_xlabel(r'Analysis time window $\tau_w$ [ns]', weight='bold')
-	ax.set_ylabel(r'Number of environments', weight='bold')
+	ax.set_xlabel(r'Time resolution $\tau$ [ns]', weight='bold')
+	ax.set_ylabel(r'Number of states', weight='bold')
 	ax.set_xscale('log')
 
 	ax.set_xlim(time[0]/2, time[-1]*2)
-	ax2.set_xlim(tau_window[0]/2, tau_window[-1]*2)
+	ax2.set_xlim(time[0]/(2*t_conv), time[-1]*2/t_conv)
 
-	plt.show()
-	fig.savefig('output_figures/Fig4.png', dpi=600)
+	fig.savefig('output_figures/Fig3.png', dpi=600)
+	plt.close(fig)
 
 def print_mol_labels1(all_the_labels, PAR, filename):
 	print('* Print color IDs for Ovito...')
