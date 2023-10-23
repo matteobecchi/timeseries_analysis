@@ -608,8 +608,6 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
-	t_smooth = [10]### This line has to be removed
-	# t_smooth = [6, 8, 10, 12, 14, 16]### This line has to be removed
 	print('* t_smooth used:', t_smooth)
 
 	for tau_w in tau_window:
