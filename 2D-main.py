@@ -511,10 +511,15 @@ def plot_paper_figure(M, PAR, all_the_labels, list_of_states, tau_window, number
 	err_sup = y_t + y_err
 	ax2.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
 
-	ax2.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
+	ax2.set_xlabel(r'Time resolution $\tau$ ' + PAR[4], weight='bold')
 	ax2.set_ylabel(r'# of states', weight='bold')
 	ax2.set_xscale('log')
 	ax2.set_xlim(time[0]/2, time[-1]*2)
+
+	ax2t = ax2.twiny()
+	ax2t.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
+	ax2t.set_xscale('log')
+	ax2t.set_xlim(time[0]/2/t_conv, time[-1]*2/t_conv)
 
 	plt.tight_layout()
 	plt.show()
@@ -534,17 +539,18 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 		del M_raw
 		del M
 		del all_the_labels
-		return
+		return None, None
 	
 	# We need to free the memory otherwise it accumulates
 	del M_raw
 	del M
 	del all_the_labels
 
+	fraction_0 = 1 - np.sum([ state[2] for state in list_of_states ])
 	if one_last_state:
-		return len(list_of_states) + 1
+		return len(list_of_states) + 1, fraction_0
 	else:
-		return len(list_of_states)
+		return len(list_of_states), fraction_0
 
 def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory, tau_window, number_of_states):
 	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
@@ -561,7 +567,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory, tau_window
 
 	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
-	# plot_paper_figure(M, PAR, all_the_labels, list_of_states, tau_window, number_of_states)
+	plot_paper_figure(M, PAR, all_the_labels, list_of_states, tau_window, number_of_states)
 
 def TRA_analysis(M_raw, PAR, data_directory):	
 	t_smooth_max = 10
@@ -577,14 +583,31 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 
-	### If the analysis hat to be performed anew
-	number_of_states = [ [tau_w] + [timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory) or 0 for t_s in t_smooth] for tau_w in tau_window ]
-	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
-	number_of_states = np.array(number_of_states)[:, 1:]
+	# ### If the analysis hat to be performed anew
+	# number_of_states = []
+	# fraction_0 = []
+	# for tau_w in tau_window:
+	# 	tmp = [tau_w]
+	# 	tmp1 = [tau_w]
+	# 	for t_s in t_smooth:
+	# 		n_s, f0 = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+	# 		n_s = n_s or 0
+	# 		f0 = f0 or 0
+	# 		tmp.append(n_s)
+	# 		tmp1.append(f0)
+	# 	number_of_states.append(tmp)
+	# 	fraction_0.append(tmp1)
+	# # number_of_states = [ [tau_w] + [timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)[0] or 0 for t_s in t_smooth] for tau_w in tau_window ]
+	# # fraction_0 = [ [tau_w] + [timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)[1] or 0 for t_s in t_smooth] for tau_w in tau_window ]
+	# np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
+	# np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
+	# number_of_states = np.array(number_of_states)[:, 1:]
+	# fraction_0 = np.array(fraction_0)[:, 1:]
 
-	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
-	plot_TRA_figure(number_of_states, tau_window, PAR[3], 'Time_resolution_analysis')
+	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], 'Time_resolution_analysis')
 	return tau_window, number_of_states
 
 def main():

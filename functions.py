@@ -300,7 +300,7 @@ def relabel_states(all_the_labels, list_of_states):
 	# Step 4: Order the states according to the mu values in the 'list1' array.
 	list1.sort(key=lambda state: state[0][0])
 
-	# # Create 'tmp2' by relabeling the states based on the sorted order.
+	# Create 'tmp2' by relabeling the states based on the sorted order.
 	tmp2 = np.zeros_like(tmp1)
 	for old_label in list_unique:
 		tmp2[tmp1 == old_label] = label_to_index.get(old_label)
@@ -321,10 +321,10 @@ def set_final_states(list_of_states, all_the_labels):
 	for s0 in range(len(list_of_states)):
 		for s1 in range(s0 + 1, len(list_of_states)):
 			# Check whether the criteria for considering a state as "final" is met.
-			if peak[s0] > peak[s1] and mu[s1] - mu[s0] < sigma[s0]:
+			if peak[s0] > peak[s1] and abs(mu[s1] - mu[s0]) < sigma[s0]:
 				tmp_list.append(s1)
 				old_to_new_map.append([s1, s0])
-			elif peak[s0] < peak[s1] and mu[s1] - mu[s0] < sigma[s1]:
+			elif peak[s0] < peak[s1] and abs(mu[s1] - mu[s0]) < sigma[s1]:
 				tmp_list.append(s0)
 				old_to_new_map.append([s0, s1])
 
@@ -379,7 +379,7 @@ def set_final_states(list_of_states, all_the_labels):
 	# Remove the tresholds outside the interval [0, 1]
 	final_list = [entry for entry in final_list if 0.0 <= entry[0] <= 1.0]
 
-	# Step 5: Sort the thresholds and add missing states.
+	# Step 5: Sort the thresholds.
 	final_list = np.array(final_list)
 	final_list = sorted(final_list, key=lambda x: x[0])
 
@@ -436,7 +436,7 @@ def relabel_states_2D(all_the_labels, list_of_states):
 			try:
 				updated_labels[a][b] = state_mapping[label]
 			except:
-				print(state_mapping)
+				print('No classification found.')
 	states_to_remove = set(s1 for s0, s1 in merge_pairs)
 	updated_states = [sorted_states[s] for s in range(len(sorted_states)) if s + 1 not in states_to_remove]
 
@@ -471,24 +471,7 @@ def assign_single_frames(all_the_labels, tau_window):
 	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
 	return new_labels
 
-def assign_final_states_to_single_frames(M, final_list):
-	print('* Assigning labels to the single frames...')
-	# Create an array of threshold values for comparison (shape: (1, len(final_list))).
-	thresholds = np.array([item[0] for item in final_list])
-	# Create a mask to compare M with the thresholds (shape: (M.shape[0], M.shape[1], len(final_list))).
-	mask = (M[:, :, np.newaxis] >= thresholds[:-1]) & (M[:, :, np.newaxis] <= thresholds[1:])
-	# Assign labels using argmax to find the index of the first True value along the third axis.
-	all_the_labels = np.argmax(mask, axis=2)
-	# In case a value in M is outside the threshold range, the last label will be selected (len(final_list) - 1).
-	all_the_labels[~mask.any(axis=2)] = len(final_list) - 1
-	return all_the_labels
-
-def assign_final_states_to_single_frames_2D(M, all_the_labels, tau_window, final_list):
-	print('* Assigning labels to the single frames...')
-	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
-	return new_labels
-
-def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
+def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, filename):
 	tmp_y_t = [ np.mean(np.array([ i for i in x if i != 0 ])) for x in number_of_states ]
 	tmp_y_err = [ np.std(np.array([ i for i in x if i != 0 ])) for x in number_of_states ]
 	tmp_time = [ t*t_conv for t in tau_window ]
@@ -519,6 +502,11 @@ def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
 	ax2 = ax.twiny()
 	ax2.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
 	ax2.set_xscale('log')
+
+	# axr = ax.twinx()
+	# mf0 = np.mean(fraction_0, axis=1)
+	# axr.plot(time, fraction_0.T[0][:len(time)], marker='o', lw=1.0, color='#ff7f0e')
+	# axr.set_ylabel('Fraction of unclassified points', weight='bold')
 
 	ax.set_xlabel(r'Time resolution $\tau$ [ns]', weight='bold')
 	ax.set_ylabel(r'Number of states', weight='bold')
@@ -552,17 +540,6 @@ def plot_TRA_figure(number_of_states, tau_window, t_conv, filename):
 	fig.savefig('output_figures/Fig3.png', dpi=600)
 	plt.close(fig)
 
-def print_mol_labels1(all_the_labels, PAR, filename):
-	print('* Print color IDs for Ovito...')
-	tau_window = PAR[0]
-	with open(filename, 'w') as f:
-		for i in range(all_the_labels.shape[0]):
-			string = str(all_the_labels[i][0])
-			for t in range(1, tau_window):
-					string += ' ' + str(all_the_labels[i][0])
-			string = ' '.join([(str(label) + ' ') * tau_window for label in all_the_labels[i][1:]])
-			print(string, file=f)
-
 def print_mol_labels_fbf_gro(all_the_labels):
 	print('* Print color IDs for Ovito...')
 	with open('all_cluster_IDs_gro.dat', 'w') as f:
@@ -590,20 +567,3 @@ def print_mol_labels_fbf_lam(all_the_labels):
 			# Use np.savetxt to write the labels for each time step efficiently.
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
-def tmp_print_some_data(M, PAR, all_the_labels, filename):
-	tau_window = PAR[0]
-	with open(filename, 'w') as f:
-		with open('labels_for_PCA.txt', 'w') as f2:
-			print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
-			for i in range(all_the_labels.shape[0]):
-				for w in range(all_the_labels.shape[1]):
-					if all_the_labels[i][w] > 1:
-						print(all_the_labels[i][w], file=f2)
-						for t in range(tau_window):
-							print(M[i][w*tau_window + t], file=f)
-	with open('for_Martina_PCA_ALL.txt', 'w') as f:
-		print('### Size of the time window: ' + str(tau_window) + ' frames. ', file=f)
-		for i in range(all_the_labels.shape[0]):
-			for w in range(all_the_labels.shape[1]):
-				for t in range(tau_window):
-					print(M[i][w*tau_window + t], file=f)
