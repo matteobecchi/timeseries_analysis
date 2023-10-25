@@ -15,7 +15,32 @@ def all_the_input_stuff():
 		print('\tERROR: data_directory.txt is missing or wrongly formatted. ')
 
 	# Remove initial frames based on 'tau_delay'.
-	M_raw = M_raw[:, PAR[2]:]
+	M_raw = M_raw[:, PAR[1]:]
+
+	# Apply filtering on the data
+	M = moving_average(M_raw, PAR[0])
+
+	# Normalize the data to the range [0, 1].
+	sig_max = np.max(M)
+	sig_min = np.min(M)
+	M = (M - sig_min)/(sig_max - sig_min)
+
+	# Get the number of particles and total frames in the trajectory.
+	total_particles = M.shape[0]
+	total_time = M.shape[1]
+
+	# Calculate the number of windows for the analysis.
+	num_windows = int(total_time / PAR[0])
+
+	# Print informative messages about trajectory details.
+	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
+	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[2]) + ' ns). ')
+	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(PAR[0]) + ' frames (' + str(PAR[0]*PAR[2]) + ' ns). ')
+
+	# Initialize an array to store labels for each window.
+	all_the_labels = np.zeros((M.shape[0], num_windows))
+	 # Initialize an empty list to store unique states in each window.
+	list_of_states = []
 
 	### Create files for output
 	with open(output_file, 'w') as f:
@@ -33,44 +58,15 @@ def all_the_input_stuff():
 		except Exception as e:
 			print(f'Failed to delete {file_path}. Reason: {e}')
 
-	return M_raw, PAR, data_directory
-
-def preparing_the_data(M_raw, t_smooth, tau_window, PAR):
-	# Apply filtering on the data
-	M = moving_average(M_raw, t_smooth)
-
-	# Normalize the data to the range [0, 1].
-	sig_max = np.max(M)
-	sig_min = np.min(M)
-	M = (M - sig_min)/(sig_max - sig_min)
-
-	# Get the number of particles and total frames in the trajectory.
-	total_particles = M.shape[0]
-	total_time = M.shape[1]
-
-	# Calculate the number of windows for the analysis.
-	num_windows = int(total_time / tau_window)
-
-	# Print informative messages about trajectory details.
-	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
-	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[3]), str(PAR[4]) + ')')
-	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*PAR[3]), str(PAR[4]) + ')')
-
-	# Initialize an array to store labels for each window.
-	all_the_labels = np.zeros((M.shape[0], num_windows))
-	 # Initialize an empty list to store unique states in each window.
-	list_of_states = []
-
 	# Return required data for further analysis.
-	return M, all_the_labels, list_of_states
+	return M, PAR, data_directory, all_the_labels, list_of_states
 
 def plot_input_data(M, PAR, filename):
-	# Extract relevant parameters from PAR
-	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
+	tau_window, tau_delay, t_conv = PAR[0], PAR[1], PAR[2]
 
 	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
-	bins = 'auto' if len(PAR) < 7 else PAR[6]
+	bins = 'auto' if len(PAR) < 6 else PAR[5]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -78,7 +74,7 @@ def plot_input_data(M, PAR, filename):
 	fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
 
 	# Plot histogram in the second subplot (right side)
-	ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
+	ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
 
 	# Compute the time array for the x-axis of the first subplot (left side)
 	time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1], M.shape[1])*t_conv
@@ -90,7 +86,7 @@ def plot_input_data(M, PAR, filename):
 
 	# Set labels and titles for the plots
 	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
+	ax[0].set_xlabel(r'Simulation time $t$ ' + PAR[3])
 	ax[1].set_xticklabels([])
 
 	if show_plot:
@@ -254,7 +250,7 @@ def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
-	number_of_windows = all_the_labels.shape[1]
+	number_of_windows = int(M.shape[1]/tau_window)
 
 	# Initialize an empty list to store non-stable windows
 	M2 = []
@@ -295,34 +291,30 @@ def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
 
 	# Convert the list of non-stable windows to a NumPy array
 	M2 = np.array(M2)
-	one_last_state = True
-	if len(M2) == 0:
-		one_last_state = False
 
 	# Calculate the fraction of stable windows with respect to the total number of windows
 	overall_fw = counter / (len(M) * number_of_windows)
 
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
-	return M2, overall_fw, list_of_states, one_last_state
+	return M2, overall_fw, list_of_states
 
-def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
+def iterative_search(M, PAR, all_the_labels, list_of_states):
 	M1 = M
 	iteration_id = 1
 	states_counter = 0
-	one_last_state = False
 	while True:
 		### Locate and fit maximum in the signal distribution
 		bins='auto'
-		if len(PAR) == 7:
-			bins=PAR[6]
-		popt, th = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		if len(PAR) == 6:
+			bins=PAR[5]
+		popt, th = gauss_fit_max(M1, bins, 'output_figures/Fig1_' + str(iteration_id))
 		if len(popt) == 0:
 			break
 
 		list_of_states.append([popt, th, 0.0])
 
 		### Find the windows in which the trajectories are stable in the maximum
-		M2, c, list_of_states, one_last_state = find_stable_trj(M, tau_w, th, list_of_states, all_the_labels, states_counter)
+		M2, c, list_of_states = find_stable_trj(M, PAR[0], th, list_of_states, all_the_labels, states_counter)
 
 		states_counter += 1
 		iteration_id += 1
@@ -332,17 +324,16 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 		else:
 			M1 = M2
 
-	atl, lis = relabel_states(all_the_labels, list_of_states)
-	return atl, lis, one_last_state
+	return relabel_states(all_the_labels, list_of_states)
 
 def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
 	print('* Printing cumulative figure...')
-	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
+	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[1], PAR[2], PAR[3]
 	n_states = len(list_of_states)
 
 	# Compute histogram of flattened M
 	flat_M = M.flatten()
-	bins = 'auto' if len(PAR) < 7 else PAR[6]
+	bins = 'auto' if len(PAR) < 6 else PAR[5]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -401,14 +392,13 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 	plt.close(fig)
 
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
-	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[2], PAR[3], PAR[4], PAR[5]
+	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[1], PAR[2], PAR[3], PAR[4]
 
 	# Get the signal of the example particle
-	signal = M[example_ID][:all_the_labels.shape[1]]
+	signal = M[example_ID]
 
 	# Create time values for the x-axis
 	times = np.arange(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + M.shape[1]) * t_conv
-	times = times[:all_the_labels.shape[1]]
 
 	# Create a figure and axes for the plot
 	fig, ax = plt.subplots()
@@ -551,84 +541,348 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 		fig.show()
 	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
-def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
-	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
-	plot_input_data(M, PAR, name + 'Fig0')
+def transition_matrix(Delta, PAR, all_the_labels, filename):
+	t_conv = PAR[2]
+	print('* Computing transition matrix...')
+	# Get the number of unique states in the all_the_labels array.
+	n_states = np.unique(all_the_labels).size
+	# Initialize an empty matrix 'T' to store the transition counts.
+	T = np.zeros((n_states, n_states))
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
-	if len(list_of_states) == 0:
-		print('* No possible classification was found. ')
-		# We need to free the memory otherwise it accumulates
-		del M_raw
-		del M
-		del all_the_labels
-		return
-	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
+	# Loop over each molecule trajectory in all_the_labels.
+	for mol in all_the_labels:
+		# Loop through the time steps of the trajectory.
+		for t in range(mol.size - Delta):
+			# Get the current state 'id0' and the state after 'Delta' steps 'id1'.
+			id0 = int(mol[t])
+			id1 = int(mol[t + Delta])
+			# Increment the corresponding transition count in the matrix 'T'.
+			T[id0][id1] += 1.0
 
-	# We need to free the memory otherwise it accumulates
-	del M_raw
-	del M
-	del all_the_labels
+	# Normalize the transition matrix 'T' to obtain transition probabilities 'N'.
+	N = T / T.sum(axis=1, keepdims=True)
 
-	if one_last_state:
-		return len(list_of_states) + 1
-	else:
-		return len(list_of_states)
+	# P, D = linalg.eig(N)
+	# print(D)
+	# print(-Delta*t_conv/np.log(P))
 
-def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
-	plot_input_data(M, PAR, 'Fig0')
+	# Create a plot to visualize the transition probabilities.
+	fig, ax = plt.subplots(figsize=(10, 8))
+	# Display the transition probabilities as an image with a logarithmic color scale.
+	im = ax.imshow(N, cmap='plasma', norm=LogNorm(vmin=N[N > 0].min(), vmax=N.max()))
+	fig.colorbar(im, ax=ax, format='%.5f')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
-	if len(list_of_states) == 0:
-		print('* No possible classification was found. ')
-		return
-	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
-	all_the_labels = assign_single_frames(all_the_labels, tau_w)
+	# Add text labels for each transition probability on the plot.
+	for (i, j), val in np.ndenumerate(N):
+		ax.text(j, i, "{:.2f}".format(val), ha='center', va='center')
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'Fig2')
-	# plot_all_trajectory_with_histos(M, PAR, name + 'Fig2a')
-	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
+	# Set titles and axis labels for the plot.
+	fig.suptitle(r'Transition probabilities, $\Delta t=$' + str(Delta*t_conv) + ' ' + PAR[3])
+	ax.set_xlabel('To...')
+	ax.set_ylabel('From...')
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	ax.set_xticks(np.arange(n_states))
+	ax.set_yticks(np.arange(n_states))
+	ax.set_xticklabels(range(n_states))
+	ax.set_yticklabels(range(n_states))
+	plt.tight_layout()
 
-	print_mol_labels_fbf_xyz(all_the_labels)
+	if show_plot:
+		plt.show()
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
+	plt.close(fig)
 
-	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
-	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
+def tau_sigma(M, PAR, all_the_labels, filename):
+	tau_window = PAR[0]
+	T = M.shape[1]
+	number_of_windows = int(T/tau_window)
+	data = []
+	labels = []
+	wc = 0
+	for i, x in enumerate(M):
+		current_label = all_the_labels[i][0]
+		x_w = x[0:tau_window]
+		for w in range(1, number_of_windows):
+			 if all_the_labels[i][w] == current_label:
+			 	x_w = np.concatenate((x_w, x[tau_window*w:tau_window*(w + 1)]))
+			 else:
+			 	### Lag-1 autocorrelation for colored noise
+				### fitting with x_n = \alpha*x_{n-1} + z_n, z_n Gaussian white noise
+			 	x_smean = x_w - np.mean(x_w)
+			 	alpha = 0.0
+			 	var = 1.0
+			 	try:
+			 		alpha, var, _ = wavelet.ar1(x_smean)
+			 		data.append([alpha, np.sqrt(var)])
+			 		labels.append(current_label)
+			 	except Warning:
+			 		wc += 1
+			 	x_w = x[tau_window*w:tau_window*(w + 1)]
+			 	current_label = all_the_labels[i][w]
 
-def TRA_analysis(M_raw, PAR, data_directory):
-	number_of_states = []
-	t_smooth_max = 20
-	### The following is to have num_of_points log-spaced points
-	num_of_points = 20
-	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
-	tmp = [ int(base**n) + 1 for n in range(1, num_of_points + 1) ]
-	tau_window = []
-	[ tau_window.append(x) for x in tmp if x not in tau_window ]
-	print('* Tau_w used:', tau_window)
-	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
-	print('* t_smooth used:', t_smooth)
+	print('\t-- ' + str(wc) + ' warnings generated --')
+	data = np.array(data).T
+	tau_c = 1/(1 - data[0])
 
-	for tau_w in tau_window:
-		tmp = []
-		for t_s in t_smooth:
-			n_s = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
-			if n_s == None:
-				tmp.append(0)
-			else:
-				tmp.append(n_s)
-		number_of_states.append(np.concatenate(([tau_w], tmp)))
+	figa, axa = plt.subplots(figsize=(7.5, 4.8))
+	axa.scatter(tau_c, data[1], c='xkcd:black', s=1.0)
+	axa.set_xlabel(r'Correlation time $\tau_c$ [ps]')
+	axa.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
+	figa.savefig(filename + 'a.png', dpi=600)
 
-	savetxt('number_of_states.txt', number_of_states)
-	number_of_states = np.array(number_of_states)[:, 1:]
-	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	figb, axb = plt.subplots(figsize=(7.5, 4.8))
+	axb.scatter(tau_c, data[1], c=labels, s=1.0)
+	axb.set_xlabel(r'Correlation time $\tau_c$ [ps]')
+	axb.set_ylabel(r'Gaussian noise amplitude $\sigma_n$')
+	# axb.legend()
+	figb.savefig(filename + 'b.png', dpi=600)
+	
+	if show_plot:
+		plt.show()
 
-	plot_TRA_figure(number_of_states, tau_window, PAR[3], 'Time_resolution_analysis')
+def state_statistics(M, PAR, all_the_labels, list_of_states, filename):
+	print('* Computing some statistics on the enviroinments...')
+	tau_window, t_conv, t_units = PAR[0], PAR[2], PAR[3]
+
+	data = []
+	labels = []
+	# Iterate through the molecules in M
+	for i, x in enumerate(M):
+		mol_data = []
+		mol_data_full = []
+		mol_labels = []
+		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
+		t0 = 0
+
+		# Find the indices where the labels change
+		label_changes = np.where(all_the_labels[i][1:] != all_the_labels[i][:-1])[0] + 1
+
+		# Add the index of the last frame to label_changes
+		label_changes = np.append(label_changes, len(all_the_labels[i]))
+
+		# Iterate through the label changes and calculate statistics for each environment
+		for t in label_changes:
+			x_t = M[i][t0:t]  # Get the complete extent of the environment
+			mol_data.append([x_t.size * t_conv, np.mean(x_t)])  # Store statistics for the environment
+			mol_data_full.append(x_t)
+			mol_labels.append(int(current_label))  # Store the label for the environment
+
+			if t < len(M[i]):
+				current_label = all_the_labels[i][t]  # Update the current label
+
+			t0 = t
+
+		### Here I want to remove the transitions which are too small (Chi2 distribution treshold) ###
+		tmp_j_to_del = []
+		for j in range(len(mol_data) - 1):
+			Delta = mol_data[j + 1][1] - mol_data[j][1]
+			sigma1 = list_of_states[mol_labels[j]][0][1]
+			sigma2 = list_of_states[mol_labels[j + 1]][0][1]
+			Chi2 = Delta**2/(sigma1**2 + sigma2**2)
+			if Chi2 < 1.5:
+				if mol_data[j][0] <= mol_data[j + 1][0]:
+					tmp_j_to_del.append(j)
+				else:
+					tmp_j_to_del.append(j + 1)
+		tmp_j_to_del.append(len(mol_data) - 1)
+
+		mol_data = [mol_data[j] for j in range(len(mol_data)) if j not in tmp_j_to_del]
+		mol_labels = [mol_labels[j] for j in range(len(mol_labels)) if j not in tmp_j_to_del]
+
+		if len(data) == 0:
+			data = mol_data
+			labels = mol_labels
+		elif len(mol_data) > 0:
+			data = np.concatenate((data, mol_data))
+			labels = np.concatenate((labels, mol_labels))
+
+	data = np.array(data)
+
+	# Characterization of the states
+	state_points = []
+	for s in np.unique(labels):
+		ID_s = np.where(labels == s)[0]
+		state_data = data[ID_s]
+		state_points.append([np.mean(state_data[:, 0]), np.mean(state_data[:, 1]), np.std(state_data[:, 0]), np.std(state_data[:, 1])])
+	state_points_tr = np.array(state_points).T
+
+	# Append environment statistics to the output file
+	with open(output_file, 'a') as f:
+		print('\nEnviroinments\n', file=f)
+		for E in state_points:
+			print(E, file=f)
+
+	# Create a scatter plot of the data points
+	fig, ax = plt.subplots()
+
+	scatter = ax.scatter(data[:, 0], data[:, 1], c=labels, s=1.0, cmap=colormap)
+	# Add error bars representing standard deviations of T and A
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3],
+		marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
+
+	# Set plot titles and labels
+	fig.suptitle('Statistics of the dynamic enviroinments')
+	ax.set_xlabel(r'Duration $T$ ' + t_units)
+	ax.set_ylabel(r'Amplitude $A$')
+	ax.legend(*scatter.legend_elements())
+
+	if show_plot:
+		plt.show()
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
+
+def transition_statistics(M, PAR, all_the_labels, list_of_states, filename):
+	print('* Computing some statistics on the transitions...')
+	tau_window, t_conv, t_units = PAR[0], PAR[2], PAR[3]
+
+	data = []
+	labels = []
+	for i, x in enumerate(M):
+		mol_data = []
+		mol_labels = []
+		current_label = all_the_labels[i][0]  # Get the initial label of the molecule
+		t0 = 0
+
+		# Find the indices where the labels change
+		label_changes = np.where(all_the_labels[i][1:] != all_the_labels[i][:-1])[0] + 1
+
+		# Add the index of the last frame to label_changes
+		label_changes = np.append(label_changes, len(all_the_labels[i]))
+
+		# Iterate through the label changes and calculate statistics for each environment
+		for t in label_changes:
+			x_t = M[i][t0:t]  # Get the complete extent of the environment
+			mol_data.append(x_t)  # Store the environment
+			mol_labels.append(int(current_label))  # Store the label for the environment
+
+			if t < len(M[i]):
+				current_label = all_the_labels[i][t]  # Update the current label
+
+			t0 = t
+
+		data.append(mol_data)
+		labels.append(mol_labels)
+
+	n_states = np.unique(all_the_labels).size
+
+	### Create dictionary
+	dictionary_21 = np.empty((n_states, n_states))
+	dictionary_12 = []
+	c = 0
+	for i in range(n_states):
+		for j in range(n_states):
+			if i != j:
+				dictionary_21[i][j] = c
+				c += 1
+				dictionary_12.append(str(i) + '-->' + str(j))
+
+	T = np.zeros((n_states, n_states))
+
+	transition_data = []
+	transition_labels = []
+	for i in range(len(data)):
+		for t in range(len(data[i]) - 1):
+			state0 = labels[i][t]
+			state1 = labels[i][t + 1]
+			mu0 = list_of_states[state0][0][0]
+			mu1 = list_of_states[state1][0][0]
+			sigma0 = list_of_states[state0][0][1]
+			sigma1 = list_of_states[state1][0][1]
+			Chi2 = (np.mean(data[i][t]) - np.mean(data[i][t + 1]))**2 / (sigma0**2 + sigma1**2)
+			if Chi2 > 1.0:
+				T[state0][state1] += 1
+				transition_data.append([data[i][t].size*t_conv, np.mean(data[i][t + 1]) - np.mean(data[i][t])])
+				transition_labels.append(dictionary_21[state0][state1])
+
+	# print(T)
+
+	transition_data_tr = np.array(transition_data).T
+	transition_labels = np.array(transition_labels)
+
+	state_points = []
+	for i in range(n_states):
+		for j in range(n_states):
+			s = dictionary_21[i][j]
+			ID_s = np.where(transition_labels == s)[0]
+			if ID_s.size == 0:
+				continue
+			T = np.mean(transition_data_tr[0][ID_s])
+			sigma_T = np.std(transition_data_tr[0][ID_s])
+			A = np.mean(transition_data_tr[1][ID_s])
+			sigma_A = np.std(transition_data_tr[1][ID_s])
+			color = dictionary_21[i][j]
+			if i > j:
+				color = dictionary_21[j][i]
+			state_points.append([T, A, sigma_T, sigma_A, color])
+	state_points_tr = np.array(state_points).T
+
+	with open(output_file, 'a') as f:
+		print('\nTransitions\n', file=f)
+		for E in state_points:
+			print(E, file=f)
+
+	fig, ax = plt.subplots()
+	scatter = ax.scatter(transition_data_tr[0], transition_data_tr[1], c=transition_labels, s=1.0, cmap='plasma', alpha=0.5)
+	ax.errorbar(state_points_tr[0], state_points_tr[1], xerr=state_points_tr[2], yerr=state_points_tr[3], marker='o', ms=3.0, c='black', lw=0.0, elinewidth=1.0, capsize=2.5)
+	ax.scatter(state_points_tr[0], state_points_tr[1], marker='s', s=30.0, c=state_points_tr[4], cmap='plasma')
+	fig.suptitle('Transitions statistics')
+	ax.set_xlabel(r'Waiting time $\Delta t$ ' + t_units)
+	ax.set_ylabel(r'Transition amplitude $\Delta A$')
+	handles, _ = scatter.legend_elements()
+	tmp = []
+	for fl in np.unique(transition_labels):
+		tmp.append(dictionary_12[int(fl)])
+	tmp = np.array(tmp)
+	ax.legend(handles, tmp)
+	# ax.set_xscale('log')
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
+
+	# fig1, ax1 = plt.subplots()
+	# fig2, ax2 = plt.subplots()
+	# for tr in [0.0, 2.0, 3.0, 5.0]:
+	# 	tmp_data = transition_data_tr[0][transition_labels == tr]
+	# 	counts, bins, _ = ax1.hist(tmp_data, bins='doane', density=True, histtype='step', label=dictionary_12[int(tr)])
+	# 	counts, bins, _ = ax2.hist(tmp_data, bins='auto', density=True, histtype='step', cumulative=True, label=dictionary_12[int(tr)])
+
+	# ax1.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	# ax1.set_ylabel(r'Probability density function PDF$(\Delta t)$')
+	# ax1.set_yscale('log')
+	# ax1.legend(loc='upper right')
+	# fig1.savefig(filename + 'a.png', dpi=600)
+
+	# ax2.set_xlabel(r'Waiting time $\Delta t$ [ns]')
+	# ax2.set_ylabel(r'Cumulative distribution function CDF$(\Delta t)$')
+	# ax2.set_xscale('log')
+	# ax2.legend(loc='lower right')
+	# fig2.savefig(filename + 'b.png', dpi=600)
+
+	if show_plot:
+		plt.show()
 
 def main():
-	M_raw, PAR, data_directory = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, data_directory)
-	full_output_analysis(M_raw, PAR[1], PAR[0], PAR, data_directory)
+	M, PAR, data_directory, all_the_labels, list_of_states = all_the_input_stuff()
+	plot_input_data(M, PAR, 'Fig0')
+
+	all_the_labels, list_of_states = iterative_search(M, PAR, all_the_labels, list_of_states)
+	if len(list_of_states) == 0:
+		print('* No possible classification was found. ')
+		return
+	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
+	all_the_labels = assign_final_states_to_single_frames(M, final_list)
+
+	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'Fig2')
+	# plot_all_trajectory_with_histos(M, PAR, 'Fig2a')
+	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
+
+	print_mol_labels_fbf_gro(all_the_labels)
+	print_mol_labels_fbf_lam(all_the_labels)
+
+	for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200, 300])]):
+		sankey(all_the_labels, frame_list, 10, PAR[2], 'Fig4_' + str(i))
+	transition_matrix(PAR[0], PAR, all_the_labels, 'Fig4a')
+
+	state_statistics(M, PAR, all_the_labels, list_of_states, 'Fig5')
+	transition_statistics(M, PAR, all_the_labels, list_of_states, 'Fig5a')
 
 if __name__ == "__main__":
 	main()
