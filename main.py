@@ -40,9 +40,9 @@ def preparing_the_data(M_raw, t_smooth, tau_window, PAR):
 	M = moving_average(M_raw, t_smooth)
 
 	# Normalize the data to the range [0, 1].
-	sig_max = np.max(M)
-	sig_min = np.min(M)
-	M = (M - sig_min)/(sig_max - sig_min)
+	# sig_max = np.max(M)
+	# sig_min = np.min(M)
+	# M = (M - sig_min)/(sig_max - sig_min)
 
 	# Get the number of particles and total frames in the trajectory.
 	total_particles = M.shape[0]
@@ -317,6 +317,7 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 			bins=PAR[6]
 		popt, th = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if len(popt) == 0:
+			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
 			break
 
 		list_of_states.append([popt, th, 0.0])
@@ -328,6 +329,7 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
 		if c <= 0.0:
+			print('Iterations interrupted because no data point has been assigned to the last state. ')
 			break
 		else:
 			M1 = M2
