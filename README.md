@@ -16,10 +16,10 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 ## input_parameters.txt
 * `tau_window`: the length of the time window (in number of frames). 
 * `t_smooth`: the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. 
-* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. Default should be 0. 
-* `t_conv`: converts number of frames in time units. 
-* `time_units`: a string indicating the time units (e.g., `ns`). 
-* `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. 
+* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. By default, use 0. 
+* `t_conv`: converts number of frames in time units. By default, use 1. 
+* `time_units`: a string indicating the time units (e.g., `ns`). By default, use `units`. 
+* `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. By default, use 0. 
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
 
 ## Output
