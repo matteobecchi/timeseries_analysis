@@ -493,7 +493,7 @@ def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, units, fil
 	### General plot settings ###
 	ax.plot(x, y, marker='o')
 	ax.set_xlabel(r'Time resolution $\Delta t$ ' + units)#, weight='bold')
-	ax.set_ylabel(r'Number of states', weight='bold')
+	ax.set_ylabel(r'# environments', weight='bold', c='#1f77b4')
 	ax.set_xscale('log')
 	ax.set_xlim(x[0]*0.75, x[-1]*1.5)
 	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -506,7 +506,7 @@ def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, units, fil
 
 	axr = ax.twinx()
 	axr.plot(x, y2, marker='o', c='#ff7f0e')
-	axr.set_ylabel('Population of cluster 0', weight='bold', c='#ff7f0e')
+	axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
 
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
