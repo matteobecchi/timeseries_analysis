@@ -600,7 +600,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 
 def TRA_analysis(M_raw, PAR, data_directory):
-	t_smooth_max = 20
+	t_smooth_max = 10
 	### The following is to have num_of_points log-spaced points
 	num_of_points = 20
 	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
@@ -608,7 +608,7 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	tau_window = []
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
-	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
+	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
 	print('* t_smooth used:', t_smooth)
 
 	number_of_states = []
