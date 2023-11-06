@@ -41,9 +41,12 @@ def all_the_input_stuff():
 			print(f'Failed to delete {file_path}. Reason: {e}')
 
 	# Return required data for further analysis.
-	return tmp_M_raw, PAR, data_directory
+	return tmp_M_raw, PAR
 
-def preparing_the_data(tmp_M_raw, t_smooth, tau_window, PAR):
+def preparing_the_data(tmp_M_raw, PAR):
+	tau_window = PAR[0]
+	t_smooth = PAR[1]
+
 	M = []
 	for d, M_raw in enumerate(tmp_M_raw):
 		# Apply filtering on the data
@@ -475,9 +478,11 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
+def timeseries_analysis(M_raw, PAR):
+	tau_w = PAR[0]
+	t_smooth = PAR[1]
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
+	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
@@ -500,8 +505,9 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	else:
 		return len(list_of_states), fraction_0
 
-def full_output_analysis(M_raw, t_smooth, tau_w, PAR):#, data_directory, tau_window, number_of_states, fraction_0):
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
+def full_output_analysis(M_raw, PAR):
+	tau_w = PAR[0]
+	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
@@ -513,13 +519,13 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR):#, data_directory, tau_win
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
 
-def TRA_analysis(M_raw, PAR, data_directory):
-	t_smooth_max = 10
+def TRA_analysis(M_raw, PAR):
+	t_smooth_max = 5 	# 5
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
 	print('* t_smooth used:', t_smooth)
 	
 	### The following is to have num_of_points log-spaced points
-	num_of_points = 20
+	num_of_points = 20 	# 20
 	base = (M_raw[0].shape[1] - t_smooth_max)**(1/num_of_points)
 	tmp = [ int(base**n) + 1 for n in range(1, num_of_points + 1) ]
 	tau_window = []
@@ -534,7 +540,10 @@ def TRA_analysis(M_raw, PAR, data_directory):
 		tmp1 = [tau_w]
 		for t_s in t_smooth:
 			print('\n* New analysis: ', tau_w, t_s)
-			n_s, f0 = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+			tmp_PAR = copy.deepcopy(PAR)
+			tmp_PAR[0] = tau_w
+			tmp_PAR[1] = t_s
+			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
 			n_s = n_s or 1
 			f0 = f0 or 1
 			tmp.append(n_s)
@@ -551,12 +560,11 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
 	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], PAR[4], 'Time_resolution_analysis')
-	return tau_window, number_of_states, fraction_0
 
 def main():
-	M_raw, PAR, data_directory = all_the_input_stuff()
-	tau_window, number_of_states, fraction_0 = TRA_analysis(M_raw, PAR, data_directory)
-	full_output_analysis(M_raw, PAR[1], PAR[0], PAR, data_directory, tau_window, number_of_states, fraction_0)
+	M_raw, PAR = all_the_input_stuff()
+	TRA_analysis(M_raw, PAR)
+	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
 	main()
