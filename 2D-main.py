@@ -369,7 +369,6 @@ def find_stable_trj(M, tau_window, ellipse, list_of_states, all_the_labels, offs
 					M2.append(r_w)
 
 	# Calculate the fraction of stable windows found
-	print(all_the_labels.size)
 	fw = counter/(all_the_labels.size)
 
 	# Print the fraction of stable windows
