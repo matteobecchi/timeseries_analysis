@@ -18,12 +18,12 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 * `t_smooth`: the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. 
 * `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. By default, use 0. 
 * `t_conv`: converts number of frames in time units. By default, use 1. 
-* `time_units`: a string indicating the time units (e.g., `ns`). By default, use `units`. 
+* `time_units`: a string indicating the time units (e.g., `ns`). 
 * `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. By default, use 0. 
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
 
 ## Output
-The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 10 frames) and different `tau_window` (spaced logarithmically between 2 frames and the entire trajectory length). The output of this analysis will be saved in the files `number_of_states.txt` and `fraction_0.txt`, containing respectively the number of states identified and the fraction of unclassified data points for each choice of `tau_window` and `t_smooth`. Finally, the output is summarized in the figure `Time_resolution_analysis.png`. 
+The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 10 frames) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length). The output of this analysis will be saved in the files `number_of_states.txt` and `fraction_0.txt`, containing respectively the number of states identified and the fraction of unclassified data points for each choice of `tau_window` and `t_smooth`. Finally, the output is summarized in the figure `Time_resolution_analysis.png`. 
 
 Then, the analysis with the values of `tau_window` and `t_smooth`  specified in `input_parameters.txt` will be performed. The output figures will be saved in the folder `output_figures`. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. The file `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. 
 
