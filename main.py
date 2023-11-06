@@ -607,9 +607,9 @@ def full_output_analysis(M_raw, PAR):
 	print('* Killing Cioni\'s jobs... done. ')
 
 def TRA_analysis(M_raw, PAR):
-	t_smooth_max = 2	#10
+	t_smooth_max = 10	#10
 	### The following is to have num_of_points log-spaced points
-	num_of_points = 2	#20
+	num_of_points = 20	#20
 	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
 	tmp = [ int(base**n) + 1 for n in range(1, num_of_points + 1) ]
 	tau_window = []
