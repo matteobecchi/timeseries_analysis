@@ -527,7 +527,7 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 
-	### If the analysis hat to be performed anew
+	### If the analysis hat to be performed anew ###
 	number_of_states = []
 	fraction_0 = []
 	for tau_w in tau_window:
@@ -547,6 +547,7 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	number_of_states = np.array(number_of_states)[:, 1:]
 	fraction_0 = np.array(fraction_0)[:, 1:]
 
+	### Otherwise, just do this ###
 	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
