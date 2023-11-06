@@ -527,29 +527,28 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 
-	# ### If the analysis hat to be performed anew
-	# number_of_states = []
-	# fraction_0 = []
-	# for tau_w in tau_window:
-	# 	tmp = [tau_w]
-	# 	tmp1 = [tau_w]
-	# 	for t_s in t_smooth:
-	# 		print('\n* New analysis: ', tau_w, t_s)
-	# 		n_s, f0 = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
-	# 		n_s = n_s or 1
-	# 		f0 = f0 or 1
-	# 		print(n_s, f0)
-	# 		tmp.append(n_s)
-	# 		tmp1.append(f0)
-	# 	number_of_states.append(tmp)
-	# 	fraction_0.append(tmp1)
-	# np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
-	# np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
-	# number_of_states = np.array(number_of_states)[:, 1:]
-	# fraction_0 = np.array(fraction_0)[:, 1:]
+	### If the analysis hat to be performed anew
+	number_of_states = []
+	fraction_0 = []
+	for tau_w in tau_window:
+		tmp = [tau_w]
+		tmp1 = [tau_w]
+		for t_s in t_smooth:
+			print('\n* New analysis: ', tau_w, t_s)
+			n_s, f0 = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+			n_s = n_s or 1
+			f0 = f0 or 1
+			tmp.append(n_s)
+			tmp1.append(f0)
+		number_of_states.append(tmp)
+		fraction_0.append(tmp1)
+	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
+	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
+	number_of_states = np.array(number_of_states)[:, 1:]
+	fraction_0 = np.array(fraction_0)[:, 1:]
 
-	number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
-	fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
+	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
 	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], PAR[4], 'Time_resolution_analysis')
 	return tau_window, number_of_states, fraction_0
