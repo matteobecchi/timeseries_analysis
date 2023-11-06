@@ -7,7 +7,7 @@ A one-dimensional timeseries, computed on *N* particles for *T* frames. The inpu
 ## Usage
 The working directory must contain:
 * A text file called `input_parameters.txt` , whose format is explained below;
-* A text file called `data_directory.txt` containing the path to the input data file.
+* A text file called `data_directory.txt` containing one line with the path to the input data file (including the input data file name). 
 
 Examples of this two files are contained in this repository. 
 
@@ -23,7 +23,9 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 * An **optional** parameter, `bins`, the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
 
 ## Output
-The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. The files `all_cluster_IDs_gro.dat` and `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. The figure `Time_resolution_analysis.png` shows the number of identified states as a function of `tau_window`, averaged over different `t_smooth`. 
+The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 10 frames) and different `tau_window` (spaced logarithmically between 2 frames and the entire trajectory length). The output of this analysis will be saved in the files `number_of_states.txt` and `fraction_0.txt`, containing respectively the number of states identified and the fraction of unclassified data points for each choice of `tau_window` and `t_smooth`. Finally, the output ois summarized in the figure `Time_resolution_analysis.png`. 
+
+Then, the analysis with the selected values of `tau_window` and `t_smooth` (the ones specified in `input_parameters.txt`) will be performed, and all the detailes outputed. The output figures will be saved in the folder `output_figures`. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. The file `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not easy to use. Maybe this will be improved. Sorry. 
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sys`. 
