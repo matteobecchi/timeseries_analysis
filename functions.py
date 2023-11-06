@@ -477,8 +477,8 @@ def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, units, fil
 	x = np.array(tau_window)*t_conv
 
 	### If I want to chose one particular value of the smoothing: #########
-	y = number_of_states.T[1]
-	y2 = fraction_0.T[1]
+	y = number_of_states.T[0]
+	y2 = fraction_0.T[0]
 	#######################################################################
 
 	# ### If I want to average over the different smoothings: ###############
