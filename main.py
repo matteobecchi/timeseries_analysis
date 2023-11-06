@@ -598,6 +598,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 
 	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
+	print('* Killing Cioni\'s jobs... done. ')
 
 def TRA_analysis(M_raw, PAR, data_directory):
 	t_smooth_max = 10
