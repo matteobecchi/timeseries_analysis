@@ -500,7 +500,7 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	else:
 		return len(list_of_states), fraction_0
 
-def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory, tau_window, number_of_states, fraction_0):
+def full_output_analysis(M_raw, t_smooth, tau_w, PAR):#, data_directory, tau_window, number_of_states, fraction_0):
 	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
