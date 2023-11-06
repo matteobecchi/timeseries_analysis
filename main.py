@@ -573,10 +573,11 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	del M
 	del all_the_labels
 
+	fraction_0 = 1 - np.sum([ state[2] for state in list_of_states ])
 	if one_last_state:
-		return len(list_of_states) + 1
+		return len(list_of_states) + 1, fraction_0
 	else:
-		return len(list_of_states)
+		return len(list_of_states), fraction_0
 
 def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
@@ -599,7 +600,6 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 
 def TRA_analysis(M_raw, PAR, data_directory):
-	number_of_states = []
 	t_smooth_max = 20
 	### The following is to have num_of_points log-spaced points
 	num_of_points = 20
@@ -611,21 +611,30 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1, int(t_smooth_max/10)) ]
 	print('* t_smooth used:', t_smooth)
 
+	number_of_states = []
+	fraction_0 = []
 	for tau_w in tau_window:
-		tmp = []
+		tmp = [tau_w]
+		tmp1 = [tau_w]
 		for t_s in t_smooth:
-			n_s = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
-			if n_s == None:
-				tmp.append(0)
-			else:
-				tmp.append(n_s)
-		number_of_states.append(np.concatenate(([tau_w], tmp)))
+			print('\n* New analysis: ', tau_w, t_s)
+			n_s, f0 = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+			n_s = n_s or 1
+			f0 = f0 or 1
+			tmp.append(n_s)
+			tmp1.append(f0)
+		number_of_states.append(tmp)
+		fraction_0.append(tmp1)
 
-	savetxt('number_of_states.txt', number_of_states)
+	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
+	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
 	number_of_states = np.array(number_of_states)[:, 1:]
-	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	fraction_0 = np.array(fraction_0)[:, 1:]
 
-	plot_TRA_figure(number_of_states, tau_window, PAR[3], 'Time_resolution_analysis')
+	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
+
+	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], PAR[4], 'Time_resolution_analysis')
 
 def main():
 	M_raw, PAR, data_directory = all_the_input_stuff()

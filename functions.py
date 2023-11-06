@@ -471,74 +471,45 @@ def assign_single_frames(all_the_labels, tau_window):
 	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
 	return new_labels
 
-def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, filename):
-	tmp_y_t = [ np.mean(np.array([ i for i in x if i != 0 ])) for x in number_of_states ]
-	tmp_y_err = [ np.std(np.array([ i for i in x if i != 0 ])) for x in number_of_states ]
-	tmp_time = [ t*t_conv for t in tau_window ]
-
-	y_t = np.array([ el for el in tmp_y_t if math.isnan(el) == False ])
-	y_err = np.array([ tmp_y_err[t] for t in range(len(tmp_y_t)) if math.isnan(tmp_y_t[t]) == False ])
-	time = [ tmp_time[t] for t in range(len(tmp_y_t)) if math.isnan(tmp_y_t[t]) == False ]
-
+def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, units, filename):
 	fig, ax = plt.subplots()
 
-	color = next(ax._get_lines.prop_cycler)['color']
-	ax.plot(time, y_t, marker='o', c=color)
-	err_inf = y_t - y_err
-	err_sup = y_t + y_err
-	ax.fill_between(time, err_inf, err_sup, zorder=0, alpha=0.4, color='gray')
-	# x_fit = np.linspace(time[0]/2, time[-1]*2, 10000)
-	# popt, pcov = scipy.optimize.curve_fit(sigmoidal, time, y_t, bounds=([0, 0, 0], [np.inf, np.inf, np.inf]))
-	# x_fit = np.logspace(np.log10(time[0]/2), np.log10(time[-1]*2), num=100)
-	# y_fit = sigmoidal(x_fit, *popt)
-	# ax.plot(x_fit, y_fit, linestyle='--', c=color)
-	
-	# print('Asymptotic number of environments: ')
-	# print(popt[0]/2 + popt[1], '(', np.sqrt(pcov[0][0])/2 + np.sqrt(pcov[1][1]), ')')
-	# print(popt[1], '(', np.sqrt(pcov[1][1]), ')')
-	# print(1/popt[2], '(', np.sqrt(pcov[2][2])/(popt[2]**2), ')')
+	x = np.array(tau_window)*t_conv
 
-	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-	ax2 = ax.twiny()
-	ax2.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
-	ax2.set_xscale('log')
+	### If I want to chose one particular value of the smoothing: #########
+	y = number_of_states.T[1]
+	y2 = fraction_0.T[1]
+	#######################################################################
 
-	# axr = ax.twinx()
-	# mf0 = np.mean(fraction_0, axis=1)
-	# axr.plot(time, fraction_0.T[0][:len(time)], marker='o', lw=1.0, color='#ff7f0e')
-	# axr.set_ylabel('Fraction of unclassified points', weight='bold')
+	# ### If I want to average over the different smoothings: ###############
+	# y = np.mean(number_of_states, axis=1)
+	# y_err = np.std(number_of_states, axis=1)
+	# y_inf = y - y_err
+	# y_sup = y + y_err
+	# ax.fill_between(x, y_inf, y_sup, zorder=0, alpha=0.4, color='gray')
+	# y2 = np.mean(fraction_0, axis=1)
+	# #######################################################################
 
-	ax.set_xlabel(r'Time resolution $\tau$ [ns]', weight='bold')
+	### General plot settings ###
+	ax.plot(x, y, marker='o')
+	ax.set_xlabel(r'Time resolution $\Delta t$ ' + units)#, weight='bold')
 	ax.set_ylabel(r'Number of states', weight='bold')
 	ax.set_xscale('log')
+	ax.set_xlim(x[0]*0.75, x[-1]*1.5)
+	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-	ax.set_xlim(time[0]/2, time[-1]*2)
-	ax2.set_xlim(time[0]/(2*t_conv), time[-1]*2/t_conv)
+	### Top x-axes settings ###
+	ax2 = ax.twiny()
+	ax2.set_xlabel(r'Time resolution $\Delta t$ [frames]')#, weight='bold')
+	ax2.set_xscale('log')
+	ax2.set_xlim(x[0]*0.75/t_conv, x[-1]*1.5/t_conv)
+
+	axr = ax.twinx()
+	axr.plot(x, y2, marker='o', c='#ff7f0e')
+	axr.set_ylabel('Population of cluster 0', weight='bold', c='#ff7f0e')
 
 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
-
-	fig, ax = plt.subplots()
-
-	for i, data in enumerate(np.array(number_of_states).T[1:]):
-		color = next(ax._get_lines.prop_cycler)['color']
-		ax.plot(tmp_time, data, marker='o', c=color, label=str(i + 1))
-		
-	ax.legend()
-	ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-	ax2 = ax.twiny()
-	ax2.set_xlabel(r'Time resolution $\tau$ [frames]', weight='bold')
-	ax2.set_xscale('log')
-
-	ax.set_xlabel(r'Time resolution $\tau$ [ns]', weight='bold')
-	ax.set_ylabel(r'Number of states', weight='bold')
-	ax.set_xscale('log')
-
-	ax.set_xlim(time[0]/2, time[-1]*2)
-	ax2.set_xlim(time[0]/(2*t_conv), time[-1]*2/t_conv)
-
-	fig.savefig('output_figures/Fig3.png', dpi=600)
-	plt.close(fig)
 
 def print_mol_labels_fbf_gro(all_the_labels):
 	print('* Print color IDs for Ovito...')
