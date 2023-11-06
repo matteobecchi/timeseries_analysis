@@ -33,16 +33,19 @@ def all_the_input_stuff():
 		except Exception as e:
 			print(f'Failed to delete {file_path}. Reason: {e}')
 
-	return M_raw, PAR, data_directory
+	return M_raw, PAR
 
-def preparing_the_data(M_raw, t_smooth, tau_window, PAR):
+def preparing_the_data(M_raw, PAR):
+	tau_window = PAR[0]
+	t_smooth = PAR[1]
+
 	# Apply filtering on the data
 	M = moving_average(M_raw, t_smooth)
 
 	# Normalize the data to the range [0, 1].
-	# sig_max = np.max(M)
-	# sig_min = np.min(M)
-	# M = (M - sig_min)/(sig_max - sig_min)
+	sig_max = np.max(M)
+	sig_min = np.min(M)
+	M = (M - sig_min)/(sig_max - sig_min)
 
 	# Get the number of particles and total frames in the trajectory.
 	total_particles = M.shape[0]
@@ -337,7 +340,7 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 	atl, lis = relabel_states(all_the_labels, list_of_states)
 	return atl, lis, one_last_state
 
-def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, filename):
+def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 	print('* Printing cumulative figure...')
 	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
 	n_states = len(list_of_states)
@@ -390,9 +393,8 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, f
 			ax[0].fill_between(time2, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
 
 	# Set plot titles and axis labels
-	fig.suptitle(data_directory)
-	ax[0].set_ylabel('Normalized signal')
-	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
+	ax[0].set_ylabel('Signal')
+	ax[0].set_xlabel(r'Time $t$ ' + t_units)
 	ax[0].set_xlim([time2[0], time2[-1]])
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
@@ -553,9 +555,11 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 		fig.show()
 	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
-def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
+def timeseries_analysis(M_raw, PAR):
+	tau_w = PAR[0]
+	t_smooth = PAR[1]
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
+	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
@@ -579,8 +583,10 @@ def timeseries_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	else:
 		return len(list_of_states), fraction_0
 
-def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, t_smooth, tau_w, PAR)
+def full_output_analysis(M_raw, PAR):
+	tau_w = PAR[0]
+	t_smooth = PAR[1]
+	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
@@ -590,7 +596,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, data_directory, 'Fig2')
+	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'Fig2')
 	# plot_all_trajectory_with_histos(M, PAR, name + 'Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
@@ -600,10 +606,10 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 	print('* Killing Cioni\'s jobs... done. ')
 
-def TRA_analysis(M_raw, PAR, data_directory):
-	t_smooth_max = 10
+def TRA_analysis(M_raw, PAR):
+	t_smooth_max = 2	#10
 	### The following is to have num_of_points log-spaced points
-	num_of_points = 20
+	num_of_points = 2	#20
 	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
 	tmp = [ int(base**n) + 1 for n in range(1, num_of_points + 1) ]
 	tau_window = []
@@ -619,7 +625,10 @@ def TRA_analysis(M_raw, PAR, data_directory):
 		tmp1 = [tau_w]
 		for t_s in t_smooth:
 			print('\n* New analysis: ', tau_w, t_s)
-			n_s, f0 = timeseries_analysis(M_raw, t_s, tau_w, PAR, data_directory)
+			tmp_PAR = copy.deepcopy(PAR)
+			tmp_PAR[0] = tau_w
+			tmp_PAR[1] = t_s
+			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
 			n_s = n_s or 1
 			f0 = f0 or 1
 			tmp.append(n_s)
@@ -639,9 +648,9 @@ def TRA_analysis(M_raw, PAR, data_directory):
 	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], PAR[4], 'Time_resolution_analysis')
 
 def main():
-	M_raw, PAR, data_directory = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, data_directory)
-	full_output_analysis(M_raw, PAR[1], PAR[0], PAR, data_directory)
+	M_raw, PAR = all_the_input_stuff()
+	TRA_analysis(M_raw, PAR)
+	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
 	main()
