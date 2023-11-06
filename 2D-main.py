@@ -3,7 +3,6 @@ from functions import *
 output_file = 'states_output.txt'
 colormap = 'viridis'
 show_plot = False
-fontsize = 6
 Color = ['black', 'blue', 'orange', 'green', 'red', 'yellow']
 
 def all_the_input_stuff():
@@ -515,7 +514,7 @@ def full_output_analysis(M_raw, t_smooth, tau_w, PAR, data_directory, tau_window
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
 
 def TRA_analysis(M_raw, PAR, data_directory):
-	t_smooth_max = 5
+	t_smooth_max = 10
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
 	print('* t_smooth used:', t_smooth)
 	
