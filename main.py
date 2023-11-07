@@ -61,11 +61,9 @@ def preparing_the_data(M_raw, PAR):
 
 	# Initialize an array to store labels for each window.
 	all_the_labels = np.zeros((M.shape[0], num_windows))
-	 # Initialize an empty list to store unique states in each window.
-	list_of_states = []
 
 	# Return required data for further analysis.
-	return M, [sig_min, sig_max], all_the_labels, list_of_states
+	return M, [sig_min, sig_max], all_the_labels
 
 def plot_input_data(M, PAR, filename):
 	# Extract relevant parameters from PAR
@@ -299,7 +297,7 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return M2, fw, one_last_state
 
-def iterative_search(M, PAR, all_the_labels, list_of_states, name):
+def iterative_search(M, PAR, all_the_labels, name):
 	tau_w = PAR[0]
 	states_list = []
 	M1 = M
@@ -553,10 +551,10 @@ def timeseries_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, M_range, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
+	M, M_range, all_the_labels = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, list_of_states, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
@@ -580,10 +578,10 @@ def timeseries_analysis(M_raw, PAR):
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
-	M, M_range, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
+	M, M_range, all_the_labels = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, list_of_states, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
