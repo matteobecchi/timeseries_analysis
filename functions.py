@@ -307,7 +307,7 @@ def relabel_states(all_the_labels, list_of_states):
 
 	return tmp2, list1
 
-def set_final_states(list_of_states, all_the_labels):
+def set_final_states(list_of_states, all_the_labels, M_range):
 	old_to_new_map = []
 	# Step 1: Define a criterion to determine which states are considered "final."
 	# Iterate over pairs of states to compare their properties (mu, sigma, and amplitude).
@@ -349,7 +349,7 @@ def set_final_states(list_of_states, all_the_labels):
 
 	# Step 3: Create a new list 'final_list' to store the final threshold values and their types (0, 1, 2 or 3).
 	final_list = []
-	final_list.append([0.0, 0])  # Initialize the list with the starting threshold.
+	final_list.append([M_range[0], 0])  # Initialize the list with the starting threshold.
 
 	mu = np.array([state[0][0] for state in list_of_states])
 	sigma = np.array([state[0][1] for state in list_of_states])
@@ -374,10 +374,10 @@ def set_final_states(list_of_states, all_the_labels):
 				final_list.append([th_minus, 1])
 		else:
 			final_list.append([(mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1]), 3])
-	final_list.append([1.0, 0])
+	final_list.append([M_range[1], 0])
 
 	# Remove the tresholds outside the interval [0, 1]
-	final_list = [entry for entry in final_list if 0.0 <= entry[0] <= 1.0]
+	final_list = [entry for entry in final_list if M_range[0] <= entry[0] <= M_range[1]]
 
 	# Step 5: Sort the thresholds.
 	final_list = np.array(final_list)

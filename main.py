@@ -42,10 +42,10 @@ def preparing_the_data(M_raw, PAR):
 	# Apply filtering on the data
 	M = moving_average(M_raw, t_smooth)
 
-	# Normalize the data to the range [0, 1].
 	sig_max = np.max(M)
 	sig_min = np.min(M)
-	M = (M - sig_min)/(sig_max - sig_min)
+	# Normalize the data to the range [0, 1]. Usually not needed. 
+	# M = (M - sig_min)/(sig_max - sig_min)
 
 	# Get the number of particles and total frames in the trajectory.
 	total_particles = M.shape[0]
@@ -65,7 +65,7 @@ def preparing_the_data(M_raw, PAR):
 	list_of_states = []
 
 	# Return required data for further analysis.
-	return M, all_the_labels, list_of_states
+	return M, [sig_min, sig_max], all_the_labels, list_of_states
 
 def plot_input_data(M, PAR, filename):
 	# Extract relevant parameters from PAR
@@ -559,7 +559,7 @@ def timeseries_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
+	M, M_range, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
@@ -570,7 +570,7 @@ def timeseries_analysis(M_raw, PAR):
 		del M
 		del all_the_labels
 		return
-	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
+	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
 
 	# We need to free the memory otherwise it accumulates
 	del M_raw
@@ -586,14 +586,14 @@ def timeseries_analysis(M_raw, PAR):
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
+	M, M_range, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
-	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels)
+	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
 	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'Fig2')
