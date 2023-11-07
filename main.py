@@ -92,7 +92,7 @@ def plot_input_data(M, PAR, filename):
 		ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
 
 	# Set labels and titles for the plots
-	ax[0].set_ylabel('Normalized signal')
+	ax[0].set_ylabel('Signal')
 	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[1].set_xticklabels([])
 
