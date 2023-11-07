@@ -225,7 +225,7 @@ def gauss_fit_max(M, bins, filename):
 			goodness = goodness_half
 	else:
 		print('\tWARNING: this fit is not converging.')
-		return [], []
+		return None
 
 	with open(output_file, 'a') as f:
 		print('\n', file=f)
@@ -233,10 +233,7 @@ def gauss_fit_max(M, bins, filename):
 		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, area = {popt[2]:.4f}', file=f)
 		print('\tFit goodness = ' + str(goodness), file=f)
 
-	### Find the tresholds for state identification
-	th_inf = popt[0] - number_of_sigmas*popt[1]
-	th_sup = popt[0] + number_of_sigmas*popt[1]
-	th = [th_inf, th_sup]
+	state = State(popt[0], popt[1], popt[2])
 
 	### Plot the distribution and the fitted Gaussians
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
@@ -251,9 +248,9 @@ def gauss_fit_max(M, bins, filename):
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-	return popt, th
+	return state
 
-def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
+def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
@@ -277,7 +274,7 @@ def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
 				# If the window is not assigned to any state yet, extract the window's data
 				x_w = x[w*tau_window:(w + 1)*tau_window]
 				# Check if the window is stable (all data points within the specified range)
-				if np.amin(x_w) > th[0] and np.amax(x_w) < th[1]:
+				if np.amin(x_w) > state.th_inf[0] and np.amax(x_w) < state.th_sup[0]:
 					# If stable, assign the window to the current state offset and increment the counter
 					all_the_labels[i][w] = offset + 1
 					counter += 1
@@ -293,23 +290,18 @@ def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
 		print(f'\tFraction of windows in state {offset} = {fw:.3}')
 		print(f'\tFraction of windows in state {offset} = {fw:.3}', file=f)
 	
-	# Update the fraction of stable windows for the current state in the list_of_states
-	list_of_states[-1][2] = fw
-
 	# Convert the list of non-stable windows to a NumPy array
 	M2 = np.array(M2)
 	one_last_state = True
 	if len(M2) == 0:
 		one_last_state = False
 
-	# Calculate the fraction of stable windows with respect to the total number of windows
-	overall_fw = counter / (len(M) * number_of_windows)
-
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
-	return M2, overall_fw, list_of_states, one_last_state
+	return M2, fw, one_last_state
 
 def iterative_search(M, PAR, all_the_labels, list_of_states, name):
 	tau_w = PAR[0]
+	states_list = []
 	M1 = M
 	iteration_id = 1
 	states_counter = 0
@@ -319,16 +311,17 @@ def iterative_search(M, PAR, all_the_labels, list_of_states, name):
 		bins='auto'
 		if len(PAR) == 7:
 			bins=PAR[6]
-		popt, th = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
-		if len(popt) == 0:
+		# popt, th, state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		if state == None:
 			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
 			break
 
-		list_of_states.append([popt, th, 0.0])
-
 		### Find the windows in which the trajectories are stable in the maximum
-		M2, c, list_of_states, one_last_state = find_stable_trj(M, tau_w, th, list_of_states, all_the_labels, states_counter)
+		M2, c, one_last_state = find_stable_trj(M, tau_w, state, all_the_labels, states_counter)
+		state.perc = c
 
+		states_list.append(state)
 		states_counter += 1
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
@@ -338,10 +331,10 @@ def iterative_search(M, PAR, all_the_labels, list_of_states, name):
 		else:
 			M1 = M2
 
-	atl, lis = relabel_states(all_the_labels, list_of_states)
+	atl, lis = relabel_states(all_the_labels, states_list)
 	return atl, lis, one_last_state
 
-def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
+def plot_cumulative_figure(M, PAR, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
 	n_states = len(list_of_states)
@@ -376,22 +369,22 @@ def plot_cumulative_figure(M, PAR, list_of_states, final_list, filename):
 
 	# Plot the Gaussian distributions of states on the right subplot (ax[1])
 	for S in range(n_states):
-		ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *list_of_states[S][0]), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
+		popt = [list_of_states[S].mu, list_of_states[S].sigma, list_of_states[S].A]
+		ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *popt), np.linspace(bins[0], bins[-1], 1000), color=palette[S])
 
-	# Plot the horizontal lines and shaded regions to mark final_list thresholds
+	# Plot the horizontal lines and shaded regions to mark states' thresholds
 	style_color_map = {
 		0: ('-', 'xkcd:black'),
-		1: ('--', 'xkcd:black'),
-		2: ('--', 'xkcd:blue'),
-		3: ('--', 'xkcd:red')
+		1: ('--', 'xkcd:blue'),
+		2: ('--', 'xkcd:red'),
 	}
 
 	time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]), time[-1] + 0.05*(time[-1] - time[0]), 100)
-	for n, th in enumerate(final_list):
-		linestyle, color = style_color_map.get(th[1], ('-', 'xkcd:black'))
-		ax[1].hlines(th[0], xmin=0.0, xmax=np.amax(counts), linestyle=linestyle, color=color)
-		if n < len(final_list) - 1:
-			ax[0].fill_between(time2, final_list[n][0], final_list[n + 1][0], color=palette[n], alpha=0.25)
+	for n, state in enumerate(list_of_states):
+		linestyle, color = style_color_map.get(state.th_inf[1], ('-', 'xkcd:black'))
+		ax[1].hlines(state.th_inf[0], xmin=0.0, xmax=np.amax(counts), linestyle=linestyle, color=color)
+		ax[0].fill_between(time2, state.th_inf[0], state.th_sup[0], color=palette[n], alpha=0.25)
+	ax[1].hlines(list_of_states[-1].th_sup[0], xmin=0.0, xmax=np.amax(counts), linestyle=linestyle, color='black')
 
 	# Set plot titles and axis labels
 	ax[0].set_ylabel('Signal')
@@ -571,14 +564,14 @@ def timeseries_analysis(M_raw, PAR):
 		del M
 		del all_the_labels
 		return
-	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
+	list_of_states, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
 
 	# We need to free the memory otherwise it accumulates
 	del M_raw
 	del M
 	del all_the_labels
 
-	fraction_0 = 1 - np.sum([ state[2] for state in list_of_states ])
+	fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
 	if one_last_state:
 		return len(list_of_states) + 1, fraction_0
 	else:
@@ -594,10 +587,10 @@ def full_output_analysis(M_raw, PAR):
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
-	list_of_states, final_list, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
+	list_of_states, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
-	plot_cumulative_figure(M, PAR, list_of_states, final_list, 'Fig2')
+	plot_cumulative_figure(M, PAR, list_of_states, 'Fig2')
 	# plot_all_trajectory_with_histos(M, PAR, name + 'Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
@@ -649,7 +642,7 @@ def TRA_analysis(M_raw, PAR):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	# TRA_analysis(M_raw, PAR)
+	TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":

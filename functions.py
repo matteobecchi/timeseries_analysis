@@ -15,6 +15,16 @@ import plotly.io as pio
 import plotly.express as px
 import seaborn as sns
 
+class State:
+	def __init__(self, mu, sigma, A):
+		number_of_sigmas = 2.0 							# The amplitude of the fluctiations INSIDE a state
+		self.mu = mu 									# Mean of the Gaussian
+		self.sigma = sigma 								# Variance of the Gaussian
+		self.A = A 										# Area below the Gaussian
+		self.perc = 0 									# Fraction of data points classified in this state
+		self.th_inf = [mu - number_of_sigmas*sigma, -1]	# Lower thrashold of the state
+		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
+
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
 	try:
@@ -279,10 +289,10 @@ def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
 		popt = []
 	return flag, goodness, popt
 
-def relabel_states(all_the_labels, list_of_states):
+def relabel_states(all_the_labels, states_list):
 	# Step 1: Remove empty states from the 'list_of_states' and keep only non-empty states.
 	# A non-empty state is one where the third element (index 2) is not equal to 0.0.
-	list1 = [state for state in list_of_states if state[2] != 0.0]
+	list1 = [state for state in states_list if state.perc != 0.0]
 
 	# Step 2: Get the unique labels from the 'all_the_labels' array. 
 	list_unique = np.unique(all_the_labels)
@@ -298,7 +308,7 @@ def relabel_states(all_the_labels, list_of_states):
 			tmp1[a][b] = list_unique[tmp1[a][b]]
 
 	# Step 4: Order the states according to the mu values in the 'list1' array.
-	list1.sort(key=lambda state: state[0][0])
+	list1.sort(key=lambda state: state.mu)
 
 	# Create 'tmp2' by relabeling the states based on the sorted order.
 	tmp2 = np.zeros_like(tmp1)
@@ -312,9 +322,9 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	# Step 1: Define a criterion to determine which states are considered "final."
 	# Iterate over pairs of states to compare their properties (mu, sigma, and amplitude).
 
-	mu = np.array([state[0][0] for state in list_of_states])
-	sigma = np.array([state[0][1] for state in list_of_states])
-	A = np.array([state[0][2] for state in list_of_states])
+	mu = np.array([state.mu for state in list_of_states])
+	sigma = np.array([state.sigma for state in list_of_states])
+	A = np.array([state.A for state in list_of_states])
 	peak = A/sigma/np.sqrt(np.pi)
 
 	tmp_list = []
@@ -334,7 +344,7 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	for s in tmp_list:
 		list_of_states.pop(s)
 	
-	list_of_states = sorted(list_of_states, key=lambda x: x[0][0])
+	list_of_states = sorted(list_of_states, key=lambda x: x.mu)
 
 	# Relabel accorind to the new states
 	for i in range(len(all_the_labels)):
@@ -347,13 +357,13 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	label_to_index = {label: index for index, label in enumerate(list_unique)}
 	new_labels = np.vectorize(label_to_index.get)(all_the_labels)
 
-	# Step 3: Create a new list 'final_list' to store the final threshold values and their types (0, 1, 2 or 3).
-	final_list = []
-	final_list.append([M_range[0], 0])  # Initialize the list with the starting threshold.
+	# Step 3: Update the final threshold values and their types (0, 1, 2 or 3).
+	list_of_states[0].th_inf[0] = M_range[0]
+	list_of_states[0].th_inf[1] = 0
 
-	mu = np.array([state[0][0] for state in list_of_states])
-	sigma = np.array([state[0][1] for state in list_of_states])
-	A = np.array([state[0][2] for state in list_of_states])
+	mu = np.array([state.mu for state in list_of_states])
+	sigma = np.array([state.sigma for state in list_of_states])
+	A = np.array([state.A for state in list_of_states])
 	peak = A / sigma / np.sqrt(np.pi)
 
 	# Step 4: Calculate the final threshold values and their types based on the intercept between neighboring states.
@@ -369,31 +379,35 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 			intercept_plus = Gaussian(th_plus, mu[s], sigma[s], A[s])
 			intercept_minus = Gaussian(th_minus, mu[s], sigma[s], A[s])
 			if intercept_plus >= intercept_minus:
-				final_list.append([th_plus, 1])
+				list_of_states[s].th_sup[0] = th_plus
+				list_of_states[s].th_sup[1] = 1
+				list_of_states[s + 1].th_inf[0] = th_plus
+				list_of_states[s + 1].th_inf[1] = 1
 			else:
-				final_list.append([th_minus, 1])
+				list_of_states[s].th_sup[0] = th_minus
+				list_of_states[s].th_sup[1] = 1
+				list_of_states[s + 1].th_inf[0] = th_minus
+				list_of_states[s + 1].th_inf[1] = 1
 		else:
-			final_list.append([(mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1]), 3])
-	final_list.append([M_range[1], 0])
-
-	# Remove the tresholds outside the interval [0, 1]
-	final_list = [entry for entry in final_list if M_range[0] <= entry[0] <= M_range[1]]
-
-	# Step 5: Sort the thresholds.
-	final_list = np.array(final_list)
-	final_list = sorted(final_list, key=lambda x: x[0])
+			th_aver = (mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1])
+			list_of_states[s].th_sup[0] = th_aver
+			list_of_states[s].th_sup[1] = 2
+			list_of_states[s + 1].th_inf[0] = th_aver
+			list_of_states[s + 1].th_inf[1] = 2
+	list_of_states[-1].th_sup[0] = M_range[1]
+	list_of_states[-1].th_sup[1] = 0
 
 	# Step 6: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
 	with open('final_states.txt', 'w') as f:
 		for state in list_of_states:
-			print(state[0][0], state[0][1], state[0][2], file=f)
+			print(state.mu, state.sigma, state.A, state.perc, file=f)
 	with open('final_thresholds.txt', 'w') as f:
-		for th in final_list:
-			print(th[0], file=f)
+		for state in list_of_states:
+			print(state.th_inf[0], state.th_sup[0], file=f)
 
-	# Step 7: Return the 'list_of_states' and 'final_list' as the output of the function.
-	return list_of_states, final_list, new_labels
+	# Step 7: Return the 'list_of_states' as the output of the function.
+	return list_of_states, new_labels
 
 def relabel_states_2D(all_the_labels, list_of_states):
 	### Step 1: sort according to the relevance, and remove possible empty states
