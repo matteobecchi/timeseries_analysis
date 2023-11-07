@@ -308,7 +308,8 @@ def find_stable_trj(M, tau_window, th, list_of_states, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return M2, overall_fw, list_of_states, one_last_state
 
-def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
+def iterative_search(M, PAR, all_the_labels, list_of_states, name):
+	tau_w = PAR[0]
 	M1 = M
 	iteration_id = 1
 	states_counter = 0
@@ -562,7 +563,7 @@ def timeseries_analysis(M_raw, PAR):
 	M, M_range, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, list_of_states, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
@@ -589,7 +590,7 @@ def full_output_analysis(M_raw, PAR):
 	M, M_range, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, list_of_states, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
@@ -648,7 +649,7 @@ def TRA_analysis(M_raw, PAR):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR)
+	# TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
