@@ -25,6 +25,16 @@ class State:
 		self.th_inf = [mu - number_of_sigmas*sigma, -1]	# Lower thrashold of the state
 		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
 
+class State_multi_D:
+	def __init__(self, mu, sigma, A):
+		number_of_sigmas = 2.0 						# The amplitude of the fluctiations INSIDE a state
+		self.mu = mu 								# Mean of the Gaussian
+		self.sigma = sigma 							# Variance of the Gaussian
+		self.A = A 									# Area below the Gaussian
+		self.perc = 0 								# Fraction of data points classified in this state
+		self.th_inf = mu - number_of_sigmas*sigma	# Lower thrashold of the state
+		self.th_sup = mu + number_of_sigmas*sigma	# Upper thrashold of the state
+
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
 	try:
