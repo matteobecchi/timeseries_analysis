@@ -2,7 +2,7 @@ from functions import *
 
 output_file = 'states_output.txt'
 colormap = 'viridis'
-show_plot = False
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -134,7 +134,7 @@ def plot_input_data(M, PAR, filename):
 
 def gauss_fit_max(M, bins, filename):
 	print('* Gaussian fit...')
-	number_of_sigmas = 2.0
+	# number_of_sigmas = 2.0
 	flat_M = M.reshape((M.shape[0]*M.shape[1], M.shape[2]))
 
 	### 1. Histogram with 'auto' binning ###
@@ -253,9 +253,6 @@ def gauss_fit_max(M, bins, filename):
 		mu.append(popt[3*dim])
 		sigma.append(popt[3*dim + 1])
 		A.append(popt[3*dim + 2])
-		a.append(number_of_sigmas*popt[3*dim + 1])
-	ellipse = [mu, a]
-
 	state = State_multi_D(np.array(mu), np.array(sigma), np.array(A))
 
 	### Plot the distribution and the fitted Gaussians -- this clearly works only with 2-dimensional data
@@ -273,8 +270,8 @@ def gauss_fit_max(M, bins, filename):
 		im.set_data(xcenters, ycenters, counts.T)
 		ax.add_image(im)
 		ax.scatter(mu[0], mu[1], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse(mu, a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse(mu, a[0], a[1], color='r', fill=False)
+		circle1 = matplotlib.patches.Ellipse(mu, sigma[0], sigma[1], color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse(mu, state.a[0], state.a[1], color='r', fill=False)
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
 	elif M.shape[2] == 3:
@@ -293,8 +290,8 @@ def gauss_fit_max(M, bins, filename):
 		im.set_data(xcenters, ycenters, np.sum(counts, axis=0))
 		ax[0][0].add_image(im)
 		ax[0][0].scatter(mu[0], mu[1], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse([mu[0], mu[1]], a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse([mu[0], mu[1]], a[0], a[1], color='r', fill=False)
+		circle1 = matplotlib.patches.Ellipse([mu[0], mu[1]], sigma[0], sigma[1], color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([mu[0], mu[1]], state.a[0], state.a[1], color='r', fill=False)
 		ax[0][0].add_patch(circle1)
 		ax[0][0].add_patch(circle2)
 
@@ -302,8 +299,8 @@ def gauss_fit_max(M, bins, filename):
 		im.set_data(zcenters, ycenters, np.sum(counts, axis=1))
 		ax[0][1].add_image(im)
 		ax[0][1].scatter(mu[2], mu[1], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse([mu[2], mu[1]], a[2]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse([mu[2], mu[1]], a[2], a[1], color='r', fill=False)
+		circle1 = matplotlib.patches.Ellipse([mu[2], mu[1]], sigma[2], sigma[1], color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([mu[2], mu[1]], state.a[2], state.a[1], color='r', fill=False)
 		ax[0][1].add_patch(circle1)
 		ax[0][1].add_patch(circle2)
 
@@ -311,8 +308,8 @@ def gauss_fit_max(M, bins, filename):
 		im.set_data(xcenters, zcenters, np.sum(counts, axis=2))
 		ax[1][0].add_image(im)
 		ax[1][0].scatter(mu[0], mu[2], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse([mu[0], mu[2]], a[0]/number_of_sigmas, a[2]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse([mu[0], mu[2]], a[0], a[2], color='r', fill=False)
+		circle1 = matplotlib.patches.Ellipse([mu[0], mu[2]], sigma[0], sigma[2], color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([mu[0], mu[2]], state.a[0], state.a[2], color='r', fill=False)
 		ax[1][0].add_patch(circle1)
 		ax[1][0].add_patch(circle2)
 
@@ -348,7 +345,7 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 			else:
 				# If the window is not assigned to any state yet, extract the window's data
 				r_w = r[w*tau_window:(w + 1)*tau_window]
-				# Check if the window is stable (all data points within the specified ellispe)
+				# Check if the window is stable (all data points within the specified ellises)
 				shifted = r_w - state.mu
 				rescaled = shifted / state.a
 
@@ -540,18 +537,18 @@ def TRA_analysis(M_raw, PAR):
 		fraction_0.append(tmp1)
 	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
 	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
-	number_of_states = np.array(number_of_states)[:, 1:]
-	fraction_0 = np.array(fraction_0)[:, 1:]
+	# number_of_states = np.array(number_of_states)[:, 1:] ### TO DEL
+	# fraction_0 = np.array(fraction_0)[:, 1:] ### TO DEL
 
 	### Otherwise, just do this ###
 	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
-	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], PAR[4], 'Time_resolution_analysis')
+	plot_TRA_figure(number_of_states, fraction_0, PAR)
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR)
+	# TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
