@@ -498,11 +498,14 @@ def assign_single_frames(all_the_labels, tau_window):
 	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
 	return new_labels
 
-def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, units, filename):
+def plot_TRA_figure(number_of_states, fraction_0, PAR):
+	t_conv, units = PAR[3], PAR[4]
+	number_of_states = np.array(number_of_states)
+	x = np.array(number_of_states.T[0])*t_conv
+	number_of_states = number_of_states[:, 1:]
+	fraction_0 = np.array(fraction_0)[:, 1:]
+
 	fig, ax = plt.subplots()
-
-	x = np.array(tau_window)*t_conv
-
 	### If I want to chose one particular value of the smoothing: #########
 	y = number_of_states.T[0]
 	y2 = fraction_0.T[0]
@@ -536,7 +539,7 @@ def plot_TRA_figure(number_of_states, fraction_0, tau_window, t_conv, units, fil
 	axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
 
 	plt.show()
-	fig.savefig(filename + '.png', dpi=600)
+	fig.savefig('Time_resolution_analysis.png', dpi=600)
 
 def print_mol_labels_fbf_gro(all_the_labels):
 	print('* Print color IDs for Ovito...')

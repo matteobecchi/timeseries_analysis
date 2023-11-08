@@ -628,14 +628,14 @@ def TRA_analysis(M_raw, PAR):
 
 	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
 	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
-	number_of_states = np.array(number_of_states)[:, 1:]
-	fraction_0 = np.array(fraction_0)[:, 1:]
+	# number_of_states = np.array(number_of_states)[:, 1:] ### TO DEL
+	# fraction_0 = np.array(fraction_0)[:, 1:] ### TO DEL
 
 	### Otherwise, just do this ###
 	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
 	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
-	plot_TRA_figure(number_of_states, fraction_0, tau_window, PAR[3], PAR[4], 'Time_resolution_analysis')
+	plot_TRA_figure(number_of_states, fraction_0, PAR)
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
