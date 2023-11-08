@@ -2,7 +2,7 @@ from functions import *
 
 output_file = 'states_output.txt'
 colormap = 'viridis'
-show_plot = True
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -417,59 +417,56 @@ def iterative_search(M, PAR, tau_w, all_the_labels, name):
 
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
-	Color = ['black', 'blue', 'orange', 'green', 'red', 'yellow']
+	n_states = len(list_of_states) + 1
+	vir = cm.get_cmap('viridis', n_states)
+	colors_from_viridis = vir(np.arange(0, 1, 1/n_states))
+	
 	fig = plt.figure(figsize=(6, 6))
-
 	if M.shape[2] == 3:
 		ax = plt.axes(projection='3d')
 
 		# Plot the individual trajectories
-		step = 1 if M.size > 1000000 else 1
+		step = 5 if M.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
-			tmp = [ Color[int(l)] for l in all_the_labels[i] ]
-			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=tmp, s=0.5, rasterized=True)
+			c = [ int(l) for l in all_the_labels[i] ]
+			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap='viridis', s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
-			[mux, muy, muz] = S.mu
-			[a, b, c] = S.a
 			u = np.linspace(0, 2*np.pi, 100)
 			v = np.linspace(0, np.pi, 100)
-			x = a*np.outer(np.cos(u), np.sin(v)) + mux
-			y = b*np.outer(np.sin(u), np.sin(v)) + muy
-			z = c*np.outer(np.ones_like(u), np.cos(v)) + muz
-			ax.plot_surface(x, y, z, alpha=0.25, color=Color[S_id + 1])
+			x = S.a[0]*np.outer(np.cos(u), np.sin(v)) + S.mu[0]
+			y = S.a[1]*np.outer(np.sin(u), np.sin(v)) + S.mu[1]
+			z = S.a[2]*np.outer(np.ones_like(u), np.cos(v)) + S.mu[2]
+			ax.plot_surface(x, y, z, alpha=0.25, color=colors_from_viridis[S_id+1])
 
 		# Set plot titles and axis labels
-		ax.set_xlabel('Signal 1')
-		ax.set_ylabel('Signal 2')
-		ax.set_zlabel('Signal 3')
+		ax.set_xlabel(r'$x$')
+		ax.set_ylabel(r'$y$')
+		ax.set_zlabel(r'$z$')
 	elif M.shape[2] == 2:
 		ax = plt.axes()
 
 		# Plot the individual trajectories
-		step = 1 if M.size > 1000000 else 1
+		step = 5 if M.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
-			tmp = [ Color[int(l)] for l in all_the_labels[i] ]
-			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=tmp, s=0.5, rasterized=True)
+			c = [ int(l) for l in all_the_labels[i] ]
+			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap='viridis', s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
-			C = S.mu
-			[a, b] = S.a
-			ellipse = matplotlib.patches.Ellipse(C, a, b, color='r', fill=False)
+			ellipse = matplotlib.patches.Ellipse(S.mu, S.a[0], S.a[1], color='r', fill=False)
 			ax.add_patch(ellipse)
 
 		# Set plot titles and axis labels
-		ax.set_xlabel('Signal 1')
-		ax.set_ylabel('Signal 2')
+		ax.set_xlabel(r'$x$')
+		ax.set_ylabel(r'$y$')
 
-	if show_plot:
-		plt.show()
+	plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
