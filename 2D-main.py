@@ -431,7 +431,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
-			c = [ int(l) for l in all_the_labels[i] ]
+			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
@@ -455,7 +455,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
-			c = [ int(l) for l in all_the_labels[i] ]
+			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap=colormap, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
