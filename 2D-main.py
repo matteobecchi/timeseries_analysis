@@ -1,7 +1,6 @@
 from functions import *
 
 output_file = 'states_output.txt'
-colormap = 'viridis'
 show_plot = False
 
 def all_the_input_stuff():
@@ -418,8 +417,10 @@ def iterative_search(M, PAR, tau_w, all_the_labels, name):
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	n_states = len(list_of_states) + 1
-	vir = cm.get_cmap('viridis', n_states)
-	colors_from_viridis = vir(np.arange(0, 1, 1/n_states))
+	colormap = 'rainbow'
+	x = cm.get_cmap(colormap, n_states)
+	colors_from_cmap = x(np.arange(0, 1, 1/n_states))
+	colors_from_cmap[-1] = x(1.0)
 	
 	fig = plt.figure(figsize=(6, 6))
 	if M.shape[2] == 3:
@@ -431,7 +432,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i] ]
-			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap='viridis', s=0.5, rasterized=True)
+			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
@@ -440,7 +441,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 			x = S.a[0]*np.outer(np.cos(u), np.sin(v)) + S.mu[0]
 			y = S.a[1]*np.outer(np.sin(u), np.sin(v)) + S.mu[1]
 			z = S.a[2]*np.outer(np.ones_like(u), np.cos(v)) + S.mu[2]
-			ax.plot_surface(x, y, z, alpha=0.25, color=colors_from_viridis[S_id+1])
+			ax.plot_surface(x, y, z, alpha=0.25, color=colors_from_cmap[S_id+1])
 
 		# Set plot titles and axis labels
 		ax.set_xlabel(r'$x$')
@@ -455,11 +456,11 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i] ]
-			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap='viridis', s=0.5, rasterized=True)
+			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap=colormap, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
-			ellipse = matplotlib.patches.Ellipse(S.mu, S.a[0], S.a[1], color='r', fill=False)
+			ellipse = matplotlib.patches.Ellipse(S.mu, S.a[0], S.a[1], color='black', fill=False)
 			ax.add_patch(ellipse)
 
 		# Set plot titles and axis labels
@@ -550,7 +551,7 @@ def TRA_analysis(M_raw, PAR):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR)
+	# TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
