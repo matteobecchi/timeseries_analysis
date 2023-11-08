@@ -3,7 +3,6 @@ from functions import *
 output_file = 'states_output.txt'
 colormap = 'viridis'
 show_plot = False
-Color = ['black', 'blue', 'orange', 'green', 'red', 'yellow']
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -44,8 +43,7 @@ def all_the_input_stuff():
 	return tmp_M_raw, PAR
 
 def preparing_the_data(tmp_M_raw, PAR):
-	tau_window = PAR[0]
-	t_smooth = PAR[1]
+	tau_window, t_smooth, t_conv, t_units = PAR[0], PAR[1], PAR[3], PAR[4]
 
 	M = []
 	for d, M_raw in enumerate(tmp_M_raw):
@@ -69,16 +67,14 @@ def preparing_the_data(tmp_M_raw, PAR):
 
 	# Print informative messages about trajectory details.
 	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
-	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[3]) + ' ' + PAR[4] + ').')
-	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*PAR[3]) + ' ' + PAR[4] + ').')
+	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv) + ' ' + t_units + ').')
+	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ' + t_units + ').')
 
 	# Initialize an array to store labels for each window.
 	all_the_labels = np.zeros((total_particles, num_windows))
-	 # Initialize an empty list to store unique states in each window.
-	list_of_states = []
 
 	# Return required data for further analysis.
-	return M, all_the_labels, list_of_states
+	return M, all_the_labels
 
 def plot_input_data(M, PAR, filename):
 	Bins = []
@@ -245,18 +241,22 @@ def gauss_fit_max(M, bins, filename):
 			goodness = goodness_half
 	else:
 		print('\tWARNING: this fit is not converging.')
-		return [], []
+		return None
 
 	if len(popt) != M.shape[2]*3:
 		print('\tWARNING: this fit is not converging.')
-		return [], []		
+		return None		
 
 	### Find the tresholds for state identification
-	C, a = [], []
+	mu, sigma, A, a = [], [], [], []
 	for dim in range(M.shape[2]):
-		C.append(popt[3*dim])
+		mu.append(popt[3*dim])
+		sigma.append(popt[3*dim + 1])
+		A.append(popt[3*dim + 2])
 		a.append(number_of_sigmas*popt[3*dim + 1])
-	ellipse = [C, a]
+	ellipse = [mu, a]
+
+	state = State_multi_D(np.array(mu), np.array(sigma), np.array(A))
 
 	### Plot the distribution and the fitted Gaussians -- this clearly works only with 2-dimensional data
 	if M.shape[2] == 2:
@@ -272,13 +272,11 @@ def gauss_fit_max(M, bins, filename):
 		ycenters = (edges[1][:-1] + edges[1][1:]) / 2
 		im.set_data(xcenters, ycenters, counts.T)
 		ax.add_image(im)
-		ax.scatter(C[0], C[1], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse(C, a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse(C, a[0], a[1], color='r', fill=False)
+		ax.scatter(mu[0], mu[1], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse(mu, a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse(mu, a[0], a[1], color='r', fill=False)
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
-		ax.set_xlim([0.0, 1.0])
-		ax.set_ylim([0.0, 1.0])
 	elif M.shape[2] == 3:
 		with open(output_file, 'a') as f:
 			print('\n', file=f)
@@ -294,43 +292,38 @@ def gauss_fit_max(M, bins, filename):
 		im = matplotlib.image.NonUniformImage(ax[0][0], interpolation='nearest')
 		im.set_data(xcenters, ycenters, np.sum(counts, axis=0))
 		ax[0][0].add_image(im)
-		ax[0][0].scatter(C[0], C[1], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse([C[0], C[1]], a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse([C[0], C[1]], a[0], a[1], color='r', fill=False)
+		ax[0][0].scatter(mu[0], mu[1], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse([mu[0], mu[1]], a[0]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([mu[0], mu[1]], a[0], a[1], color='r', fill=False)
 		ax[0][0].add_patch(circle1)
 		ax[0][0].add_patch(circle2)
 
 		im = matplotlib.image.NonUniformImage(ax[0][1], interpolation='nearest')
 		im.set_data(zcenters, ycenters, np.sum(counts, axis=1))
 		ax[0][1].add_image(im)
-		ax[0][1].scatter(C[2], C[1], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse([C[2], C[1]], a[2]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse([C[2], C[1]], a[2], a[1], color='r', fill=False)
+		ax[0][1].scatter(mu[2], mu[1], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse([mu[2], mu[1]], a[2]/number_of_sigmas, a[1]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([mu[2], mu[1]], a[2], a[1], color='r', fill=False)
 		ax[0][1].add_patch(circle1)
 		ax[0][1].add_patch(circle2)
 
 		im = matplotlib.image.NonUniformImage(ax[1][0], interpolation='nearest')
 		im.set_data(xcenters, zcenters, np.sum(counts, axis=2))
 		ax[1][0].add_image(im)
-		ax[1][0].scatter(C[0], C[2], s=8.0, c='red')
-		circle1 = matplotlib.patches.Ellipse([C[0], C[2]], a[0]/number_of_sigmas, a[2]/number_of_sigmas, color='r', fill=False)
-		circle2 = matplotlib.patches.Ellipse([C[0], C[2]], a[0], a[2], color='r', fill=False)
+		ax[1][0].scatter(mu[0], mu[2], s=8.0, c='red')
+		circle1 = matplotlib.patches.Ellipse([mu[0], mu[2]], a[0]/number_of_sigmas, a[2]/number_of_sigmas, color='r', fill=False)
+		circle2 = matplotlib.patches.Ellipse([mu[0], mu[2]], a[0], a[2], color='r', fill=False)
 		ax[1][0].add_patch(circle1)
 		ax[1][0].add_patch(circle2)
-
-		for a in ax:
-			for b in a:
-				b.set_xlim([0.0, 1.0])
-				b.set_ylim([0.0, 1.0])
 
 	if show_plot:
 	 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
-	return popt, ellipse
+	return state
 
-def find_stable_trj(M, tau_window, ellipse, list_of_states, all_the_labels, offset):
+def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
@@ -356,9 +349,9 @@ def find_stable_trj(M, tau_window, ellipse, list_of_states, all_the_labels, offs
 				# If the window is not assigned to any state yet, extract the window's data
 				r_w = r[w*tau_window:(w + 1)*tau_window]
 				# Check if the window is stable (all data points within the specified ellispe)
-				shifted = r_w - ellipse[0]
-				rescaled = shifted / np.array(ellipse[1])
-				# rescaled = shifted / np.array([ellipse[1], ellipse[2]])
+				shifted = r_w - state.mu
+				rescaled = shifted / state.a
+
 				squared_distances = np.sum(rescaled**2, axis=1)
 				if np.max(squared_distances) <= 1.0:
 					# If stable, assign the window to the current state offset and increment the counter
@@ -376,22 +369,17 @@ def find_stable_trj(M, tau_window, ellipse, list_of_states, all_the_labels, offs
 		print(f'\tFraction of windows in state {offset} = {fw:.3}')
 		print(f'\tFraction of windows in state {offset} = {fw:.3}', file=f)
 	
-	# Update the fraction of stable windows for the current state in the list_of_states
-	list_of_states[-1][2] = fw
-
 	# Convert the list of non-stable windows to a NumPy array
 	M2 = np.array(M2)
 	one_last_state = True
 	if len(M2) == 0:
 		one_last_state = False
 
-	# Calculate the fraction of stable windows with respect to the total number of windows
-	overall_fw = counter / (len(M) * number_of_windows)
-
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
-	return M2, overall_fw, list_of_states, one_last_state
+	return M2, fw, one_last_state
 
-def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
+def iterative_search(M, PAR, tau_w, all_the_labels, name):
+	states_list = []
 	M1 = M
 	iteration_id = 1
 	states_counter = 0
@@ -399,29 +387,33 @@ def iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name):
 	while True:
 		### Locate and fit maximum in the signal distribution
 		bins = 50 if len(PAR) < 7 else PAR[6]
-		popt, ellipse = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
-		if len(popt) == 0:
+		state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		if state == None:
+			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')			
 			break
 
-		list_of_states.append([popt, ellipse, 0.0])
-
 		### Find the windows in which the trajectories are stable in the maximum
-		M2, c, list_of_states, one_last_state = find_stable_trj(M, tau_w, ellipse, list_of_states, all_the_labels, states_counter)
+		M2, c, one_last_state = find_stable_trj(M, tau_w, state, all_the_labels, states_counter)
+		state.perc = c
 
+		if c > 0.0:
+			states_list.append(state)
+		
 		states_counter += 1
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
 		if c <= 0.0 or M2.size == 0:
-			list_of_states.pop()
+			print('Iterations interrupted because no data points have been assigned to the last state. ')
 			break
 		else:
 			M1 = M2
 
-	all_the_labels, list_of_states = relabel_states_2D(all_the_labels, list_of_states)
+	all_the_labels, list_of_states = relabel_states_2D(all_the_labels, states_list)
 	return all_the_labels, list_of_states, one_last_state
 
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
+	Color = ['black', 'blue', 'orange', 'green', 'red', 'yellow']
 	fig = plt.figure(figsize=(6, 6))
 
 	if M.shape[2] == 3:
@@ -437,8 +429,8 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
-			[mux, muy, muz] = S[1][0]
-			[a, b, c] = S[1][1]
+			[mux, muy, muz] = S.mu
+			[a, b, c] = S.a
 			u = np.linspace(0, 2*np.pi, 100)
 			v = np.linspace(0, np.pi, 100)
 			x = a*np.outer(np.cos(u), np.sin(v)) + mux
@@ -463,8 +455,8 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
-			C = S[1][0]
-			[a, b] = S[1][1]
+			C = S.mu
+			[a, b] = S.a
 			ellipse = matplotlib.patches.Ellipse(C, a, b, color='r', fill=False)
 			ax.add_patch(ellipse)
 
@@ -478,27 +470,26 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	plt.close(fig)
 
 def timeseries_analysis(M_raw, PAR):
-	tau_w = PAR[0]
-	t_smooth = PAR[1]
+	tau_w, t_smooth = PAR[0], PAR[1]
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
+	M, all_the_labels = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
 		del M_raw
 		del M
 		del all_the_labels
-		return None, None
+		return 1, 1.0
 	
 	# We need to free the memory otherwise it accumulates
 	del M_raw
 	del M
 	del all_the_labels
 
-	fraction_0 = 1 - np.sum([ state[2] for state in list_of_states ])
+	fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
 	if one_last_state:
 		return len(list_of_states) + 1, fraction_0
 	else:
@@ -506,10 +497,10 @@ def timeseries_analysis(M_raw, PAR):
 
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
-	M, all_the_labels, list_of_states = preparing_the_data(M_raw, PAR)
+	M, all_the_labels = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, list_of_states, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
@@ -543,8 +534,6 @@ def TRA_analysis(M_raw, PAR):
 			tmp_PAR[0] = tau_w
 			tmp_PAR[1] = t_s
 			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
-			n_s = n_s or 1
-			f0 = f0 or 1
 			tmp.append(n_s)
 			tmp1.append(f0)
 		number_of_states.append(tmp)

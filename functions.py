@@ -27,13 +27,12 @@ class State:
 
 class State_multi_D:
 	def __init__(self, mu, sigma, A):
-		number_of_sigmas = 2.0 						# The amplitude of the fluctiations INSIDE a state
-		self.mu = mu 								# Mean of the Gaussian
-		self.sigma = sigma 							# Variance of the Gaussian
-		self.A = A 									# Area below the Gaussian
-		self.perc = 0 								# Fraction of data points classified in this state
-		self.th_inf = mu - number_of_sigmas*sigma	# Lower thrashold of the state
-		self.th_sup = mu + number_of_sigmas*sigma	# Upper thrashold of the state
+		number_of_sigmas = 2.0 				# The amplitude of the fluctiations INSIDE a state
+		self.mu = mu 						# Mean of the Gaussians
+		self.sigma = sigma 					# Variance of the Gaussians
+		self.A = A 							# Area below the Gaussians
+		self.perc = 0 						# Fraction of data points classified in this state
+		self.a = number_of_sigmas*sigma		# Axes of the state
 
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
@@ -419,10 +418,10 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	# Step 7: Return the 'list_of_states' as the output of the function.
 	return list_of_states, new_labels
 
-def relabel_states_2D(all_the_labels, list_of_states):
-	### Step 1: sort according to the relevance, and remove possible empty states
-	sorted_indices = [index + 1 for index, _ in sorted(enumerate(list_of_states), key=lambda x: x[1][2], reverse=True)]
-	sorted_states = sorted(list_of_states, key=lambda x: x[2], reverse=True)
+def relabel_states_2D(all_the_labels, states_list):
+	### Step 1: sort according to the relevance
+	sorted_indices = [index + 1 for index, _ in sorted(enumerate(states_list), key=lambda x: x[1].perc, reverse=True)]
+	sorted_states = sorted(states_list, key=lambda x: x.perc, reverse=True)
 
 	# Step 2: relabel all the labels according to the new ordering
 	sorted_all_the_labels = np.empty(all_the_labels.shape)
@@ -439,10 +438,10 @@ def relabel_states_2D(all_the_labels, list_of_states):
 	merge_pairs = []
 	for i, s0 in enumerate(sorted_states):
 		for j, s1 in enumerate(sorted_states[i + 1:]):
-			C0 = s0[1][0]
-			C1 = s1[1][0]
+			C0 = s0.mu
+			C1 = s1.mu
 			diff = np.abs(np.subtract(C1, C0))
-			if np.all(diff < [ max(s0[1][1][k], s1[1][1][k]) for k in range(diff.size) ]):
+			if np.all(diff < [ max(s0.a[k], s1.a[k]) for k in range(diff.size) ]):
 				merge_pairs.append([i + 1, j + i + 2])
 
 	for p0 in range(len(merge_pairs)):
@@ -472,21 +471,25 @@ def relabel_states_2D(all_the_labels, list_of_states):
 				if l == current_labels[m]:
 					updated_labels[i][t] = m
 
+	for s_id in range(len(updated_states)):
+		n = np.sum(updated_labels == s_id+1)
+		updated_states[s_id].perc = n / updated_labels.size
+
 	# Step 5: print informations on the final states
 	with open('final_states.txt', 'w') as f:
-		print('#center_coords, semiaxis', file=f)
+		print('#center_coords, semiaxis, fraction_of_data', file=f)
 		for s in updated_states:
-			C = s[1][0]
+			C = s.mu
 			centers = '[' + str(C[0]) + ', '
 			for ck in C[1:-1]:
 				centers += str(ck) + ', '
 			centers += str(C[-1]) + ']'
-			A = s[1][1]
+			A = s.a
 			axis = '[' + str(A[0]) + ', '
 			for ck in A[1:-1]:
 				axis += str(ck) + ', '
 			axis += str(A[-1]) + ']'
-			print(centers, axis, file=f)
+			print(centers, axis, s.perc, file=f)
 
 	return updated_labels, updated_states
 
