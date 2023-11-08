@@ -417,7 +417,7 @@ def iterative_search(M, PAR, tau_w, all_the_labels, name):
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	n_states = len(list_of_states) + 1
-	colormap = 'rainbow'
+	colormap = 'viridis'
 	x = cm.get_cmap(colormap, n_states)
 	colors_from_cmap = x(np.arange(0, 1, 1/n_states))
 	colors_from_cmap[-1] = x(1.0)
@@ -432,7 +432,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
-			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, s=0.5, rasterized=True)
+			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
@@ -456,7 +456,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
-			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap=colormap, s=0.5, rasterized=True)
+			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
@@ -551,7 +551,7 @@ def TRA_analysis(M_raw, PAR):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR)
+	# TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
