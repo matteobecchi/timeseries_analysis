@@ -313,6 +313,11 @@ def gauss_fit_max(M, bins, filename):
 		ax[1][0].add_patch(circle1)
 		ax[1][0].add_patch(circle2)
 
+		for a in ax:
+			for b in a:
+				b.set_xlim(0.0, 1.0)
+				b.set_ylim(0.0, 1.0)
+
 	if show_plot:
 	 	plt.show()
 	fig.savefig(filename + '.png', dpi=600)
