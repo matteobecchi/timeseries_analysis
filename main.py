@@ -101,7 +101,6 @@ def plot_input_data(M, PAR, filename):
 
 def gauss_fit_max(M, bins, filename):
 	print('* Gaussian fit...')
-	number_of_sigmas = 2.0
 	flat_M = M.flatten()
 
 	### 1. Histogram with 'auto' binning ###
@@ -555,13 +554,15 @@ def timeseries_analysis(M_raw, PAR):
 	plot_input_data(M, PAR, name + 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, name)
+	
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
 		del M_raw
 		del M
 		del all_the_labels
-		return
+		return 1, 1.0
+
 	list_of_states, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
 
 	# We need to free the memory otherwise it accumulates
@@ -620,8 +621,6 @@ def TRA_analysis(M_raw, PAR):
 			tmp_PAR[0] = tau_w
 			tmp_PAR[1] = t_s
 			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
-			n_s = n_s or 1
-			f0 = f0 or 1
 			tmp.append(n_s)
 			tmp1.append(f0)
 		number_of_states.append(tmp)
