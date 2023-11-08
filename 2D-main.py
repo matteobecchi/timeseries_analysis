@@ -274,6 +274,8 @@ def gauss_fit_max(M, bins, filename):
 		circle2 = matplotlib.patches.Ellipse(mu, state.a[0], state.a[1], color='r', fill=False)
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
+		ax.set_xlim(0.0, 1.0)
+		ax.set_ylim(0.0, 1.0)
 	elif M.shape[2] == 3:
 		with open(output_file, 'a') as f:
 			print('\n', file=f)
