@@ -551,7 +551,7 @@ def TRA_analysis(M_raw, PAR):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	# TRA_analysis(M_raw, PAR)
+	TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
