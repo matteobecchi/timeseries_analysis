@@ -541,8 +541,6 @@ def TRA_analysis(M_raw, PAR):
 		fraction_0.append(tmp1)
 	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
 	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
-	# number_of_states = np.array(number_of_states)[:, 1:] ### TO DEL
-	# fraction_0 = np.array(fraction_0)[:, 1:] ### TO DEL
 
 	### Otherwise, just do this ###
 	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
