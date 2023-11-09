@@ -31,7 +31,7 @@ Then, the analysis with the values of `tau_window` and `t_smooth`  specified in 
 The `2D-main.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. 
 
 ## Required Python 3 packages
-`matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `seaborn`, `sys`. 
+`matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `sys`. 
 
 ## Gaussian fitting procedure
 1. The histogram of the timeseries is computed, using the `bins='auto'` numpy option (unless a different `bins` is passed as imput parameter). 
