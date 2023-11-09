@@ -254,7 +254,7 @@ def gauss_fit_max(M, bins, filename):
 		A.append(popt[3*dim + 2])
 	state = State_multi_D(np.array(mu), np.array(sigma), np.array(A))
 
-	### Plot the distribution and the fitted Gaussians -- this clearly works only with 2-dimensional data
+	### Plot the distribution and the fitted Gaussians
 	if M.shape[2] == 2:
 		with open(output_file, 'a') as f:
 			print('\n', file=f)
