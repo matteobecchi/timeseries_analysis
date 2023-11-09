@@ -59,11 +59,7 @@ def preparing_the_data(M_raw, PAR):
 	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[3]), str(PAR[4]) + ')')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*PAR[3]), str(PAR[4]) + ')')
 
-	# Initialize an array to store labels for each window.
-	all_the_labels = np.zeros((M.shape[0], num_windows))
-
-	# Return required data for further analysis.
-	return M, [sig_min, sig_max], all_the_labels
+	return M, [sig_min, sig_max]
 
 def plot_input_data(M, PAR, filename):
 	# Extract relevant parameters from PAR
@@ -296,8 +292,13 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return M2, fw, one_last_state
 
-def iterative_search(M, PAR, all_the_labels, name):
+def iterative_search(M, PAR, name):
 	tau_w = PAR[0]
+	
+	# Initialize an array to store labels for each window.
+	num_windows = int(M.shape[1] / tau_w)
+	all_the_labels = np.zeros((M.shape[0], num_windows))
+
 	states_list = []
 	M1 = M
 	iteration_id = 1
@@ -390,8 +391,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, filename):
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
 
-	if show_plot:
-		plt.show()
+	plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -424,46 +424,6 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	if show_plot:
 		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
-	plt.close(fig)
-
-def plot_all_trajectory_with_histos(M, PAR, filename):
-	tau_window = PAR[0]
-	tau_delay = PAR[1]
-	t_conv = PAR[2]
-
-	fig = plt.figure()
-	ax0 = plt.subplot(2, 4, 1)
-	ax1 = plt.subplot(2, 4, 2)
-	ax2 = plt.subplot(2, 4, 3)
-	ax3 = plt.subplot(2, 4, 4)
-	ax4 = plt.subplot(2, 1, 2)
-	axes = [ax0, ax1, ax2, ax3, ax4]
-
-	t_lim = np.array([tau_delay + int(tau_window/2), (tau_delay + int(tau_window/2) + M.shape[1])])*t_conv
-	time = np.linspace(t_lim[0], t_lim[1], M.shape[1])
-
-	if M.shape[1] > 1000:
-		for mol in M[::10]:
-			ax4.plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-	else:
-		for mol in M:
-			ax4.plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-
-	block_t = int(M.shape[1]/4)
-	for i in range(4):
-		part_signal = M[:, :(i + 1)*block_t].flatten()
-		counts, bins = np.histogram(part_signal, bins='auto', density=True)
-		axes[i].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
-		if i > 0:
-			axes[i].set_yticklabels([])
-
-	fig.suptitle('Example particle: ID = ' + str(PAR[4]))
-	ax4.set_xlabel('Time ' + PAR[3])
-	ax4.set_ylabel('Normalized signal')
-	ax4.set_xlim(t_lim)
-	if show_plot:
-		plt.show()
-	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
 def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
@@ -550,10 +510,10 @@ def timeseries_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, M_range, all_the_labels = preparing_the_data(M_raw, PAR)
+	M, M_range = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, name)
 	
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
@@ -618,10 +578,10 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
-	M, M_range, all_the_labels = preparing_the_data(M_raw, PAR)
+	M, M_range = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
@@ -632,7 +592,6 @@ def full_output_analysis(M_raw, PAR):
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
 	plot_cumulative_figure(M, PAR, list_of_states, 'Fig2')
-	# plot_all_trajectory_with_histos(M, PAR, name + 'Fig2a')
 	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
 	print_mol_labels_fbf_xyz(all_the_labels)
@@ -679,7 +638,7 @@ def TRA_analysis(M_raw, PAR):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR)
+	# TRA_analysis(M_raw, PAR)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
