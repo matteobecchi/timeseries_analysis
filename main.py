@@ -599,12 +599,12 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 		ax.plot(x, center, label='ENV'+str(l), marker='o')
 	fig.suptitle('Average time sequence inside each environments')
 	ax.set_xlabel(r'Time $t$ [frames]')
-	ax.set_ylabel(r'LENS')
+	ax.set_ylabel(r'Signal')
 	ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 	ax.legend()
 
 	plt.show()
-	fig.savefig('output_figures/Fig3.png', dpi=600)
+	fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
