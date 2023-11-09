@@ -13,7 +13,6 @@ plotly.__version__
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
-# import seaborn as sns
 
 class State:
 	def __init__(self, mu, sigma, A):
@@ -21,6 +20,7 @@ class State:
 		self.mu = mu 									# Mean of the Gaussian
 		self.sigma = sigma 								# Variance of the Gaussian
 		self.A = A 										# Area below the Gaussian
+		self.peak = A/sigma/np.sqrt(np.pi)				# Height of the Gaussian peak
 		self.perc = 0 									# Fraction of data points classified in this state
 		self.th_inf = [mu - number_of_sigmas*sigma, -1]	# Lower thrashold of the state
 		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
@@ -327,23 +327,19 @@ def relabel_states(all_the_labels, states_list):
 	return tmp2, list1
 
 def set_final_states(list_of_states, all_the_labels, M_range):
-	old_to_new_map = []
 	# Step 1: Define a criterion to determine which states are considered "final."
-	# Iterate over pairs of states to compare their properties (mu, sigma, and amplitude).
-
-	mu = np.array([state.mu for state in list_of_states])
-	sigma = np.array([state.sigma for state in list_of_states])
-	A = np.array([state.A for state in list_of_states])
-	peak = A/sigma/np.sqrt(np.pi)
-
+	# Iterate over pairs of states to compare their properties.
+	old_to_new_map = []
 	tmp_list = []
 	for s0 in range(len(list_of_states)):
 		for s1 in range(s0 + 1, len(list_of_states)):
+			S0 = list_of_states[s0]
+			S1 = list_of_states[s1]
 			# Check whether the criteria for considering a state as "final" is met.
-			if peak[s0] > peak[s1] and abs(mu[s1] - mu[s0]) < sigma[s0]:
+			if S0.peak > S1.peak and abs(S1.mu - S0.mu) < S0.sigma:
 				tmp_list.append(s1)
 				old_to_new_map.append([s1, s0])
-			elif peak[s0] < peak[s1] and abs(mu[s1] - mu[s0]) < sigma[s1]:
+			elif S0.peak < S1.peak and abs(S1.mu - S0.mu) < S1.sigma:
 				tmp_list.append(s0)
 				old_to_new_map.append([s0, s1])
 
@@ -366,47 +362,44 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	label_to_index = {label: index for index, label in enumerate(list_unique)}
 	new_labels = np.vectorize(label_to_index.get)(all_the_labels)
 
-	# Step 3: Update the final threshold values and their types (0, 1, 2 or 3).
+	# Step 3: Calculate the final threshold values and their types based on the intercept between neighboring states.
 	list_of_states[0].th_inf[0] = M_range[0]
 	list_of_states[0].th_inf[1] = 0
 
-	mu = np.array([state.mu for state in list_of_states])
-	sigma = np.array([state.sigma for state in list_of_states])
-	A = np.array([state.A for state in list_of_states])
-	peak = A / sigma / np.sqrt(np.pi)
-
-	# Step 4: Calculate the final threshold values and their types based on the intercept between neighboring states.
-	for s in range(len(list_of_states) - 1):
-		a = sigma[s + 1]**2 - sigma[s]**2
-		b = -2*(mu[s]*sigma[s + 1]**2 - mu[s + 1]*sigma[s]**2)
-		c = (mu[s]*sigma[s + 1])**2 - (mu[s + 1]*sigma[s])**2 - ((sigma[s]*sigma[s + 1])**2)*np.log(A[s]*sigma[s + 1]/A[s + 1]/sigma[s])
+	for n in range(len(list_of_states) - 1):
+		S0 = list_of_states[n]
+		S1 = list_of_states[n + 1]
+		a = S1.sigma**2 - S0.sigma**2
+		b = -2*(S0.mu*S1.sigma**2 - S1.mu*S0.sigma**2)
+		c = (S0.mu*S1.sigma)**2 - (S1.mu*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.A*S1.sigma/S1.A/S0.sigma)
 		Delta = b**2 - 4*a*c
-		# Determine the type of the threshold (0, 1, 2 or 3). 
+		# Determine the type of the threshold (0, 1 or 2). 
 		if Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
 			th_minus = (- b - np.sqrt(Delta))/(2*a)
-			intercept_plus = Gaussian(th_plus, mu[s], sigma[s], A[s])
-			intercept_minus = Gaussian(th_minus, mu[s], sigma[s], A[s])
+			intercept_plus = Gaussian(th_plus, S0.mu, S0.sigma, S0.A)
+			intercept_minus = Gaussian(th_minus, S0.mu, S0.sigma, S0.A)
 			if intercept_plus >= intercept_minus:
-				list_of_states[s].th_sup[0] = th_plus
-				list_of_states[s].th_sup[1] = 1
-				list_of_states[s + 1].th_inf[0] = th_plus
-				list_of_states[s + 1].th_inf[1] = 1
+				list_of_states[n].th_sup[0] = th_plus
+				list_of_states[n].th_sup[1] = 1
+				list_of_states[n + 1].th_inf[0] = th_plus
+				list_of_states[n + 1].th_inf[1] = 1
 			else:
-				list_of_states[s].th_sup[0] = th_minus
-				list_of_states[s].th_sup[1] = 1
-				list_of_states[s + 1].th_inf[0] = th_minus
-				list_of_states[s + 1].th_inf[1] = 1
+				list_of_states[n].th_sup[0] = th_minus
+				list_of_states[n].th_sup[1] = 1
+				list_of_states[n + 1].th_inf[0] = th_minus
+				list_of_states[n + 1].th_inf[1] = 1
 		else:
-			th_aver = (mu[s]/sigma[s] + mu[s + 1]/sigma[s + 1])/(1/sigma[s] + 1/sigma[s + 1])
-			list_of_states[s].th_sup[0] = th_aver
-			list_of_states[s].th_sup[1] = 2
-			list_of_states[s + 1].th_inf[0] = th_aver
-			list_of_states[s + 1].th_inf[1] = 2
+			th_aver = (S0.mu/S0.sigma + S1.mu/S1.sigma)/(1/S0.sigma + 1/S1.sigma)
+			list_of_states[n].th_sup[0] = th_aver
+			list_of_states[n].th_sup[1] = 2
+			list_of_states[n + 1].th_inf[0] = th_aver
+			list_of_states[n + 1].th_inf[1] = 2
+
 	list_of_states[-1].th_sup[0] = M_range[1]
 	list_of_states[-1].th_sup[1] = 0
 
-	# Step 6: Write the final states and final thresholds to text files.
+	# Step 4: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
 	with open('final_states.txt', 'w') as f:
 		for state in list_of_states:
@@ -415,7 +408,7 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 		for state in list_of_states:
 			print(state.th_inf[0], state.th_sup[0], file=f)
 
-	# Step 7: Return the 'list_of_states' as the output of the function.
+	# Step 5: Return the 'list_of_states' as the output of the function.
 	return list_of_states, new_labels
 
 def relabel_states_2D(all_the_labels, states_list):
