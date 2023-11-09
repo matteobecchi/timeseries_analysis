@@ -576,6 +576,35 @@ def timeseries_analysis(M_raw, PAR):
 	else:
 		return len(list_of_states), fraction_0
 
+def compute_cluster_mean_seq(M, all_the_labels, tau_window):
+	center_list = []
+	std_list = []
+	for L in np.unique(all_the_labels):
+		tmp = []
+		for i, mol in enumerate(all_the_labels):
+			for w, l in enumerate(mol):
+				t0 = w*tau_window
+				t1 = (w + 1)*tau_window
+				if l == L:
+					tmp.append(M[i][t0:t1])
+		center_list.append(np.mean(tmp, axis=0))
+		std_list.append(np.std(tmp, axis=0))
+
+	fig, ax = plt.subplots()
+	x = range(tau_window)
+	for l, center in enumerate(center_list):
+		err_inf = center - std_list[l]
+		err_sup = center + std_list[l]
+		ax.fill_between(x, err_inf, err_sup, alpha=0.25)
+		ax.plot(x, center, label='ENV'+str(l), marker='o')
+	fig.suptitle('Average time sequence inside each environments')
+	ax.set_xlabel(r'Time $t$ [frames]')
+	ax.set_ylabel(r'LENS')
+	ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+	ax.legend()
+
+	plt.show()
+
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
 	t_smooth = PAR[1]
@@ -587,6 +616,9 @@ def full_output_analysis(M_raw, PAR):
 		print('* No possible classification was found. ')
 		return
 	list_of_states, all_the_labels = set_final_states(list_of_states, all_the_labels, M_range)
+
+	compute_cluster_mean_seq(M, all_the_labels, tau_w)
+
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
 	plot_cumulative_figure(M, PAR, list_of_states, 'Fig2')
