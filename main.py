@@ -2,7 +2,7 @@ from functions import *
 
 output_file = 'states_output.txt'
 colormap = 'viridis'
-show_plot = False
+show_plot = True
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -41,6 +41,7 @@ def preparing_the_data(M_raw, PAR):
 
 	# Apply filtering on the data
 	M = moving_average(M_raw, t_smooth)
+	# M = np.array([ butter_lowpass_filter(x, 1/t_smooth, 1, 2) for x in M_raw ])
 
 	sig_max = np.max(M)
 	sig_min = np.min(M)

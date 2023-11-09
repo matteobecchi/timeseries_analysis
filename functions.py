@@ -7,6 +7,7 @@ import copy
 import math
 import scipy.optimize
 from scipy.signal import savgol_filter
+from scipy.signal import butter,filtfilt
 from matplotlib.colors import LogNorm
 import plotly
 plotly.__version__
@@ -88,6 +89,13 @@ def read_data(filename):
 	else:
 		print('\tERROR: unsupported format for input file.')
 		return None
+
+def butter_lowpass_filter(x, cutoff, fs, order):
+	nyq = 0.5
+	normal_cutoff = cutoff / nyq
+	b, a = butter(order, normal_cutoff, btype='low', analog=False)
+	y = filtfilt(b, a, x)
+	return y
 
 def Savgol_filter(M, window):
 	# Step 1: Set the polynomial order for the Savitzky-Golay filter.
