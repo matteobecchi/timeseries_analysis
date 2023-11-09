@@ -13,7 +13,7 @@ plotly.__version__
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
-import seaborn as sns
+# import seaborn as sns
 
 class State:
 	def __init__(self, mu, sigma, A):

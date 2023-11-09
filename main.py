@@ -224,20 +224,20 @@ def gauss_fit_max(M, bins, filename):
 		print('\tWARNING: this fit is not converging.')
 		return None
 
+	state = State(popt[0], popt[1], popt[2])
+
 	with open(output_file, 'a') as f:
 		print('\n', file=f)
-		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, area = {popt[2]:.4f}')
-		print(f'\tmu = {popt[0]:.4f}, sigma = {popt[1]:.4f}, area = {popt[2]:.4f}', file=f)
+		print(f'\tmu = {state.mu:.4f}, sigma = {state.sigma:.4f}, area = {state.A:.4f}')
+		print(f'\tmu = {state.mu:.4f}, sigma = {state.sigma:.4f}, area = {state.A:.4f}', file=f)
 		print('\tFit goodness = ' + str(goodness), file=f)
-
-	state = State(popt[0], popt[1], popt[2])
 
 	### Plot the distribution and the fitted Gaussians
 	y_lim = [np.min(M) - 0.025*(np.max(M) - np.min(M)), np.max(M) + 0.025*(np.max(M) - np.min(M))]
 	fig, ax = plt.subplots()
 	plot_histo(ax, counts, bins)
 	ax.set_xlim(y_lim)
-	tmp_popt = [popt[0], popt[1], popt[2]/flat_M.size]
+	tmp_popt = [state.mu, state.sigma, state.A/flat_M.size]
 	ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
 	if show_plot:
