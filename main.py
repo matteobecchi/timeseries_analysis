@@ -604,6 +604,7 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 	ax.legend()
 
 	plt.show()
+	fig.savefig('output_figures/Fig3.png', dpi=600)
 
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR[0]
