@@ -372,7 +372,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, filename):
 
 	# Plot the horizontal lines and shaded regions to mark states' thresholds
 	style_color_map = {
-		0: ('-', 'xkcd:black'),
+		0: ('--', 'xkcd:black'),
 		1: ('--', 'xkcd:blue'),
 		2: ('--', 'xkcd:red'),
 	}

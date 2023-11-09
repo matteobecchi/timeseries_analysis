@@ -374,7 +374,13 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 		c = (S0.mu*S1.sigma)**2 - (S1.mu*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.A*S1.sigma/S1.A/S0.sigma)
 		Delta = b**2 - 4*a*c
 		# Determine the type of the threshold (0, 1 or 2). 
-		if Delta >= 0:
+		if a == 0.0:
+			th = (S0.mu + S1.mu)/2 - S0.sigma**2 / 2 / (S1.mu - S0.mu) * np.log(S0.A/S1.A)
+			list_of_states[n].th_sup[0] = th
+			list_of_states[n].th_sup[1] = 1
+			list_of_states[n + 1].th_inf[0] = th
+			list_of_states[n + 1].th_inf[1] = 1
+		elif Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
 			th_minus = (- b - np.sqrt(Delta))/(2*a)
 			intercept_plus = Gaussian(th_plus, S0.mu, S0.sigma, S0.A)
@@ -560,6 +566,7 @@ def print_mol_labels_fbf_lam(all_the_labels):
 				print('#', file=f)
 			# Use np.savetxt to write the labels for each time step efficiently.
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
+
 
 
 
