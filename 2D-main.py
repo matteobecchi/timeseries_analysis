@@ -5,7 +5,8 @@ show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
-	data_directory, PAR = read_input_parameters()
+	data_directory = read_input_parameters()
+	PAR = Parameters('input_parameters.txt')
 
 	tmp_M_raw = []
 	for d in range(len(data_directory)):
@@ -13,7 +14,7 @@ def all_the_input_stuff():
 		M_raw = read_data(data_directory[d])
 
 		# Remove initial frames based on 'tau_delay'.
-		M_raw = M_raw[:, PAR[2]:]
+		M_raw = M_raw[:, PAR.t_delay:]
 
 		tmp_M_raw.append(M_raw)
 
@@ -24,7 +25,7 @@ def all_the_input_stuff():
 
 	### Create files for output
 	with open(output_file, 'w') as f:
-		f.write('# {0}, {1}, {2}'.format(*PAR))
+		f.write('#')
 	figures_folder = 'output_figures'
 	if not os.path.exists(figures_folder):
 		os.makedirs(figures_folder)
@@ -42,7 +43,7 @@ def all_the_input_stuff():
 	return tmp_M_raw, PAR
 
 def preparing_the_data(tmp_M_raw, PAR):
-	tau_window, t_smooth, t_conv, t_units = PAR[0], PAR[1], PAR[3], PAR[4]
+	tau_window, t_smooth, t_conv, t_units = PAR.tau_w, PAR.t_smooth, PAR.t_conv, PAR.t_units
 
 	M = []
 	for d, M_raw in enumerate(tmp_M_raw):
@@ -76,12 +77,12 @@ def preparing_the_data(tmp_M_raw, PAR):
 	return M, all_the_labels
 
 def plot_input_data(M, PAR, filename):
+	tau_window, tau_delay, t_conv, t_units, bins = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.bins
 	Bins = []
 	Counts = []
 	for d in range(M.shape[2]):
 		# Flatten the M matrix and compute histogram counts and bins
 		flat_M = M[:,:,d].flatten()
-		bins = 50 if len(PAR) < 7 else PAR[6]
 		counts0, bins0 = np.histogram(flat_M, bins=bins, density=True)
 		counts0 *= flat_M.size
 		Bins.append(bins0)
@@ -133,10 +134,11 @@ def plot_input_data(M, PAR, filename):
 
 def gauss_fit_max(M, bins, filename):
 	print('* Gaussian fit...')
-	# number_of_sigmas = 2.0
 	flat_M = M.reshape((M.shape[0]*M.shape[1], M.shape[2]))
 
 	### 1. Histogram with 'auto' binning ###
+	if bins == 'auto':
+		bins = int(np.power(M.size, 1/3)/2)
 	counts, edges = np.histogramdd(flat_M, bins=bins, density=True)
 	gap = 1
 	if np.all([e.size > 40 for e in edges]):
@@ -163,12 +165,24 @@ def gauss_fit_max(M, bins, filename):
 			min_id0 = max(max_ind[dim] - gap, 0)
 			min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-			tmp_max = tuple([max_ind[i] for i in range(D) if i != dim])
+			tmp_max1 = copy.deepcopy(max_ind)
+			tmp_max2 = copy.deepcopy(max_ind)
 
-			while min_id0 > 0 and data[tuple([min_id0] + list(tmp_max))] > data[tuple([min_id0 - 1] + list(tmp_max))]:
+			tmp_max1[dim] = min_id0
+			tmp_max2[dim] = min_id0 - 1
+			while min_id0 > 0 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]:
+				tmp_max1[dim] -= 1
+				tmp_max2[dim] -= 1
 				min_id0 -= 1
 
-			while min_id1 < data.shape[dim] - 1 and data[tuple([min_id1] + list(tmp_max))] > data[tuple([min_id1 + 1] + list(tmp_max))]:
+			tmp_max1 = copy.deepcopy(max_ind)
+			tmp_max2 = copy.deepcopy(max_ind)
+
+			tmp_max1[dim] = min_id1
+			tmp_max2[dim] = min_id1 + 1
+			while min_id1 < data.shape[dim] - 1 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]:
+				tmp_max1[dim] += 1
+				tmp_max2[dim] += 1
 				min_id1 += 1
 
 			minima.extend([min_id0, min_id1])
@@ -179,15 +193,17 @@ def gauss_fit_max(M, bins, filename):
 
 	### 5. Try the fit between the minima and check its goodness ###
 	popt_min = []
+	goodness_min = 0
 	for dim in range(M.shape[2]):
 		try:
-			flag_min, goodness_min, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
+			flag_min, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
 			popt[2] *= flat_M.T[0].size
 			popt_min.extend(popt)
+			goodness_min += goodness
 		except:
 			popt_min = []
 			flag_min = False
-			goodness_min = 0
+			goodness_min -= 5
 
 	### 6. Find the interval of half height ###
 	def find_half_height_around_max(data, max_ind, gap):
@@ -199,12 +215,18 @@ def gauss_fit_max(M, bins, filename):
 			half_id0 = max(max_ind[dim] - gap, 0)
 			half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-			tmp_max = tuple([max_ind[i] for i in range(D) if i != dim])
+			tmp_max = copy.deepcopy(max_ind)
 
-			while half_id0 > 0 and data[tuple([half_id0] + list(tmp_max))] > max_val/2:
+			tmp_max[dim] = half_id0
+			while half_id0 > 0 and data[tuple(tmp_max)] > max_val/2:
+				tmp_max[dim] -= 1
 				half_id0 -= 1
 
-			while half_id1 < data.shape[dim] - 1 and data[tuple([half_id1] + list(tmp_max))] > max_val/2:
+			tmp_max = copy.deepcopy(max_ind)
+
+			tmp_max[dim] = half_id1
+			while half_id1 < data.shape[dim] - 1 and data[tuple(tmp_max)] > max_val/2:
+				tmp_max[dim] += 1
 				half_id1 += 1
 
 			minima.extend([half_id0, half_id1])
@@ -215,15 +237,17 @@ def gauss_fit_max(M, bins, filename):
 
 	### 7. Try the fit between the minima and check its goodness ###
 	popt_half = []
+	goodness_half = 0
 	for dim in range(M.shape[2]):
 		try:
-			flag_half, goodness_half, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
+			flag_half, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
 			popt[2] *= flat_M.T[0].size
 			popt_half.extend(popt)
+			goodness_half += goodness
 		except:
 			popt_half = []
 			flag_half = False
-			goodness_half = 0
+			goodness_half -= 5
 
 	### 8. Choose the best fit ###
 	goodness = goodness_min
@@ -381,7 +405,8 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return M2, fw, one_last_state
 
-def iterative_search(M, PAR, tau_w, all_the_labels, name):
+def iterative_search(M, PAR, all_the_labels, name):
+	tau_w, bins = PAR.tau_w, PAR.bins
 	states_list = []
 	M1 = M
 	iteration_id = 1
@@ -389,7 +414,6 @@ def iterative_search(M, PAR, tau_w, all_the_labels, name):
 	one_last_state = False
 	while True:
 		### Locate and fit maximum in the signal distribution
-		bins = 50 if len(PAR) < 7 else PAR[6]
 		state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if state == None:
 			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')			
@@ -472,12 +496,12 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	plt.close(fig)
 
 def timeseries_analysis(M_raw, PAR):
-	tau_w, t_smooth = PAR[0], PAR[1]
+	tau_w, t_smooth = PAR.tau_w, PAR.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
 	M, all_the_labels = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
@@ -498,11 +522,11 @@ def timeseries_analysis(M_raw, PAR):
 		return len(list_of_states), fraction_0
 
 def full_output_analysis(M_raw, PAR):
-	tau_w = PAR[0]
+	tau_w = PAR.tau_w
 	M, all_the_labels = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, tau_w, all_the_labels, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
@@ -511,7 +535,7 @@ def full_output_analysis(M_raw, PAR):
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
 
-def TRA_analysis(M_raw, PAR):
+def TRA_analysis(M_raw, PAR, perform_anew):
 	t_smooth_max = 5 	# 5
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
 	print('* t_smooth used:', t_smooth)
@@ -524,34 +548,35 @@ def TRA_analysis(M_raw, PAR):
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 
-	### If the analysis hat to be performed anew ###
-	number_of_states = []
-	fraction_0 = []
-	for tau_w in tau_window:
-		tmp = [tau_w]
-		tmp1 = [tau_w]
-		for t_s in t_smooth:
-			print('\n* New analysis: ', tau_w, t_s)
-			tmp_PAR = copy.deepcopy(PAR)
-			tmp_PAR[0] = tau_w
-			tmp_PAR[1] = t_s
-			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
-			tmp.append(n_s)
-			tmp1.append(f0)
-		number_of_states.append(tmp)
-		fraction_0.append(tmp1)
-	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
-	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
-
-	### Otherwise, just do this ###
-	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
-	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
+	if perform_anew:
+		### If the analysis hat to be performed anew ###
+		number_of_states = []
+		fraction_0 = []
+		for tau_w in tau_window:
+			tmp = [tau_w]
+			tmp1 = [tau_w]
+			for t_s in t_smooth:
+				print('\n* New analysis: ', tau_w, t_s)
+				tmp_PAR = copy.deepcopy(PAR)
+				tmp_PAR.tau_w = tau_w
+				tmp_PAR.t_smooth = t_s
+				n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
+				tmp.append(n_s)
+				tmp1.append(f0)
+			number_of_states.append(tmp)
+			fraction_0.append(tmp1)
+		np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
+		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
+	else:
+		### Otherwise, just do this ###
+		number_of_states = np.loadtxt('number_of_states.txt')
+		fraction_0 = np.loadtxt('fraction_0.txt')
 
 	plot_TRA_figure(number_of_states, fraction_0, PAR)
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	# TRA_analysis(M_raw, PAR)
+	# TRA_analysis(M_raw, PAR, True)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":

@@ -35,6 +35,31 @@ class State_multi_D:
 		self.perc = 0 						# Fraction of data points classified in this state
 		self.a = number_of_sigmas*sigma		# Axes of the state
 
+class Parameters:
+	def __init__(self, input_file):
+		try:
+			with open(input_file, 'r') as file:
+				lines = file.readlines()
+				param = [line.strip() for line in lines]
+		except:
+			print('\tinput_parameters.txt file missing or wrongly formatted.')
+		if len(param) < 6:
+			print('\tinput_parameters.txt file wrongly formatted.')
+
+		self.tau_w = int(param[0])
+		self.t_smooth = int(param[1])
+		self.t_delay = int(param[2])
+		self.t_conv = float(param[3])
+		self.t_units = r'[' + str(param[4]) + r']'
+		self.example_ID = int(param[5])
+		self.bins = 'auto'
+
+		if len(param) == 7:
+			print('\tWARNING: overriding histogram binning')
+			self.bins = int(param[6])
+		elif len(param) > 7:
+			print('\tinput_parameters.txt file wrongly formatted.')
+
 def read_input_parameters():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
 	try:
@@ -42,31 +67,34 @@ def read_input_parameters():
 	except:
 		print('\tdata_directory.txt file missing or wrongly formatted.')
 
-	# Step 2: Attempt to open and read the 'input_parameters.txt' file.
-	try:
-		with open('input_parameters.txt', 'r') as file:
-			lines = file.readlines()
-			# Step 3: Convert the lines of text into a list of floating-point numbers (floats).
-			param = [line.strip() for line in lines]
-	except:
-		print('\tinput_parameters.txt file missing or wrongly formatted.')
-
-	# Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
-	# The sixth parameter, 'bins' is optional and shoul be avoided if possible. 
-	if len(param) == 6:
-		PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']',  int(param[5])]
-	elif len(param) == 7:
-		print('\tWARNING: overriding histogram binning')
-		PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']', int(param[5]), int(param[6])]
-	else:
-		print('\tinput_parameters.txt file wrongly formatted.')
-
 	print('* Reading data from', data_dir)
 
+	#########################################################################################
+	# ### THE FOLLOWING HAS TO BE REMOVED AT A CERTAIN POINT ###
+	# # Step 2: Attempt to open and read the 'input_parameters.txt' file.
+	# try:
+	# 	with open('input_parameters.txt', 'r') as file:
+	# 		lines = file.readlines()
+	# 		# Step 3: Convert the lines of text into a list of floating-point numbers (floats).
+	# 		param = [line.strip() for line in lines]
+	# except:
+	# 	print('\tinput_parameters.txt file missing or wrongly formatted.')
+
+	# # Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
+	# # The sixth parameter, 'bins' is optional and shoul be avoided if possible. 
+	# if len(param) == 6:
+	# 	PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']',  int(param[5])]
+	# elif len(param) == 7:
+	# 	print('\tWARNING: overriding histogram binning')
+	# 	PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']', int(param[5]), int(param[6])]
+	# else:
+	# 	print('\tinput_parameters.txt file wrongly formatted.')
+	#########################################################################################
+
 	if data_dir.size == 1:
-		return str(data_dir), PAR
+		return str(data_dir)
 	else:
-		return data_dir, PAR		
+		return data_dir
 
 def read_data(filename):
 	# Check if the filename ends with a supported format.
@@ -430,7 +458,7 @@ def relabel_states_2D(all_the_labels, states_list):
 	sorted_indices = [index + 1 for index, _ in sorted(enumerate(states_list), key=lambda x: x[1].perc, reverse=True)]
 	sorted_states = sorted(states_list, key=lambda x: x.perc, reverse=True)
 
-	# Step 2: relabel all the labels according to the new ordering
+	### Step 2: relabel all the labels according to the new ordering
 	sorted_all_the_labels = np.empty(all_the_labels.shape)
 	for a, mol in enumerate(all_the_labels):
 		for b, mol_t in enumerate(mol):
@@ -441,36 +469,51 @@ def relabel_states_2D(all_the_labels, states_list):
 				else:
 					sorted_all_the_labels[a][b] = 0
 
-	# Step 3: merge strongly overlapping states
+	### Step 3: merge strongly overlapping states. Two states are merged if, along all the directions,
+	### their means dist less than the larger of their standard deviations in that direction. 
+	## Find all the pairs of states which should be merged
 	merge_pairs = []
 	for i, s0 in enumerate(sorted_states):
 		for j, s1 in enumerate(sorted_states[i + 1:]):
-			C0 = s0.mu
-			C1 = s1.mu
-			diff = np.abs(np.subtract(C1, C0))
-			if np.all(diff < [ max(s0.a[k], s1.a[k]) for k in range(diff.size) ]):
+			diff = np.abs(np.subtract(s1.mu, s0.mu))
+			if np.all(diff < [ max(s0.sigma[k], s1.sigma[k]) for k in range(diff.size) ]):
 				merge_pairs.append([i + 1, j + i + 2])
 
+	## If a state can be merged with more than one state, choose the most relevant one
+	el_to_del = []
+	for p0 in range(len(merge_pairs)):
+		for p1 in range(p0 + 1, len(merge_pairs)):
+			if merge_pairs[p1][1] == merge_pairs[p0][1]:
+				el_to_del.append(p1)
+	for el in np.unique(el_to_del)[::-1]:
+		merge_pairs.pop(el)
+
+	## Manage chains of merging
 	for p0 in range(len(merge_pairs)):
 		for p1 in range(p0 + 1, len(merge_pairs)):
 			if merge_pairs[p1][0] == merge_pairs[p0][1]:
 				merge_pairs[p1][0] = merge_pairs[p0][0]
 
+	## Create a dictionary to easily relabel data points
 	state_mapping = {i: i for i in range(len(sorted_states) + 1)}
 	for s0, s1 in merge_pairs:
 		state_mapping[s1] = s0
 
+	## Relabel the data points
 	updated_labels = np.empty(sorted_all_the_labels.shape)
 	for a, mol in enumerate(sorted_all_the_labels):
 		for b, label in enumerate(mol):
 			try:
 				updated_labels[a][b] = state_mapping[label]
 			except:
-				print('No classification found.')
+				continue
+				# print('No classification found.')
+
+	## Update the list of states
 	states_to_remove = set(s1 for s0, s1 in merge_pairs)
 	updated_states = [sorted_states[s] for s in range(len(sorted_states)) if s + 1 not in states_to_remove]
 
-	# Step 4: remove gaps in the labeling
+	### Step 4: remove gaps in the labeling
 	current_labels = np.unique(updated_labels)
 	for i, mol in enumerate(updated_labels):
 		for t, l in enumerate(mol):
@@ -482,7 +525,7 @@ def relabel_states_2D(all_the_labels, states_list):
 		n = np.sum(updated_labels == s_id+1)
 		updated_states[s_id].perc = n / updated_labels.size
 
-	# Step 5: print informations on the final states
+	### Step 5: print informations on the final states
 	with open('final_states.txt', 'w') as f:
 		print('#center_coords, semiaxis, fraction_of_data', file=f)
 		for s in updated_states:
@@ -506,7 +549,7 @@ def assign_single_frames(all_the_labels, tau_window):
 	return new_labels
 
 def plot_TRA_figure(number_of_states, fraction_0, PAR):
-	t_conv, units = PAR[3], PAR[4]
+	t_conv, units = PAR.t_conv, PAR.t_units
 	number_of_states = np.array(number_of_states)
 	x = np.array(number_of_states.T[0])*t_conv
 	number_of_states = number_of_states[:, 1:]
