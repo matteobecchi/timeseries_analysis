@@ -442,7 +442,7 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	n_states = len(list_of_states) + 1
 	colormap = 'viridis'
-	x = cm.get_cmap(colormap, n_states)
+	x = plt.get_cmap(colormap, n_states)
 	colors_from_cmap = x(np.arange(0, 1, 1/n_states))
 	colors_from_cmap[-1] = x(1.0)
 	
@@ -578,7 +578,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, True)
+	TRA_analysis(M_raw, PAR, False)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
