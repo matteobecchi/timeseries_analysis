@@ -593,7 +593,7 @@ def full_output_analysis(M_raw, PAR):
 	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 
-def TRA_analysis(M_raw, PAR):
+def TRA_analysis(M_raw, PAR, perform_anew):
 	t_smooth_max = 5	# 5
 	### The following is to have num_of_points log-spaced points
 	num_of_points = 20	# 20
@@ -605,34 +605,35 @@ def TRA_analysis(M_raw, PAR):
 	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
 	print('* t_smooth used:', t_smooth)
 
-	number_of_states = []
-	fraction_0 = []
-	for tau_w in tau_window:
-		tmp = [tau_w]
-		tmp1 = [tau_w]
-		for t_s in t_smooth:
-			print('\n* New analysis: ', tau_w, t_s)
-			tmp_PAR = copy.deepcopy(PAR)
-			tmp_PAR.tau_w = tau_w
-			tmp_PAR.t_smooth = t_s
-			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
-			tmp.append(n_s)
-			tmp1.append(f0)
-		number_of_states.append(tmp)
-		fraction_0.append(tmp1)
-
-	np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
-	np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
-
-	### Otherwise, just do this ###
-	# number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
-	# fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
+	if perform_anew:
+		### If the analysis hat to be performed anew ###
+		number_of_states = []
+		fraction_0 = []
+		for tau_w in tau_window:
+			tmp = [tau_w]
+			tmp1 = [tau_w]
+			for t_s in t_smooth:
+				print('\n* New analysis: ', tau_w, t_s)
+				tmp_PAR = copy.deepcopy(PAR)
+				tmp_PAR.tau_w = tau_w
+				tmp_PAR.t_smooth = t_s
+				n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
+				tmp.append(n_s)
+				tmp1.append(f0)
+			number_of_states.append(tmp)
+			fraction_0.append(tmp1)
+		np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
+		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
+	else:
+		### Otherwise, just do this ###
+		number_of_states = np.loadtxt('number_of_states.txt')[:, 1:]
+		fraction_0 = np.loadtxt('fraction_0.txt')[:, 1:]
 
 	plot_TRA_figure(number_of_states, fraction_0, PAR)
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR)
+	TRA_analysis(M_raw, PAR, True)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
