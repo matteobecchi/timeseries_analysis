@@ -95,8 +95,8 @@ def plot_input_data(M, PAR, filename):
 		ax1 = fig.add_subplot(grid[0:1, 0:3])
 		ax2 = fig.add_subplot(grid[1:4, 0:3])
 		ax3 = fig.add_subplot(grid[1:4, 3:4])
-		ax1.get_shared_x_axes().join(ax1, ax2)
-		ax3.get_shared_y_axes().join(ax3, ax2)
+		# ax1.get_shared_x_axes().join(ax1, ax2)
+		# ax3.get_shared_y_axes().join(ax3, ax2)
 		ax1.set_xticklabels([])
 		ax3.set_yticklabels([])
 		
@@ -534,6 +534,8 @@ def full_output_analysis(M_raw, PAR):
 	print_mol_labels_fbf_xyz(all_the_labels)
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
+
+	# print_colored_trj_from_xyz('OW.xyz', all_the_labels, PAR)
 
 def TRA_analysis(M_raw, PAR, perform_anew):
 	t_smooth_max = 5 	# 5
