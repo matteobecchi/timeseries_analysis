@@ -2,11 +2,12 @@ from functions import *
 
 output_file = 'states_output.txt'
 colormap = 'viridis'
-show_plot = True
+show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
-	data_directory, PAR = read_input_parameters()
+	data_directory = read_input_parameters()
+	PAR = Parameters('input_parameters.txt')
 
 	# Read raw data from the specified directory/files.
 	if type(data_directory) == str:
@@ -15,11 +16,11 @@ def all_the_input_stuff():
 		print('\tERROR: data_directory.txt is missing or wrongly formatted. ')
 
 	# Remove initial frames based on 'tau_delay'.
-	M_raw = M_raw[:, PAR[2]:]
+	M_raw = M_raw[:, PAR.t_delay:]
 
 	### Create files for output
 	with open(output_file, 'w') as f:
-		f.write('# {0}, {1}, {2}'.format(*PAR))
+		print('#', file=f)
 	figures_folder = 'output_figures'
 	if not os.path.exists(figures_folder):
 		os.makedirs(figures_folder)
@@ -36,8 +37,7 @@ def all_the_input_stuff():
 	return M_raw, PAR
 
 def preparing_the_data(M_raw, PAR):
-	tau_window = PAR[0]
-	t_smooth = PAR[1]
+	tau_window, t_smooth, t_conv, t_units = PAR.tau_w, PAR.t_smooth, PAR.t_conv, PAR.t_units
 
 	# Apply filtering on the data
 	M = moving_average(M_raw, t_smooth)
@@ -57,18 +57,18 @@ def preparing_the_data(M_raw, PAR):
 
 	# Print informative messages about trajectory details.
 	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
-	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*PAR[3]), str(PAR[4]) + ')')
-	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*PAR[3]), str(PAR[4]) + ')')
+	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv), t_units + ')')
+	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv), t_units + ')')
 
 	return M, [sig_min, sig_max]
 
 def plot_input_data(M, PAR, filename):
 	# Extract relevant parameters from PAR
-	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
+	tau_window, tau_delay, t_conv, t_units = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units
 
 	# Flatten the M matrix and compute histogram counts and bins
 	flat_M = M.flatten()
-	bins = 'auto' if len(PAR) < 7 else PAR[6]
+	bins = PAR.bins
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -294,7 +294,7 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	return M2, fw, one_last_state
 
 def iterative_search(M, PAR, name):
-	tau_w = PAR[0]
+	tau_w, bins = PAR.tau_w, PAR.bins
 	
 	# Initialize an array to store labels for each window.
 	num_windows = int(M.shape[1] / tau_w)
@@ -307,9 +307,6 @@ def iterative_search(M, PAR, name):
 	one_last_state = False
 	while True:
 		### Locate and fit maximum in the signal distribution
-		bins='auto'
-		if len(PAR) == 7:
-			bins=PAR[6]
 		# popt, th, state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if state == None:
@@ -335,12 +332,11 @@ def iterative_search(M, PAR, name):
 
 def plot_cumulative_figure(M, PAR, list_of_states, filename):
 	print('* Printing cumulative figure...')
-	tau_window, tau_delay, t_conv, t_units = PAR[0], PAR[2], PAR[3], PAR[4]
+	tau_window, tau_delay, t_conv, t_units, bins = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.bins
 	n_states = len(list_of_states)
 
 	# Compute histogram of flattened M
 	flat_M = M.flatten()
-	bins = 'auto' if len(PAR) < 7 else PAR[6]
 	counts, bins = np.histogram(flat_M, bins=bins, density=True)
 	counts *= flat_M.size
 
@@ -397,8 +393,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, filename):
 	plt.close(fig)
 
 def plot_one_trajectory(M, PAR, all_the_labels, filename):
-	tau_window, tau_delay, t_conv, t_units, example_ID = PAR[0], PAR[2], PAR[3], PAR[4], PAR[5]
-
+	tau_window, tau_delay, t_conv, t_units, example_ID = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.example_ID
 	# Get the signal of the example particle
 	signal = M[example_ID][:all_the_labels.shape[1]]
 
@@ -508,8 +503,7 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
 def timeseries_analysis(M_raw, PAR):
-	tau_w = PAR[0]
-	t_smooth = PAR[1]
+	tau_w, t_smooth = PAR.tau_w, PAR.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
 	M, M_range = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
@@ -577,8 +571,7 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 	fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def full_output_analysis(M_raw, PAR):
-	tau_w = PAR[0]
-	t_smooth = PAR[1]
+	tau_w = PAR.tau_w
 	M, M_range = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
@@ -620,8 +613,8 @@ def TRA_analysis(M_raw, PAR):
 		for t_s in t_smooth:
 			print('\n* New analysis: ', tau_w, t_s)
 			tmp_PAR = copy.deepcopy(PAR)
-			tmp_PAR[0] = tau_w
-			tmp_PAR[1] = t_s
+			tmp_PAR.tau_w = tau_w
+			tmp_PAR.t_smooth = t_s
 			n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
 			tmp.append(n_s)
 			tmp1.append(f0)
@@ -644,3 +637,6 @@ def main():
 
 if __name__ == "__main__":
 	main()
+
+
+
