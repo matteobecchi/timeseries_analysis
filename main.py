@@ -41,7 +41,7 @@ def preparing_the_data(M_raw, PAR):
 
 	# Apply filtering on the data
 	M = moving_average(M_raw, t_smooth)
-	# M = np.array([ butter_lowpass_filter(x, 1/t_smooth, 1, 2) for x in M_raw ])
+	# M = np.array([ butter_lowpass_filter(x, 1/double(t_smooth), 1, 2) for x in M_raw ])
 
 	sig_max = np.max(M)
 	sig_min = np.min(M)
@@ -348,7 +348,7 @@ def plot_cumulative_figure(M, PAR, list_of_states, filename):
 
 	# Create a color palette for plotting states
 	palette = []
-	cmap = cm.get_cmap(colormap, n_states)
+	cmap = plt.get_cmap(colormap, n_states)
 	for i in range(cmap.N):
 		rgba = cmap(i)
 		palette.append(matplotlib.colors.rgb2hex(rgba))
@@ -479,7 +479,7 @@ def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
 
 	# Generate a color palette for the Sankey diagram.
 	palette = []
-	cmap = cm.get_cmap(colormap, n_states)
+	cmap = plt.get_cmap(colormap, n_states)
 	for i in range(cmap.N):
 		rgba = cmap(i)
 		palette.append(matplotlib.colors.rgb2hex(rgba))
