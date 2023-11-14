@@ -106,9 +106,17 @@ def plot_input_data(M, PAR, filename):
 		ax3.stairs(Counts[1], Bins[1], fill=True, orientation='horizontal')
 
 		# Plot the individual trajectories in the first subplot (left side)
+		ID_max, ID_min = 0, 0
+		for idx, mol in enumerate(M):
+			if np.max(mol) == np.max(M):
+				ID_max = idx
+			if np.min(mol) == np.min(M):
+				ID_min = idx
 		step = 10 if M.size > 1000000 else 1
 		for idx, mol in enumerate(M[::step]):
 			ax2.plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+		ax2.plot(M[ID_min][:,0], M[ID_min][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+		ax2.plot(M[ID_max][:,0], M[ID_max][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
 
 		# Set labels and titles for the plots
 		ax2.set_ylabel('Signal 1')
@@ -452,12 +460,26 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 		ax = plt.axes(projection='3d')
 
 		# Plot the individual trajectories
+		ID_max, ID_min = 0, 0
+		for idx, mol in enumerate(M):
+			if np.max(mol) == np.max(M):
+				ID_max = idx
+			if np.min(mol) == np.min(M):
+				ID_min = idx
+
 		step = 5 if M.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
+		
+		c = [ int(l) for l in all_the_labels[ID_min] ]
+		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.scatter(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
+		c = [ int(l) for l in all_the_labels[ID_max] ]
+		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.scatter(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
 		for S_id, S in enumerate(list_of_states):
