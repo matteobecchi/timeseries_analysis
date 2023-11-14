@@ -69,28 +69,6 @@ def read_input_parameters():
 
 	print('* Reading data from', data_dir)
 
-	#########################################################################################
-	# ### THE FOLLOWING HAS TO BE REMOVED AT A CERTAIN POINT ###
-	# # Step 2: Attempt to open and read the 'input_parameters.txt' file.
-	# try:
-	# 	with open('input_parameters.txt', 'r') as file:
-	# 		lines = file.readlines()
-	# 		# Step 3: Convert the lines of text into a list of floating-point numbers (floats).
-	# 		param = [line.strip() for line in lines]
-	# except:
-	# 	print('\tinput_parameters.txt file missing or wrongly formatted.')
-
-	# # Step 4: Create a list containing the extracted parameters, converting them to integers where needed.
-	# # The sixth parameter, 'bins' is optional and shoul be avoided if possible. 
-	# if len(param) == 6:
-	# 	PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']',  int(param[5])]
-	# elif len(param) == 7:
-	# 	print('\tWARNING: overriding histogram binning')
-	# 	PAR = [int(param[0]), int(param[1]), int(param[2]), float(param[3]), r'[' + str(param[4]) + r']', int(param[5]), int(param[6])]
-	# else:
-	# 	print('\tinput_parameters.txt file wrongly formatted.')
-	#########################################################################################
-
 	if data_dir.size == 1:
 		return str(data_dir)
 	else:
