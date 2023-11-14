@@ -60,7 +60,7 @@ class Parameters:
 		elif len(param) > 7:
 			print('\tinput_parameters.txt file wrongly formatted.')
 
-def read_input_parameters():
+def read_input_data():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
 	try:
 		data_dir = np.loadtxt('data_directory.txt', dtype=str)
