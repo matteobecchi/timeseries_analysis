@@ -1,3 +1,4 @@
+from classes import *
 from functions import *
 
 output_file = 'states_output.txt'
