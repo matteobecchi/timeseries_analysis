@@ -1,3 +1,4 @@
+from classes import *
 from functions import *
 
 output_file = 'states_output.txt'
@@ -589,7 +590,7 @@ def full_output_analysis(M_raw, PAR):
 	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
 	print_mol_labels_fbf_xyz(all_the_labels)
-	# print_colored_trj_from_xyz('OW.xyz', all_the_labels, PAR)
+	# print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, PAR)
 
 	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
