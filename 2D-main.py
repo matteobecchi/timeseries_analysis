@@ -5,7 +5,7 @@ show_plot = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
-	data_directory = read_input_parameters()
+	data_directory = read_input_data()
 	PAR = Parameters('input_parameters.txt')
 
 	tmp_M_raw = []
