@@ -28,7 +28,7 @@ The algorithm will attempt to perform the clustering on the input data, using di
 Then, the analysis with the values of `tau_window` and `t_smooth`  specified in `input_parameters.txt` will be performed. The output figures will be saved in the folder `output_figures`. The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. The file `final_tresholds.txt` contains the list of the tresholds between states. The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. The figure `output_figure/Fig4.png` shows the mean time sequence inside each state, and it's useful for checking the meaningfulness of the results. 
 The file `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not super friendly to use; the script `add_colors.sh` combines it with a .xyz trajecory to create a trajectory file whit particles colored according to the clustering. But a bit of fine-tuning will be necessary. 
 
-## 2D version
+## Multivariate time-series version
 The `2D-main.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. 
 
 ## Required Python 3 packages
