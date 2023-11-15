@@ -597,24 +597,17 @@ def full_output_analysis(M_raw, PAR):
 
 def TRA_analysis(M_raw, PAR, perform_anew):
 	t_smooth_max = 5	# 5
-	### The following is to have num_of_points log-spaced points
 	num_of_points = 20	# 20
-	base = (M_raw.shape[1] - t_smooth_max)**(1/num_of_points)
-	tmp = [ int(base**n) + 1 for n in range(1, num_of_points + 1) ]
-	tau_window = []
-	[ tau_window.append(x) for x in tmp if x not in tau_window ]
-	print('* Tau_w used:', tau_window)
-	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
-	print('* t_smooth used:', t_smooth)
+	Tau_window, T_smooth = param_grid(M_raw.shape[1], t_smooth_max, num_of_points)
 
 	if perform_anew:
 		### If the analysis hat to be performed anew ###
 		number_of_states = []
 		fraction_0 = []
-		for tau_w in tau_window:
+		for tau_w in Tau_window:
 			tmp = [tau_w]
 			tmp1 = [tau_w]
-			for t_s in t_smooth:
+			for t_s in T_smooth:
 				print('\n* New analysis: ', tau_w, t_s)
 				tmp_PAR = copy.deepcopy(PAR)
 				tmp_PAR.tau_w = tau_w
@@ -636,7 +629,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, True)
+	TRA_analysis(M_raw, PAR, False)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
