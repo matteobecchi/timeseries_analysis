@@ -552,28 +552,31 @@ def print_mol_labels_fbf_lam(all_the_labels):
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
 def print_colored_trj_from_xyz(trj_file, all_the_labels, PAR):
-	with open(trj_file, "r") as f:
-		tmp = [ x.split()  for x in f.readlines() ]
+	if os.path.exists(trj_file):
+		with open(trj_file, "r") as f:
+			tmp = [ x.split()  for x in f.readlines() ]
 
-	N = all_the_labels.shape[0]
-	T = all_the_labels.shape[1]
-	nlines = (N + 2)*T
+		N = all_the_labels.shape[0]
+		T = all_the_labels.shape[1]
+		nlines = (N + 2)*T
 
-	print('\t Removing the first', int(PAR.t_smooth/2) + PAR.t_delay, 'frames...')
-	for t in range(int(PAR.t_smooth/2) + PAR.t_delay):
-		for n in range(N + 2):
-			tmp.pop(0)
+		print('\t Removing the first', int(PAR.t_smooth/2) + PAR.t_delay, 'frames...')
+		for t in range(int(PAR.t_smooth/2) + PAR.t_delay):
+			for n in range(N + 2):
+				tmp.pop(0)
 
-	print('\t Removing the last', int((len(tmp) - nlines)/(N + 2)), 'frames...')
-	while len(tmp) > nlines:
-		tmp.pop(-1)
+		print('\t Removing the last', int((len(tmp) - nlines)/(N + 2)), 'frames...')
+		while len(tmp) > nlines:
+			tmp.pop(-1)
 
-	with open('colored_trj.txt', "w+") as f:
-		i = 0
-		for t in range(T):
-			print(tmp[i][0], file=f)
-			print(tmp[i + 1][0], file=f)
-			for n in range(N):
-				print(all_the_labels[n][t], tmp[i + 2 + n][1], tmp[i + 2 + n][2], tmp[i + 2 + n][3], file=f)
-			i += N + 2
+		with open('colored_trj.txt', "w+") as f:
+			i = 0
+			for t in range(T):
+				print(tmp[i][0], file=f)
+				print(tmp[i + 1][0], file=f)
+				for n in range(N):
+					print(all_the_labels[n][t], tmp[i + 2 + n][1], tmp[i + 2 + n][2], tmp[i + 2 + n][3], file=f)
+				i += N + 2
+	else:
+		print('No ' + trj_file + ' found for coloring the trajectory.')
 
