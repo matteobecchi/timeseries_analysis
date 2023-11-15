@@ -40,22 +40,28 @@ class Parameters:
 		try:
 			with open(input_file, 'r') as file:
 				lines = file.readlines()
-				param = [line.strip() for line in lines]
 		except:
 			print('\tinput_parameters.txt file missing or wrongly formatted.')
-		if len(param) < 6:
+		if len(lines) < 6 or len(lines) > 7:
 			print('\tinput_parameters.txt file wrongly formatted.')
 
-		self.tau_w = int(param[0])
-		self.t_smooth = int(param[1])
-		self.t_delay = int(param[2])
-		self.t_conv = float(param[3])
-		self.t_units = r'[' + str(param[4]) + r']'
-		self.example_ID = int(param[5])
 		self.bins = 'auto'
 
-		if len(param) == 7:
-			print('\tWARNING: overriding histogram binning')
-			self.bins = int(param[6])
-		elif len(param) > 7:
-			print('\tinput_parameters.txt file wrongly formatted.')
+		for line in lines:
+			key, value = [ s for s in line.strip().split('\t') if s != '']
+			if key == 'tau_window':
+				self.tau_w = int(value)
+				print(int(value))
+			elif key == 't_smooth':
+				self.t_smooth = int(value)
+			elif key == 't_delay':
+				self.t_delay = int(value)
+			elif key == 't_conv':
+				self.t_conv = float(value)
+			elif key == 't_units':
+				self.t_units = r'[' + str(value) + r']'
+			elif key == 'example_ID':
+				self.example_ID = int(value)
+			if key == 'bins':
+				self.bins = int(value)
+				print('\tWARNING: overriding histogram binning')
