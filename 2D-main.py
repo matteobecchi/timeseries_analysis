@@ -554,11 +554,11 @@ def full_output_analysis(M_raw, PAR):
 		print('* No possible classification was found. ')
 		return
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
-	print_mol_labels_fbf_xyz(all_the_labels)
 
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
 
-	# print_colored_trj_from_xyz('OW.xyz', all_the_labels, PAR)
+	print_mol_labels_fbf_xyz(all_the_labels)
+	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, PAR)
 
 def TRA_analysis(M_raw, PAR, perform_anew):
 	t_smooth_max = 5 	# 5
@@ -590,8 +590,9 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 				tmp1.append(f0)
 			number_of_states.append(tmp)
 			fraction_0.append(tmp1)
-		np.savetxt('number_of_states.txt', number_of_states, delimiter=' ')
-		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ')
+		header = 'tau_window\t t_s = 1\t t_s = 2\t t_s = 3\t t_s = 4\t t_s = 5'
+		np.savetxt('number_of_states.txt', number_of_states, delimiter=' ', header=header)
+		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ', header=header)
 	else:
 		### Otherwise, just do this ###
 		number_of_states = np.loadtxt('number_of_states.txt')
