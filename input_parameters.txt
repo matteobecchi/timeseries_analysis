@@ -1,6 +1,6 @@
 tau_window	5
 t_smooth	1
-tau_delay	0
+t_delay		0
 t_conv		1.0
 t_units		ns
 example_ID	123
