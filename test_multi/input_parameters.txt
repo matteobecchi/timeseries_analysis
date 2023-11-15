@@ -1,7 +1,7 @@
-5
-1
-0
-200
-dt
-0
-50
+tau_window	5
+t_smooth	1
+t_delay		0
+t_conv		200
+t_units		dt
+example_ID	0
+bins		50

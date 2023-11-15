@@ -1,6 +1,6 @@
-10
-1
-1
-0.1
-ns
-0
+tau_window	10
+t_smooth	1
+t_delay		1
+t_conv		0.1
+t_units		ns
+example_ID	0

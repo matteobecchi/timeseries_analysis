@@ -1,8 +1,6 @@
-tau_window
-t_smooth
-tau_delay
-t_conv
-t_unists
-example_ID
-### Substitute the previous line with the numerical/string values
-### Then REMOVE this two last lines
+tau_window	5
+t_smooth	1
+tau_delay	0
+t_conv		1.0
+t_units	ns
+example_ID	123
