@@ -390,6 +390,7 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	# Step 4: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
 	with open('final_states.txt', 'w') as f:
+		print('# Mu \t Sigma \t A \t state_fraction')
 		for state in list_of_states:
 			print(state.mu, state.sigma, state.A, state.perc, file=f)
 	with open('final_thresholds.txt', 'w') as f:
