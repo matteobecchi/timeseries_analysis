@@ -560,6 +560,10 @@ def print_mol_labels_fbf_gro(all_the_labels):
 
 def print_signal_with_labels(M, all_the_labels):
 	with open('signal_with_labels.dat', 'w+') as f:
+		if M.shape[2] == 2:
+				print("Signal 1 Signal 2 Cluster", file=f)
+		else:
+				print("Signal 1 Signal 2 Signal 3 Cluster", file=f)
 		for t in range(all_the_labels.shape[1]):
 			for n in range(all_the_labels.shape[0]):
 				if M.shape[2] == 2:
