@@ -432,6 +432,16 @@ def relabel_states_2D(all_the_labels, states_list):
 		for p1 in range(p0 + 1, len(merge_pairs)):
 			if merge_pairs[p1][1] == merge_pairs[p0][1]:
 				el_to_del.append(p1)
+			# if merge_pairs[p1][1] == merge_pairs[p0][1]:
+			# 	s0 = sorted_states[merge_pairs[p0][1] - 1]
+			# 	sA = sorted_states[merge_pairs[p0][0] - 1]
+			# 	sB = sorted_states[merge_pairs[p1][0] - 1]
+			# 	diff_A = sA.mu - s0.mu
+			# 	diff_B = sB.mu - s0.mu
+			# 	if sum(pow(diff, 2) for diff in diff_A) < sum(pow(diff, 2) for diff in diff_B):
+			# 		el_to_del.append(p0)
+			# 	else:
+			# 		el_to_del.append(p1)
 	for el in np.unique(el_to_del)[::-1]:
 		merge_pairs.pop(el)
 
@@ -506,7 +516,7 @@ def plot_TRA_figure(number_of_states, fraction_0, PAR):
 
 	fig, ax = plt.subplots()
 	### If I want to chose one particular value of the smoothing: #########
-	t_smooth_idx = 1
+	t_smooth_idx = 0
 	y = number_of_states.T[t_smooth_idx]
 	y2 = fraction_0.T[t_smooth_idx]
 	#######################################################################
@@ -559,7 +569,7 @@ def print_signal_with_labels(M, all_the_labels):
 
 def print_mol_labels_fbf_xyz(all_the_labels):
 	print('* Print color IDs for Ovito...')
-	with open('all_cluster_IDs_xyz.dat', 'w') as f:
+	with open('all_cluster_IDs_xyz.dat', 'w+') as f:
 		for t in range(all_the_labels.shape[1]):
 			# Print two lines containing '#' to separate time steps.
 			print('#', file=f)
