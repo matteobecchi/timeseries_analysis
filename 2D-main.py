@@ -71,11 +71,8 @@ def preparing_the_data(tmp_M_raw, PAR):
 	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv) + ' ' + t_units + ').')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ' + t_units + ').')
 
-	# Initialize an array to store labels for each window.
-	all_the_labels = np.zeros((total_particles, num_windows))
-
 	# Return required data for further analysis.
-	return M, all_the_labels
+	return M
 
 def plot_input_data(M, PAR, filename):
 	tau_window, tau_delay, t_conv, t_units, bins = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.bins
@@ -414,8 +411,13 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return M2, fw, one_last_state
 
-def iterative_search(M, PAR, all_the_labels, name):
+def iterative_search(M, PAR, name):
 	tau_w, bins = PAR.tau_w, PAR.bins
+
+	# Initialize an array to store labels for each window.
+	num_windows = int(M.shape[1] / tau_w)
+	all_the_labels = np.zeros((M.shape[0], num_windows))
+
 	states_list = []
 	M1 = M
 	iteration_id = 1
@@ -535,10 +537,10 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 def timeseries_analysis(M_raw, PAR):
 	tau_w, t_smooth = PAR.tau_w, PAR.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, all_the_labels = preparing_the_data(M_raw, PAR)
+	M = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
@@ -600,10 +602,10 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR.tau_w
-	M, all_the_labels = preparing_the_data(M_raw, PAR)
+	M = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, all_the_labels, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
