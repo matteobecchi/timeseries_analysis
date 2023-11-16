@@ -71,7 +71,6 @@ def preparing_the_data(tmp_M_raw, PAR):
 	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv) + ' ' + t_units + ').')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ' + t_units + ').')
 
-	# Return required data for further analysis.
 	return M
 
 def plot_input_data(M, PAR, filename):
@@ -469,18 +468,20 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 			if np.min(mol) == np.min(M):
 				ID_min = idx
 
+		lw = 0.05
+
 		step = 5 if M.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
-			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 		
 		c = [ int(l) for l in all_the_labels[ID_min] ]
-		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 		ax.scatter(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 		c = [ int(l) for l in all_the_labels[ID_max] ]
-		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 		ax.scatter(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
@@ -507,18 +508,20 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 			if np.min(mol) == np.min(M):
 				ID_min = idx
 
+		lw = 0.05
+
 		step = 5 if M.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
 		for i, mol in enumerate(M[::step]):
-			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		c = [ int(l) for l in all_the_labels[ID_min] ]
-		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 		ax.scatter(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 		c = [ int(l) for l in all_the_labels[ID_max] ]
-		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], c='black', lw=0.2, rasterized=True, zorder=0)
+		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 		ax.scatter(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
@@ -651,7 +654,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, True)
+	TRA_analysis(M_raw, PAR, False)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
