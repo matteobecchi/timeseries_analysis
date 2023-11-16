@@ -430,18 +430,20 @@ def relabel_states_2D(all_the_labels, states_list):
 	el_to_del = []
 	for p0 in range(len(merge_pairs)):
 		for p1 in range(p0 + 1, len(merge_pairs)):
-			if merge_pairs[p1][1] == merge_pairs[p0][1]:
-				el_to_del.append(p1)
+			### TO REMOVE ###################################
 			# if merge_pairs[p1][1] == merge_pairs[p0][1]:
-			# 	s0 = sorted_states[merge_pairs[p0][1] - 1]
-			# 	sA = sorted_states[merge_pairs[p0][0] - 1]
-			# 	sB = sorted_states[merge_pairs[p1][0] - 1]
-			# 	diff_A = sA.mu - s0.mu
-			# 	diff_B = sB.mu - s0.mu
-			# 	if sum(pow(diff, 2) for diff in diff_A) < sum(pow(diff, 2) for diff in diff_B):
-			# 		el_to_del.append(p0)
-			# 	else:
-			# 		el_to_del.append(p1)
+			# 	el_to_del.append(p1)
+			#################################################
+			if merge_pairs[p1][1] == merge_pairs[p0][1]:
+				s0 = sorted_states[merge_pairs[p0][1] - 1]
+				sA = sorted_states[merge_pairs[p0][0] - 1]
+				sB = sorted_states[merge_pairs[p1][0] - 1]
+				diff_A = sA.mu - s0.mu
+				diff_B = sB.mu - s0.mu
+				if sum(pow(diff, 2) for diff in diff_A) < sum(pow(diff, 2) for diff in diff_B):
+					el_to_del.append(p0)
+				else:
+					el_to_del.append(p1)
 	for el in np.unique(el_to_del)[::-1]:
 		merge_pairs.pop(el)
 
