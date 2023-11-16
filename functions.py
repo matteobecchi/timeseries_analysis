@@ -462,6 +462,8 @@ def relabel_states_2D(all_the_labels, states_list):
 
 	### Step 4: remove gaps in the labeling
 	current_labels = np.unique(updated_labels)
+	if current_labels[0] != 0:
+		np.insert(current_labels, 0, 0)
 	for i, mol in enumerate(updated_labels):
 		for t, l in enumerate(mol):
 			for m in range(len(current_labels)):
@@ -504,8 +506,9 @@ def plot_TRA_figure(number_of_states, fraction_0, PAR):
 
 	fig, ax = plt.subplots()
 	### If I want to chose one particular value of the smoothing: #########
-	y = number_of_states.T[0]
-	y2 = fraction_0.T[0]
+	t_smooth_idx = 1
+	y = number_of_states.T[t_smooth_idx]
+	y2 = fraction_0.T[t_smooth_idx]
 	#######################################################################
 
 	# ### If I want to average over the different smoothings: ###############
@@ -583,7 +586,7 @@ def print_colored_trj_from_xyz(trj_file, all_the_labels, PAR):
 		while len(tmp) > nlines:
 			tmp.pop(-1)
 
-		with open('colored_trj.txt', "w+") as f:
+		with open('colored_trj.xyz', "w+") as f:
 			i = 0
 			for t in range(T):
 				print(tmp[i][0], file=f)
