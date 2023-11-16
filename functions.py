@@ -426,7 +426,7 @@ def relabel_states_2D(all_the_labels, states_list):
 			if np.all(diff < [ max(s0.sigma[k], s1.sigma[k]) for k in range(diff.size) ]):
 				merge_pairs.append([i + 1, j + i + 2])
 
-	## If a state can be merged with more than one state, choose the most relevant one
+	## If a state can be merged with more than one state, choose the most relevant one ### !!! ###
 	el_to_del = []
 	for p0 in range(len(merge_pairs)):
 		for p1 in range(p0 + 1, len(merge_pairs)):
@@ -547,6 +547,15 @@ def print_mol_labels_fbf_gro(all_the_labels):
 		for labels in all_the_labels:
 			# Join the elements of 'labels' using a space as the separator and write to the file.
 			print(' '.join(map(str, labels)), file=f)
+
+def print_signal_with_labels(M, all_the_labels):
+	with open('signal_with_labels.dat', 'w+') as f:
+		for t in range(all_the_labels.shape[1]):
+			for n in range(all_the_labels.shape[0]):
+				if M.shape[2] == 2:
+					print(M[n][t][0], M[n][t][1], int(all_the_labels[n][t]), file=f)
+				else:
+					print(M[n][t][0], M[n][t][1], M[n][t][2], int(all_the_labels[n][t]), file=f)
 
 def print_mol_labels_fbf_xyz(all_the_labels):
 	print('* Print color IDs for Ovito...')
