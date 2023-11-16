@@ -618,6 +618,7 @@ def full_output_analysis(M_raw, PAR):
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
 
 	print_mol_labels_fbf_xyz(all_the_labels)
+	print_signal_with_labels(M, all_the_labels)
 	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, PAR)
 
 def TRA_analysis(M_raw, PAR, perform_anew):
@@ -654,7 +655,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, True)
+	TRA_analysis(M_raw, PAR, False)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
