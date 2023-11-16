@@ -463,7 +463,7 @@ def relabel_states_2D(all_the_labels, states_list):
 	### Step 4: remove gaps in the labeling
 	current_labels = np.unique(updated_labels)
 	if current_labels[0] != 0:
-		np.insert(current_labels, 0, 0)
+		current_labels = np.insert(current_labels, 0, 0)
 	for i, mol in enumerate(updated_labels):
 		for t, l in enumerate(mol):
 			for m in range(len(current_labels)):
