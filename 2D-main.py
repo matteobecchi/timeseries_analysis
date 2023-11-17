@@ -143,7 +143,7 @@ def gauss_fit_max(M, bins, filename):
 
 	### 1. Histogram with 'auto' binning ###
 	if bins == 'auto':
-		bins = int(np.power(M.size, 1/3)*2)
+		bins = max(int(np.power(M.size, 1/3)*2), 10)
 	counts, edges = np.histogramdd(flat_M, bins=bins, density=True)
 	gap = 1
 	if np.all([e.size > 40 for e in edges]):
