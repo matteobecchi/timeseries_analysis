@@ -4,4 +4,3 @@ t_delay		0
 t_conv		200
 t_units		dt
 example_ID	0
-bins		50
