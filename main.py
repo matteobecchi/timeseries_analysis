@@ -46,8 +46,12 @@ def preparing_the_data(M_raw, PAR):
 
 	sig_max = np.max(M)
 	sig_min = np.min(M)
-	# Normalize the data to the range [0, 1]. Usually not needed. 
+	###################################################################
+	### Normalize the data to the range [0, 1]. Usually not needed. ###
 	# M = (M - sig_min)/(sig_max - sig_min)
+	# sig_max = np.max(M)
+	# sig_min = np.min(M)
+	###################################################################
 
 	# Get the number of particles and total frames in the trajectory.
 	total_particles = M.shape[0]
