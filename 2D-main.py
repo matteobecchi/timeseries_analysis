@@ -143,7 +143,7 @@ def gauss_fit_max(M, bins, filename):
 
 	### 1. Histogram with 'auto' binning ###
 	if bins == 'auto':
-		bins = int(np.power(M.size, 1/3)/2)
+		bins = int(np.power(M.size, 1/3)*2)
 	counts, edges = np.histogramdd(flat_M, bins=bins, density=True)
 	gap = 1
 	if np.all([e.size > 40 for e in edges]):
@@ -439,8 +439,11 @@ def iterative_search(M, PAR, name):
 		states_counter += 1
 		iteration_id += 1
 		### Exit the loop if no new stable windows are found
-		if c <= 0.0 or M2.size == 0:
+		if c <= 0.0:
 			print('Iterations interrupted because no data points have been assigned to the last state. ')
+			break
+		elif M2.size == 0:
+			print('Iterations interrupted because all data points have been assigned to one state. ')
 			break
 		else:
 			M1 = M2

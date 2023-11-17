@@ -1,60 +1,2295 @@
 #
 
-	mu = [0.2024, 0.1888], sigma = [0.0763, 0.0800], area = 546236.1414, 467657.1596
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.374
+
+
+	mu = [0.7749, 0.7654], sigma = [0.0711, 0.0755], area = 482241.6954, 599628.8967
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.34
+
+
+	mu = [0.2017, 0.7578], sigma = [0.0826, 0.0790], area = 160412.1697, 156997.8175
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.155
+
+
+	mu = [0.7653, 0.1856], sigma = [0.0761, 0.0771], area = 57904.6850, 61898.6823
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.068
+
+
+	mu = [0.4062, 0.0000], sigma = [0.1458, 0.5186], area = 21282.5399, 63555.4782
+	Fit goodness = 0
+	Fraction of windows in state 4 = 0.0228
+
+
+	mu = [0.7672, 0.7533], sigma = [0.0977, 0.1135], area = 8015.6457, 10306.5532
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0181
+
+
+	mu = [0.0667, 0.1573], sigma = [0.0557, 0.1146], area = 2243.1295, 3765.7593
+	Fit goodness = 7
+	Fraction of windows in state 6 = 0.0002
+
+
+	mu = [0.0658, 0.1573], sigma = [0.0554, 0.1146], area = 2177.5235, 3765.7593
+	Fit goodness = 7
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.392
+
+
+	mu = [0.8140, 0.8047], sigma = [0.0764, 0.0755], area = 508543.0121, 611904.9311
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.354
+
+
+	mu = [0.1214, 0.7972], sigma = [0.0783, 0.0764], area = 149696.1877, 148516.8491
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.161
+
+
+	mu = [0.8084, 0.1143], sigma = [0.0870, 0.0690], area = 54931.9674, 51029.3577
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0702
+
+
+	mu = [0.3530, 0.1165], sigma = [0.1658, 0.0848], area = 11359.9147, 3941.8405
+	Fit goodness = 5
+	Fraction of windows in state 4 = 0.0061
+
+
+	mu = [0.8509, 0.7882], sigma = [0.0825, 0.1281], area = 1865.7578, 3443.4177
+	Fit goodness = 6
+	Fraction of windows in state 5 = 0.005
+
+
+	mu = [0.9165, 0.2162], sigma = [0.3851, 0.0554], area = 5896.6778, 1380.7287
+	Fit goodness = 2
+	Fraction of windows in state 6 = 0.0017
+
+
+	mu = [0.1378, 0.2605], sigma = [0.1255, 0.0780], area = 2200.7458, 1448.0132
+	Fit goodness = 3
+	Fraction of windows in state 7 = 0.0022
+
+
+	mu = [0.6245, 0.8602], sigma = [0.0675, 0.2446], area = 250.8865, 3502.5780
+	Fit goodness = 0
+	Fraction of windows in state 8 = 0.0001
+
+
+	mu = [0.6244, 0.8512], sigma = [0.0674, 0.2511], area = 249.9844, 3394.1645
+	Fit goodness = 0
+	Fraction of windows in state 9 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.396
+
+
+	mu = [0.8413, 0.8478], sigma = [0.0638, 0.0619], area = 517442.0090, 620112.0688
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.349
+
+
+	mu = [0.0834, 0.8413], sigma = [0.0624, 0.0604], area = 152829.3466, 153475.9503
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.161
+
+
+	mu = [0.8309, 0.0832], sigma = [0.0553, 0.0502], area = 51303.3954, 49324.8601
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0698
+
+
+	mu = [0.8623, 0.8790], sigma = [0.1160, 0.1016], area = 5887.6708, 5647.9009
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0096
+
+
+	mu = [0.0901, 0.0732], sigma = [0.0735, 0.0997], area = 2233.3946, 3681.0708
+	Fit goodness = 7
+	Fraction of windows in state 5 = 0.0021
+
+
+	mu = [0.0014, 0.8668], sigma = [0.1326, 0.0772], area = 4297.6181, 2960.8647
+	Fit goodness = 0
+	Fraction of windows in state 6 = 0.0006
+
+
+	mu = [0.2200, 0.4188], sigma = [0.2281, 0.0841], area = 4949.0968, 804.3899
+	Fit goodness = 5
+	Fraction of windows in state 7 = 0.0009
+
+
+	mu = [0.4257, 0.0458], sigma = [0.1668, 0.1624], area = 1527.4363, 4166.4284
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.0036
+
+
+	mu = [0.4744, 1.0000], sigma = [0.0981, 0.1227], area = 524.4509, 32189.3850
+	Fit goodness = 1
+	Fraction of windows in state 9 = 0.0008
+
+
+	mu = [1.0000, 0.1250], sigma = [0.1494, 0.1177], area = 17310.4269, 758.5691
+	Fit goodness = 5
+	Fraction of windows in state 10 = 0.0014
+
+
+	mu = [0.8854, 1.0000], sigma = [0.1316, 0.6672], area = 1975.6739, 4914.7489
+	Fit goodness = 0
+	Fraction of windows in state 11 = 0.002
+
+
+	mu = [1.0000, 0.7969], sigma = [1.0643, 0.1199], area = 2075.1293, 180.7635
+	Fit goodness = 0
+	Fraction of windows in state 12 = 0.0015
+
+
+	mu = [0.0450, 0.4293], sigma = [0.0523, 0.0864], area = 259.1304, 153.0080
+	Fit goodness = 2
+	Fraction of windows in state 13 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.384
+
+
+	mu = [0.8568, 0.8681], sigma = [0.0454, 0.0434], area = 488794.4546, 593811.8056
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.323
+
+
+	mu = [0.0598, 0.8653], sigma = [0.0463, 0.0467], area = 163725.0560, 174703.1092
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.158
+
+
+	mu = [0.8530, 0.0748], sigma = [0.0432, 0.0338], area = 68953.0171, 59992.4070
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0679
+
+
+	mu = [0.8985, 0.9291], sigma = [0.0886, 0.1017], area = 26255.2488, 35054.4620
+	Fit goodness = 9
+	Fraction of windows in state 4 = 0.0342
+
+
+	mu = [0.0653, 0.0820], sigma = [0.0663, 0.0608], area = 9112.2423, 9767.7405
+	Fit goodness = 9
+	Fraction of windows in state 5 = 0.0119
+
+
+	mu = [1.0000, 0.0752], sigma = [0.1174, 0.0502], area = 42551.4604, 3384.5313
+	Fit goodness = 4
+	Fraction of windows in state 6 = 0.0012
+
+
+	mu = [0.0000, 1.0000], sigma = [0.1893, 0.1126], area = 7899.6713, 49791.3111
+	Fit goodness = 1
+	Fraction of windows in state 7 = 0.0024
+
+
+	mu = [0.4919, 0.8347], sigma = [0.0829, 0.0695], area = 1200.3691, 1438.0872
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.001
+
+
+	mu = [0.0110, 0.3130], sigma = [0.1043, 0.2528], area = 3629.4014, 4094.9533
+	Fit goodness = 1
+	Fraction of windows in state 9 = 0.0035
+
+
+	mu = [0.4976, 0.0479], sigma = [0.0625, 0.0575], area = 741.1284, 2811.4217
+	Fit goodness = 2
+	Fraction of windows in state 10 = 0.0007
+
+
+	mu = [0.0801, 0.0504], sigma = [0.2662, 0.0570], area = 2181.8708, 2411.5799
+	Fit goodness = 2
+	Fraction of windows in state 11 = 0.0029
+
+
+	mu = [1.0000, 0.0000], sigma = [0.3043, 0.1494], area = 5806.0017, 2593.8837
+	Fit goodness = 2
+	Fraction of windows in state 12 = 0.0029
+
+
+	mu = [0.7104, 0.7672], sigma = [0.0588, 0.0440], area = 312.1427, 192.7697
+	Fit goodness = 0
+	Fraction of windows in state 13 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.372
+
+
+	mu = [0.8781, 0.8829], sigma = [0.0382, 0.0379], area = 483045.6648, 593765.2569
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.324
+
+
+	mu = [0.0518, 0.8802], sigma = [0.0435, 0.0433], area = 178760.6266, 180698.2008
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.157
+
+
+	mu = [0.8731, 0.0582], sigma = [0.0353, 0.0294], area = 68564.6572, 67189.0834
+	Fit goodness = 8
+	Fraction of windows in state 3 = 0.0661
+
+
+	mu = [0.9146, 0.9225], sigma = [0.0750, 0.0724], area = 29424.7248, 30604.3431
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0338
+
+
+	mu = [0.0605, 0.0709], sigma = [0.0564, 0.0592], area = 16641.0032, 18574.0437
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0251
+
+
+	mu = [1.0000, 0.0535], sigma = [0.1129, 0.0692], area = 43816.8467, 4658.1112
+	Fit goodness = 5
+	Fraction of windows in state 6 = 0.0037
+
+
+	mu = [0.0644, 1.0000], sigma = [0.0755, 0.1381], area = 3045.0251, 20747.3780
+	Fit goodness = 5
+	Fraction of windows in state 7 = 0.0029
+
+
+	mu = [0.5373, 0.8213], sigma = [0.0813, 0.0689], area = 1352.7506, 948.4883
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.0013
+
+
+	mu = [0.3367, 0.0286], sigma = [0.0812, 0.0564], area = 1382.2128, 2533.0661
+	Fit goodness = 5
+	Fraction of windows in state 9 = 0.0018
+
+
+	mu = [0.7734, 0.5577], sigma = [0.0714, 0.0585], area = 647.1249, 703.4320
+	Fit goodness = 3
+	Fraction of windows in state 10 = 0.0004
+
+
+	mu = [0.5570, 0.0290], sigma = [0.0961, 0.0591], area = 700.9393, 1612.7859
+	Fit goodness = 6
+	Fraction of windows in state 11 = 0.0011
+
+
+	mu = [0.3214, 0.7844], sigma = [0.0767, 0.0757], area = 690.4358, 564.7318
+	Fit goodness = 7
+	Fraction of windows in state 12 = 0.0006
+
+
+	mu = [0.7618, 0.8545], sigma = [0.0586, 0.1424], area = 459.9286, 637.9235
+	Fit goodness = 1
+	Fraction of windows in state 13 = 0.0003
+
+
+	mu = [0.0423, 0.0314], sigma = [0.0938, 0.0626], area = 1600.7308, 1066.9002
+	Fit goodness = 3
+	Fraction of windows in state 14 = 0.0003
+
+
+	mu = [0.7643, 0.7562], sigma = [0.0785, 0.0516], area = 418.2115, 340.5583
+	Fit goodness = 3
+	Fraction of windows in state 15 = 0.0001
+
+
+	mu = [0.7737, 0.5701], sigma = [0.0780, 0.0988], area = 386.9814, 677.8221
+	Fit goodness = 1
+	Fraction of windows in state 16 = 0.0002
+
+
+	mu = [0.7739, 0.7206], sigma = [0.0509, 0.3464], area = 283.4501, 2309.0839
+	Fit goodness = -1
+	Fraction of windows in state 17 = 0.0001
+
+
+	mu = [0.7841, 0.7591], sigma = [0.0743, 0.1545], area = 557.2817, 563.5774
+	Fit goodness = -1
+	Fraction of windows in state 18 = 0.0008
+
+
+	mu = [0.0011, 0.0313], sigma = [0.1096, 0.0643], area = 2443.1681, 964.0658
+	Fit goodness = 0
+	Fraction of windows in state 19 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.363
+
+
+	mu = [0.7749, 0.7654], sigma = [0.0711, 0.0755], area = 482116.3278, 599628.8967
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.333
+
+
+	mu = [0.2007, 0.7577], sigma = [0.0836, 0.0804], area = 169085.5876, 162987.3601
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.153
+
+
+	mu = [0.7651, 0.1826], sigma = [0.0747, 0.0757], area = 64249.6302, 69843.7321
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0653
+
+
+	mu = [0.1779, 0.1468], sigma = [0.1124, 0.0939], area = 23877.4006, 18432.9384
+	Fit goodness = 9
+	Fraction of windows in state 4 = 0.0116
+
+
+	mu = [0.8032, 0.7551], sigma = [0.1855, 0.1275], area = 27988.6341, 20108.8935
+	Fit goodness = 6
+	Fraction of windows in state 5 = 0.0258
+
+
+	mu = [0.3291, 0.3057], sigma = [0.2021, 0.0675], area = 52710.1900, 5539.0132
+	Fit goodness = 2
+	Fraction of windows in state 6 = 0.00255
+
+
+	mu = [0.2664, 0.3051], sigma = [0.1759, 0.0680], area = 29722.5440, 5196.3385
+	Fit goodness = 2
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.388
+
+
+	mu = [0.8145, 0.8043], sigma = [0.0763, 0.0756], area = 517911.3574, 623910.8524
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.35
+
+
+	mu = [0.1216, 0.7971], sigma = [0.0790, 0.0768], area = 153965.5445, 151791.3562
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.159
+
+
+	mu = [0.8078, 0.1145], sigma = [0.0869, 0.0695], area = 59008.0454, 54501.0921
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0687
+
+
+	mu = [0.1283, 0.1097], sigma = [0.1203, 0.0748], area = 8030.3755, 6819.9189
+	Fit goodness = 6
+	Fraction of windows in state 4 = 0.0069
+
+
+	mu = [0.0937, 0.1202], sigma = [0.0682, 0.0901], area = 2266.3366, 4309.3433
+	Fit goodness = 2
+	Fraction of windows in state 5 = 0.0015
+
+
+	mu = [0.8078, 0.7926], sigma = [0.1315, 0.1084], area = 7635.3283, 5684.4716
+	Fit goodness = 5
+	Fraction of windows in state 6 = 0.0093
+
+
+	mu = [0.8649, 0.2182], sigma = [0.2179, 0.0457], area = 5561.2652, 1500.1868
+	Fit goodness = 5
+	Fraction of windows in state 7 = 0.0003
+
+
+	mu = [0.1449, 0.0811], sigma = [0.1080, 0.0546], area = 3585.3960, 1755.9100
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.394
+
+
+	mu = [0.8413, 0.8478], sigma = [0.0638, 0.0619], area = 517224.5614, 620112.0688
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.344
+
+
+	mu = [0.0834, 0.8416], sigma = [0.0627, 0.0606], area = 154607.7668, 157766.1644
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.16
+
+
+	mu = [0.8311, 0.0837], sigma = [0.0567, 0.0502], area = 54314.4551, 50179.5887
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0683
+
+
+	mu = [0.7449, 0.8603], sigma = [0.2318, 0.0878], area = 25990.7670, 8821.1656
+	Fit goodness = 5
+	Fraction of windows in state 4 = 0.0156
+
+
+	mu = [0.0853, 0.1494], sigma = [0.0840, 0.1255], area = 3810.8020, 10256.8985
+	Fit goodness = 5
+	Fraction of windows in state 5 = 0.0036
+
+
+	mu = [0.8571, 0.0805], sigma = [0.0966, 0.0689], area = 3604.5654, 2921.7570
+	Fit goodness = 6
+	Fraction of windows in state 6 = 0.00195
+
+
+	mu = [0.8027, 1.0000], sigma = [0.0571, 0.1418], area = 1244.4366, 18134.1544
+	Fit goodness = 1
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.378
+
+
+	mu = [0.8568, 0.8681], sigma = [0.0454, 0.0434], area = 488794.4546, 593811.8057
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.312
+
+
+	mu = [0.0604, 0.8661], sigma = [0.0456, 0.0465], area = 172296.0767, 189050.9782
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.157
+
+
+	mu = [0.8541, 0.0756], sigma = [0.0444, 0.0346], area = 79738.3763, 66349.2118
+	Fit goodness = 8
+	Fraction of windows in state 3 = 0.0671
+
+
+	mu = [0.8848, 0.8969], sigma = [0.0813, 0.0811], area = 35136.8090, 38210.3900
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.045
+
+
+	mu = [0.0626, 0.0797], sigma = [0.0527, 0.0468], area = 12435.0505, 13040.0197
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0116
+
+
+	mu = [0.0771, 0.0822], sigma = [0.0617, 0.0451], area = 8196.0090, 7364.6934
+	Fit goodness = 0
+	Fraction of windows in state 6 = 0.00225
+
+
+	mu = [0.0601, 0.0815], sigma = [0.0553, 0.0470], area = 5458.7954, 5595.5943
+	Fit goodness = 2
+	Fraction of windows in state 7 = 0.0003
+
+
+	mu = [0.0612, 0.0799], sigma = [0.0549, 0.0463], area = 5291.5811, 5316.0703
+	Fit goodness = 2
+	Fraction of windows in state 8 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.361
+
+
+	mu = [0.8781, 0.8829], sigma = [0.0382, 0.0379], area = 483045.6648, 593765.2569
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.312
+
+
+	mu = [0.0522, 0.8813], sigma = [0.0426, 0.0430], area = 192470.9694, 194574.5839
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.155
+
+
+	mu = [0.8761, 0.0583], sigma = [0.0361, 0.0289], area = 81816.2014, 79026.8997
+	Fit goodness = 8
+	Fraction of windows in state 3 = 0.0641
+
+
+	mu = [0.9019, 0.9094], sigma = [0.0645, 0.0659], area = 38401.4930, 40327.0840
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0447
+
+
+	mu = [0.0557, 0.0646], sigma = [0.0466, 0.0491], area = 25597.2230, 27635.2674
+	Fit goodness = 8
+	Fraction of windows in state 5 = 0.0311
+
+
+	mu = [1.0000, 0.0617], sigma = [0.1135, 0.0471], area = 63471.9405, 7329.3816
+	Fit goodness = 6
+	Fraction of windows in state 6 = 0.0039
+
+
+	mu = [0.0658, 0.1173], sigma = [0.0569, 0.1141], area = 6259.4526, 14529.2185
+	Fit goodness = 5
+	Fraction of windows in state 7 = 0.0051
+
+
+	mu = [0.0579, 1.0000], sigma = [0.0784, 0.1359], area = 4520.2308, 33597.2806
+	Fit goodness = 2
+	Fraction of windows in state 8 = 0.00465
+
+
+	mu = [0.8361, 0.0474], sigma = [0.0308, 0.0749], area = 1049.3580, 3955.5900
+	Fit goodness = 4
+	Fraction of windows in state 9 = 0.0003
+
+
+	mu = [0.8190, 0.0465], sigma = [0.0301, 0.0729], area = 1001.0955, 3783.4411
+	Fit goodness = 4
+	Fraction of windows in state 10 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.356
+
+
+	mu = [0.7753, 0.7660], sigma = [0.0703, 0.0757], area = 486955.9570, 613038.4192
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.326
+
+
+	mu = [0.2000, 0.7572], sigma = [0.0836, 0.0793], area = 179555.3016, 170511.1030
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.15
+
+
+	mu = [0.7654, 0.1856], sigma = [0.0809, 0.0876], area = 73506.6433, 84504.4430
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0674
+
+
+	mu = [0.1821, 0.1766], sigma = [0.1219, 0.1293], area = 32947.0152, 31481.1575
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0384
+
+
+	mu = [1.0000, 0.7463], sigma = [0.3419, 0.1254], area = 92901.2120, 25503.9188
+	Fit goodness = 5
+	Fraction of windows in state 5 = 0.0324
+
+
+	mu = [0.1917, 0.7416], sigma = [0.0818, 0.1123], area = 5114.4641, 5933.0657
+	Fit goodness = 7
+	Fraction of windows in state 6 = 0.0046
+
+
+	mu = [0.2849, 0.6982], sigma = [0.2103, 0.0453], area = 8776.5046, 1896.6739
+	Fit goodness = 2
+	Fraction of windows in state 7 = 0.0004
+
+
+	mu = [0.3282, 0.7500], sigma = [0.2577, 0.1232], area = 9950.6845, 4345.1721
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.0068
+
+
+	mu = [0.2123, 0.1193], sigma = [0.1986, 0.0605], area = 3440.7301, 2017.3264
+	Fit goodness = 3
+	Fraction of windows in state 9 = 0.0002
+
+
+	mu = [0.1092, 0.1239], sigma = [0.1164, 0.0654], area = 1438.4168, 2162.9166
+	Fit goodness = 2
+	Fraction of windows in state 10 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.384
+
+
+	mu = [0.8145, 0.8047], sigma = [0.0763, 0.0757], area = 509558.1487, 623784.0074
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.348
+
+
+	mu = [0.1214, 0.7972], sigma = [0.0794, 0.0768], area = 158871.2462, 157399.4028
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.159
+
+
+	mu = [0.8066, 0.1130], sigma = [0.0827, 0.0686], area = 58416.3346, 56801.7799
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.067
+
+
+	mu = [0.1340, 0.1214], sigma = [0.1304, 0.1050], area = 11283.5225, 11373.4251
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0134
+
+
+	mu = [0.8380, 0.7859], sigma = [0.0660, 0.0970], area = 4489.6689, 7181.4996
+	Fit goodness = 7
+	Fraction of windows in state 5 = 0.0044
+
+
+	mu = [0.7719, 1.0000], sigma = [0.1283, 0.4756], area = 6097.8640, 27327.5417
+	Fit goodness = 5
+	Fraction of windows in state 6 = 0.0102
+
+
+	mu = [0.0000, 0.1022], sigma = [0.4352, 0.0683], area = 11943.9400, 2304.3473
+	Fit goodness = 2
+	Fraction of windows in state 7 = 0.003
+
+
+	mu = [0.1139, 0.7809], sigma = [0.0744, 0.1206], area = 1834.2921, 2382.2311
+	Fit goodness = 7
+	Fraction of windows in state 8 = 0.0006
+
+
+	mu = [0.1140, 0.7861], sigma = [0.0714, 0.1237], area = 1614.3896, 2303.8808
+	Fit goodness = 7
+	Fraction of windows in state 9 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.392
+
+
+	mu = [0.8413, 0.8477], sigma = [0.0638, 0.0627], area = 511721.7414, 624290.6125
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.34
+
+
+	mu = [0.0839, 0.8417], sigma = [0.0615, 0.0608], area = 156812.2304, 165356.9423
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.16
+
+
+	mu = [0.8305, 0.0837], sigma = [0.0576, 0.0534], area = 57954.8275, 54666.2722
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0686
+
+
+	mu = [0.8403, 0.8555], sigma = [0.1074, 0.0877], area = 11582.1029, 11496.5085
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0174
+
+
+	mu = [0.0891, 0.0801], sigma = [0.0649, 0.0548], area = 4536.3207, 5004.2876
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0014
+
+
+	mu = [0.0875, 0.0812], sigma = [0.0620, 0.0605], area = 3590.1150, 4295.9643
+	Fit goodness = 7
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.375
+
+
+	mu = [0.8568, 0.8681], sigma = [0.0454, 0.0434], area = 488794.4546, 593811.8056
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.301
+
+
+	mu = [0.0604, 0.8665], sigma = [0.0455, 0.0469], area = 175632.9949, 198812.4160
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.156
+
+
+	mu = [0.8545, 0.0771], sigma = [0.0446, 0.0348], area = 90002.8734, 70826.3610
+	Fit goodness = 8
+	Fraction of windows in state 3 = 0.0668
+
+
+	mu = [0.8759, 0.8886], sigma = [0.0746, 0.0725], area = 41839.0809, 44828.6502
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0546
+
+
+	mu = [0.0590, 0.0805], sigma = [0.0456, 0.0418], area = 14844.1318, 15504.4008
+	Fit goodness = 8
+	Fraction of windows in state 5 = 0.0098
+
+
+	mu = [0.0754, 0.0777], sigma = [0.0586, 0.0392], area = 13013.7337, 9442.0735
+	Fit goodness = 4
+	Fraction of windows in state 6 = 0.0038
+
+
+	mu = [0.0610, 0.0786], sigma = [0.0406, 0.0402], area = 7650.8279, 7608.5443
+	Fit goodness = 6
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.354
+
+
+	mu = [0.8784, 0.8831], sigma = [0.0381, 0.0376], area = 492129.2332, 603082.8906
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.302
+
+
+	mu = [0.0522, 0.8814], sigma = [0.0426, 0.0435], area = 198968.4291, 204370.6849
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.154
+
+
+	mu = [0.8768, 0.0587], sigma = [0.0367, 0.0297], area = 91991.3320, 86407.0364
+	Fit goodness = 8
+	Fraction of windows in state 3 = 0.0644
+
+
+	mu = [0.0553, 0.0660], sigma = [0.0410, 0.0452], area = 34091.8618, 36470.9522
+	Fit goodness = 9
+	Fraction of windows in state 4 = 0.0316
+
+
+	mu = [0.8945, 0.9011], sigma = [0.0606, 0.0628], area = 43060.3728, 44460.1585
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0536
+
+
+	mu = [0.0510, 0.0599], sigma = [0.0419, 0.0468], area = 8049.3369, 10744.8815
+	Fit goodness = 5
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.334
+
+
+	mu = [0.7753, 0.7660], sigma = [0.0702, 0.0757], area = 486300.6061, 613038.4193
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.311
+
+
+	mu = [0.2018, 0.7581], sigma = [0.0850, 0.0816], area = 209216.8406, 195762.9103
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.145
+
+
+	mu = [0.7667, 0.1862], sigma = [0.0851, 0.0910], area = 91127.6579, 105701.9342
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0651
+
+
+	mu = [0.1941, 0.1828], sigma = [0.1252, 0.1180], area = 61341.9269, 52125.7904
+	Fit goodness = 9
+	Fraction of windows in state 4 = 0.0571
+
+
+	mu = [0.7706, 0.7530], sigma = [0.1166, 0.1143], area = 34857.3149, 41013.0127
+	Fit goodness = 9
+	Fraction of windows in state 5 = 0.0434
+
+
+	mu = [0.1689, 0.7361], sigma = [0.1074, 0.0997], area = 10533.6763, 10445.2304
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.0063
+
+
+	mu = [0.2236, 0.7450], sigma = [0.1910, 0.1080], area = 9110.0669, 8376.2677
+	Fit goodness = 5
+	Fraction of windows in state 7 = 0.00805
+
+
+	mu = [0.7489, 0.1760], sigma = [0.1406, 0.1273], area = 6188.4360, 7473.7477
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.0035
+
+
+	mu = [0.1735, 0.1048], sigma = [0.1643, 0.0555], area = 5890.7535, 1981.7825
+	Fit goodness = 5
+	Fraction of windows in state 9 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.375
+
+
+	mu = [0.8145, 0.8047], sigma = [0.0763, 0.0757], area = 509558.1488, 623784.0074
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.34
+
+
+	mu = [0.1225, 0.7982], sigma = [0.0803, 0.0807], area = 171377.1491, 172768.3335
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.158
+
+
+	mu = [0.8034, 0.1151], sigma = [0.0843, 0.0754], area = 67243.3827, 70586.7409
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0669
+
+
+	mu = [0.0539, 0.1163], sigma = [0.0390, 0.0784], area = 3998.9562, 15273.4223
+	Fit goodness = 5
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.389
+
+
+	mu = [0.8416, 0.8479], sigma = [0.0640, 0.0618], area = 522725.5413, 630708.7648
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.325
+
+
+	mu = [0.0839, 0.8415], sigma = [0.0615, 0.0609], area = 163396.3008, 181466.2698
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.157
+
+
+	mu = [0.8348, 0.0853], sigma = [0.0635, 0.0514], area = 75291.2872, 59035.8715
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0672
+
+
+	mu = [0.8788, 0.8353], sigma = [0.1053, 0.0700], area = 39258.9577, 20896.8807
+	Fit goodness = 5
+	Fraction of windows in state 4 = 0.0224
+
+
+	mu = [0.0931, 0.0850], sigma = [0.0637, 0.0523], area = 7898.0394, 7909.3394
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0021
+
+
+	mu = [0.0936, 0.0846], sigma = [0.0601, 0.0584], area = 6655.1806, 6853.7902
+	Fit goodness = 9
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.361
+
+
+	mu = [0.8568, 0.8681], sigma = [0.0454, 0.0434], area = 488794.4546, 593811.8056
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.275
+
+
+	mu = [0.0611, 0.8664], sigma = [0.0442, 0.0472], area = 195529.4579, 229715.9945
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.152
+
+
+	mu = [0.8565, 0.0779], sigma = [0.0566, 0.0476], area = 120583.0491, 89826.1403
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0665
+
+
+	mu = [0.0634, 0.0799], sigma = [0.0394, 0.0381], area = 32022.7727, 29859.5881
+	Fit goodness = 8
+	Fraction of windows in state 4 = 0.0049
+
+
+	mu = [0.0641, 0.0787], sigma = [0.0392, 0.0376], area = 28615.1620, 26407.9410
+	Fit goodness = 8
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.335
+
+
+	mu = [0.8784, 0.8831], sigma = [0.0381, 0.0376], area = 492129.2332, 603082.8906
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.273
+
+
+	mu = [0.0532, 0.8827], sigma = [0.0400, 0.0427], area = 227650.5203, 243353.5842
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.148
+
+
+	mu = [0.8801, 0.0611], sigma = [0.0502, 0.0462], area = 130812.0434, 118881.4682
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0662
+
+
+	mu = [0.0549, 0.0614], sigma = [0.0384, 0.0357], area = 56706.5789, 51224.5611
+	Fit goodness = 8
+	Fraction of windows in state 4 = 0.0221
+
+
+	mu = [0.8890, 0.8928], sigma = [0.0521, 0.0497], area = 65795.4877, 71377.4335
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0732
+
+
+	mu = [0.0521, 0.0611], sigma = [0.0367, 0.0416], area = 30679.5958, 27678.6770
+	Fit goodness = 8
+	Fraction of windows in state 6 = 0.0063
+
+
+	mu = [0.0541, 0.0602], sigma = [0.0413, 0.0394], area = 27077.4791, 22652.0023
+	Fit goodness = 8
+	Fraction of windows in state 7 = 0.00245
+
+
+	mu = [0.0537, 0.0608], sigma = [0.0406, 0.0407], area = 25551.9509, 21550.7489
+	Fit goodness = 8
+	Fraction of windows in state 8 = 0.00035
+
+
+	mu = [0.0538, 0.0610], sigma = [0.0407, 0.0406], area = 25375.7524, 21333.6235
+	Fit goodness = 8
+	Fraction of windows in state 9 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.312
+
+
+	mu = [0.7759, 0.7661], sigma = [0.0715, 0.0750], area = 500913.7136, 618952.4406
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.299
+
+
+	mu = [0.2020, 0.7588], sigma = [0.0858, 0.0825], area = 235252.6919, 211739.6271
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.14
+
+
+	mu = [0.7660, 0.1872], sigma = [0.0858, 0.0870], area = 105718.2339, 127259.9212
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.063
+
+
+	mu = [0.2007, 0.1847], sigma = [0.1155, 0.1008], area = 85594.2605, 70717.9316
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0645
+
+
+	mu = [0.7663, 0.7542], sigma = [0.0989, 0.1019], area = 43040.8553, 53520.0946
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.046
+
+
+	mu = [0.1877, 0.1320], sigma = [0.1043, 0.0757], area = 23028.1658, 10450.5263
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.365
+
+
+	mu = [0.8145, 0.8047], sigma = [0.0763, 0.0757], area = 508873.1297, 623784.0074
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.331
+
+
+	mu = [0.1223, 0.7990], sigma = [0.0806, 0.0821], area = 180952.3931, 182552.1694
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.155
+
+
+	mu = [0.8053, 0.1147], sigma = [0.0834, 0.0712], area = 75983.9112, 78091.3164
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0621
+
+
+	mu = [0.1019, 0.1154], sigma = [0.0717, 0.0859], area = 19462.5247, 27410.8427
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0045
+
+
+	mu = [0.1189, 0.1123], sigma = [0.0981, 0.0843], area = 22670.8785, 23600.5213
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.019
+
+
+	mu = [0.7977, 0.7901], sigma = [0.1061, 0.0979], area = 22492.0183, 21492.3364
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.02
+
+
+	mu = [0.1099, 0.0766], sigma = [0.1282, 0.0537], area = 14096.3016, 6083.1199
+	Fit goodness = 7
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.383
+
+
+	mu = [0.8416, 0.8479], sigma = [0.0641, 0.0618], area = 522036.9344, 630708.7647
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.313
+
+
+	mu = [0.0840, 0.8422], sigma = [0.0615, 0.0619], area = 169458.5578, 193267.2712
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.155
+
+
+	mu = [0.8340, 0.0865], sigma = [0.0610, 0.0502], area = 84253.7011, 65166.9995
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0641
+
+
+	mu = [0.8386, 0.8458], sigma = [0.0837, 0.0778], area = 33532.8184, 33939.4383
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.037
+
+
+	mu = [0.0877, 0.0869], sigma = [0.0632, 0.0563], area = 12198.7456, 12506.7822
+	Fit goodness = 9
+	Fraction of windows in state 5 = 0.0035
+
+
+	mu = [0.0889, 0.0893], sigma = [0.0612, 0.0557], area = 10481.7839, 10745.5596
+	Fit goodness = 9
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
 	Fit goodness = 10
 	Fraction of windows in state 0 = 0.349
 
 
-	mu = [0.7738, 0.7644], sigma = [0.0739, 0.0772], area = 421768.1983, 519088.6249
+	mu = [0.8566, 0.8681], sigma = [0.0440, 0.0431], area = 486797.6137, 604443.7959
 	Fit goodness = 10
-	Fraction of windows in state 1 = 0.328
+	Fraction of windows in state 1 = 0.257
 
 
-	mu = [0.2009, 0.7592], sigma = [0.0837, 0.0800], area = 201814.9156, 186067.3223
+	mu = [0.0617, 0.8668], sigma = [0.0433, 0.0465], area = 215427.0252, 255303.7932
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.149
+
+
+	mu = [0.8573, 0.0788], sigma = [0.0562, 0.0469], area = 141206.2665, 103858.6556
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0641
+
+
+	mu = [0.0605, 0.0793], sigma = [0.0363, 0.0352], area = 44091.5985, 40704.6521
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.317
+
+
+	mu = [0.8785, 0.8833], sigma = [0.0380, 0.0372], area = 499944.9672, 612489.4318
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.256
+
+
+	mu = [0.0532, 0.8831], sigma = [0.0395, 0.0427], area = 250537.1757, 266023.8226
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.144
+
+
+	mu = [0.8793, 0.0615], sigma = [0.0476, 0.0445], area = 148976.3993, 140144.7935
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0646
+
+
+	mu = [0.0520, 0.0629], sigma = [0.0556, 0.0507], area = 92442.6206, 78480.9731
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0666
+
+
+	mu = [0.8854, 0.8890], sigma = [0.0489, 0.0451], area = 78656.5173, 83219.8233
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0716
+
+
+	mu = [0.8734, 0.8757], sigma = [0.0468, 0.0468], area = 21364.2941, 27894.9589
+	Fit goodness = 8
+	Fraction of windows in state 6 = 0.0015
+
+
+	mu = [0.8737, 0.8762], sigma = [0.0463, 0.0462], area = 20419.8778, 27181.7450
+	Fit goodness = 8
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.282
+
+
+	mu = [0.7759, 0.7659], sigma = [0.0722, 0.0744], area = 513187.0850, 626017.1942
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.272
+
+
+	mu = [0.2026, 0.7594], sigma = [0.0837, 0.0805], area = 279956.5039, 248484.9421
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.13
+
+
+	mu = [0.7693, 0.1870], sigma = [0.0838, 0.0869], area = 141621.6736, 169542.3283
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0576
+
+
+	mu = [0.2000, 0.1866], sigma = [0.1017, 0.1015], area = 127746.4691, 114579.3524
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0784
+
+
+	mu = [0.7678, 0.7591], sigma = [0.0930, 0.0953], area = 76626.1839, 90338.2982
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0632
+
+
+	mu = [0.1843, 0.1950], sigma = [0.0876, 0.1201], area = 39107.7355, 42905.3102
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.0048
+
+
+	mu = [0.1833, 0.1880], sigma = [0.0964, 0.1060], area = 38105.1370, 34473.4879
+	Fit goodness = 10
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.349
+
+
+	mu = [0.8148, 0.8045], sigma = [0.0763, 0.0750], area = 518040.3984, 631029.9116
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.317
+
+
+	mu = [0.1219, 0.8000], sigma = [0.0776, 0.0804], area = 199684.2133, 201684.3499
 	Fit goodness = 10
 	Fraction of windows in state 2 = 0.147
 
 
-	mu = [0.7672, 0.1882], sigma = [0.0809, 0.0818], area = 97210.0583, 113327.0087
+	mu = [0.8061, 0.1171], sigma = [0.0810, 0.0725], area = 90415.3814, 96642.0277
 	Fit goodness = 10
-	Fraction of windows in state 3 = 0.0655
+	Fraction of windows in state 3 = 0.0585
 
 
-	mu = [0.1904, 0.1889], sigma = [0.1109, 0.1219], area = 59308.6298, 58882.5949
+	mu = [0.1274, 0.1000], sigma = [0.0940, 0.1107], area = 48231.8971, 58151.3567
 	Fit goodness = 10
-	Fraction of windows in state 4 = 0.0428
+	Fraction of windows in state 4 = 0.0417
 
 
-	mu = [0.7626, 0.7624], sigma = [0.1192, 0.1289], area = 37525.0201, 48898.8705
+	mu = [0.8064, 0.8005], sigma = [0.1137, 0.0896], area = 39407.1111, 36631.4166
 	Fit goodness = 10
-	Fraction of windows in state 5 = 0.0285
+	Fraction of windows in state 5 = 0.0312
 
 
-	mu = [0.1896, 0.7576], sigma = [0.1270, 0.1206], area = 22022.2708, 19681.7404
+	mu = [0.7915, 0.1135], sigma = [0.0913, 0.0902], area = 13938.0942, 13471.0599
 	Fit goodness = 10
-	Fraction of windows in state 6 = 0.0123
+	Fraction of windows in state 6 = 0.00561
 
 
-	mu = [0.7579, 0.2020], sigma = [0.1264, 0.1259], area = 10480.1444, 16614.4230
+	mu = [0.1184, 0.7844], sigma = [0.0866, 0.0906], area = 12339.3124, 14772.1649
 	Fit goodness = 10
-	Fraction of windows in state 7 = 0.005
+	Fraction of windows in state 7 = 0.00561
 
 
-	mu = [0.1636, 0.1934], sigma = [0.1365, 0.1159], area = 10128.2520, 12128.5975
+	mu = [0.7906, 0.1109], sigma = [0.0937, 0.0856], area = 9987.6440, 9814.1296
 	Fit goodness = 9
-	Fraction of windows in state 8 = 0.00175
+	Fraction of windows in state 8 = 0.0
 
 
-	mu = [0.0000, 0.1917], sigma = [0.3009, 0.1225], area = 37251.6105, 10608.4394
-	Fit goodness = 5
-	Fraction of windows in state 9 = 0.00325
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.375
 
 
-	mu = [0.2286, 0.2009], sigma = [0.1595, 0.1218], area = 7266.7102, 7313.2510
-	Fit goodness = 7
-	Fraction of windows in state 10 = 0.0005
+	mu = [0.8416, 0.8479], sigma = [0.0641, 0.0618], area = 521245.4523, 630708.7647
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.297
 
 
-	mu = [0.2744, 0.2012], sigma = [0.1162, 0.1081], area = 4524.4283, 6519.0076
+	mu = [0.0844, 0.8436], sigma = [0.0607, 0.0621], area = 184402.1201, 217763.8046
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.151
+
+
+	mu = [0.8366, 0.0856], sigma = [0.0658, 0.0490], area = 104462.9391, 72496.0802
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0577
+
+
+	mu = [0.8329, 0.8446], sigma = [0.0732, 0.0700], area = 48318.5920, 50309.4528
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0248
+
+
+	mu = [0.8334, 0.8426], sigma = [0.0723, 0.0689], area = 31414.3552, 31812.4648
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.33
+
+
+	mu = [0.8566, 0.8681], sigma = [0.0441, 0.0431], area = 486100.1626, 602967.8346
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.237
+
+
+	mu = [0.0618, 0.8676], sigma = [0.0425, 0.0465], area = 238748.0808, 281072.4482
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.142
+
+
+	mu = [0.8580, 0.0792], sigma = [0.0536, 0.0445], area = 165042.7552, 128115.2328
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0585
+
+
+	mu = [0.8638, 0.8738], sigma = [0.0642, 0.0613], area = 112082.8040, 120443.3933
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.103
+
+
+	mu = [0.0605, 0.0765], sigma = [0.0390, 0.0376], area = 60006.5243, 55227.5221
 	Fit goodness = 8
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.293
+
+
+	mu = [0.8785, 0.8833], sigma = [0.0380, 0.0372], area = 499219.1208, 612489.4318
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.234
+
+
+	mu = [0.0537, 0.8839], sigma = [0.0385, 0.0420], area = 284932.1122, 298902.1443
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.136
+
+
+	mu = [0.0543, 0.0619], sigma = [0.0470, 0.0416], area = 130283.6508, 170432.9873
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0617
+
+
+	mu = [0.8803, 0.0590], sigma = [0.0479, 0.0465], area = 171846.4775, 111028.5034
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0593
+
+
+	mu = [0.8861, 0.8893], sigma = [0.0571, 0.0552], area = 113646.5077, 123950.0335
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.108
+
+
+	mu = [0.0502, 0.0579], sigma = [0.0355, 0.0321], area = 43317.2610, 33658.2851
+	Fit goodness = 8
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.236
+
+
+	mu = [0.7756, 0.7661], sigma = [0.0706, 0.0751], area = 512418.4319, 640438.5559
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.229
+
+
+	mu = [0.2031, 0.7626], sigma = [0.0815, 0.0787], area = 346804.9740, 313572.9366
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.115
+
+
+	mu = [0.2015, 0.1887], sigma = [0.0879, 0.0834], area = 207082.0257, 232878.3815
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0495
+
+
+	mu = [0.7700, 0.7646], sigma = [0.0772, 0.0875], area = 186012.1413, 172825.3733
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0417
+
+
+	mu = [0.2018, 0.1886], sigma = [0.0924, 0.0842], area = 149951.6328, 168937.8482
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.013
+
+
+	mu = [0.7701, 0.1880], sigma = [0.0806, 0.0840], area = 141679.4339, 154305.2035
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.0508
+
+
+	mu = [0.2002, 0.1870], sigma = [0.0912, 0.0963], area = 123488.8354, 104254.4040
+	Fit goodness = 10
+	Fraction of windows in state 7 = 0.013
+
+
+	mu = [0.7699, 0.7623], sigma = [0.0833, 0.0926], area = 88083.5222, 116907.4281
+	Fit goodness = 10
+	Fraction of windows in state 8 = 0.026
+
+
+	mu = [0.1995, 0.1869], sigma = [0.0968, 0.0967], area = 110483.8905, 88815.4216
+	Fit goodness = 10
+	Fraction of windows in state 9 = 0.0156
+
+
+	mu = [0.1991, 0.1880], sigma = [0.0959, 0.1011], area = 94786.8831, 75511.3317
+	Fit goodness = 10
+	Fraction of windows in state 10 = 0.00781
+
+
+	mu = [0.7684, 0.7609], sigma = [0.0800, 0.0951], area = 60120.0409, 88435.8707
+	Fit goodness = 10
 	Fraction of windows in state 11 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.327
+
+
+	mu = [0.8148, 0.8045], sigma = [0.0763, 0.0750], area = 518040.3984, 631029.9117
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.29
+
+
+	mu = [0.1228, 0.8004], sigma = [0.0789, 0.0787], area = 233725.0220, 235383.5778
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.145
+
+
+	mu = [0.8096, 0.1163], sigma = [0.0871, 0.0784], area = 122430.0499, 124398.1235
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0612
+
+
+	mu = [0.1184, 0.1113], sigma = [0.0779, 0.0757], area = 66514.2007, 61599.1693
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.362
+
+
+	mu = [0.8416, 0.8479], sigma = [0.0641, 0.0618], area = 521245.4523, 630708.7647
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.27
+
+
+	mu = [0.0854, 0.8447], sigma = [0.0600, 0.0612], area = 205385.7307, 252723.8603
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.143
+
+
+	mu = [0.8372, 0.0880], sigma = [0.0672, 0.0617], area = 131938.6808, 94639.9922
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0612
+
+
+	mu = [0.8408, 0.8465], sigma = [0.0700, 0.0628], area = 74625.5030, 80683.0636
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0156
+
+
+	mu = [0.8380, 0.8449], sigma = [0.0673, 0.0630], area = 59373.2420, 67053.7133
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.293
+
+
+	mu = [0.8568, 0.8683], sigma = [0.0438, 0.0432], area = 494781.4230, 614419.3445
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.211
+
+
+	mu = [0.0625, 0.8684], sigma = [0.0411, 0.0462], area = 291757.6806, 326103.0171
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.13
+
+
+	mu = [0.0627, 0.0795], sigma = [0.0446, 0.0431], area = 133613.5153, 172036.2165
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0456
+
+
+	mu = [0.8586, 0.8723], sigma = [0.0537, 0.0555], area = 202173.2412, 162829.7622
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0521
+
+
+	mu = [0.8550, 0.0786], sigma = [0.0509, 0.0460], area = 142913.7620, 121016.9030
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0573
+
+
+	mu = [0.0607, 0.0778], sigma = [0.0517, 0.0535], area = 81022.7362, 67694.4527
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.0143
+
+
+	mu = [0.8555, 0.8669], sigma = [0.0500, 0.0436], area = 81550.6708, 92439.6412
+	Fit goodness = 10
+	Fraction of windows in state 7 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.245
+
+
+	mu = [0.8784, 0.8834], sigma = [0.0368, 0.0367], area = 508664.2011, 631387.7446
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.198
+
+
+	mu = [0.0539, 0.8843], sigma = [0.0365, 0.0406], area = 353343.6309, 351535.7189
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.122
+
+
+	mu = [0.0542, 0.0616], sigma = [0.0407, 0.0383], area = 199118.4037, 231153.8759
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.056
+
+
+	mu = [0.8807, 0.8885], sigma = [0.0454, 0.0490], area = 220599.8011, 196451.9608
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0768
+
+
+	mu = [0.0526, 0.0613], sigma = [0.0461, 0.0428], area = 129364.6005, 156576.5325
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0299
+
+
+	mu = [0.8765, 0.0591], sigma = [0.0451, 0.0463], area = 136351.9232, 134370.4474
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.0573
+
+
+	mu = [0.0509, 0.0595], sigma = [0.0523, 0.0540], area = 96871.2987, 76229.7877
+	Fit goodness = 10
+	Fraction of windows in state 7 = 0.0352
+
+
+	mu = [0.8782, 0.8826], sigma = [0.0423, 0.0384], area = 72578.1559, 90957.3412
+	Fit goodness = 8
+	Fraction of windows in state 8 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.176
+
+
+	mu = [0.7760, 0.7666], sigma = [0.0696, 0.0750], area = 526944.0077, 662980.0285
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.164
+
+
+	mu = [0.2038, 0.1898], sigma = [0.0795, 0.0797], area = 442252.9968, 338211.0077
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.016
+
+
+	mu = [0.7738, 0.7643], sigma = [0.0737, 0.0786], area = 299149.7342, 417423.8671
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.032
+
+
+	mu = [0.2041, 0.1899], sigma = [0.0804, 0.0791], area = 418380.6735, 313062.2229
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.287
+
+
+	mu = [0.8149, 0.8049], sigma = [0.0766, 0.0745], area = 534635.0104, 650928.7960
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.259
+
+
+	mu = [0.1225, 0.8034], sigma = [0.0771, 0.0787], area = 285940.4200, 285472.5589
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.124
+
+
+	mu = [0.1235, 0.1177], sigma = [0.0830, 0.0786], area = 143986.4306, 177807.1243
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0462
+
+
+	mu = [0.8101, 0.8033], sigma = [0.0821, 0.0814], area = 153009.5339, 125123.2578
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0442
+
+
+	mu = [0.8089, 0.1169], sigma = [0.0821, 0.0773], area = 109989.6771, 117302.1769
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0562
+
+
+	mu = [0.0995, 0.1080], sigma = [0.0533, 0.0661], area = 53054.3501, 54471.1657
+	Fit goodness = 8
+	Fraction of windows in state 6 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.339
+
+
+	mu = [0.8413, 0.8481], sigma = [0.0637, 0.0621], area = 526570.3828, 643332.7573
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.241
+
+
+	mu = [0.0849, 0.8470], sigma = [0.0586, 0.0630], area = 235967.4848, 297968.5053
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.135
+
+
+	mu = [0.8387, 0.8498], sigma = [0.0676, 0.0680], area = 166493.5182, 131777.6239
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0321
+
+
+	mu = [0.8372, 0.0884], sigma = [0.0654, 0.0595], area = 134887.7860, 117202.9374
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0562
+
+
+	mu = [0.0856, 0.0887], sigma = [0.0560, 0.0538], area = 71381.2631, 60533.8693
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.243
+
+
+	mu = [0.8570, 0.8685], sigma = [0.0436, 0.0429], area = 510700.2958, 634558.5727
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.185
+
+
+	mu = [0.0625, 0.8689], sigma = [0.0402, 0.0450], area = 358264.7480, 362408.2758
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.118
+
+
+	mu = [0.0623, 0.0796], sigma = [0.0424, 0.0408], area = 209143.0514, 236915.5943
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0522
+
+
+	mu = [0.0624, 0.0788], sigma = [0.0433, 0.0413], area = 150523.4783, 176347.4996
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.193
+
+
+	mu = [0.8786, 0.8836], sigma = [0.0366, 0.0364], area = 514975.1477, 640727.5393
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.171
+
+
+	mu = [0.0535, 0.0621], sigma = [0.0356, 0.0352], area = 425102.9539, 320814.2679
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0221
+
+
+	mu = [0.0536, 0.8842], sigma = [0.0355, 0.0396], area = 399552.1431, 394909.6095
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.102
+
+
+	mu = [0.0534, 0.0616], sigma = [0.0383, 0.0365], area = 263936.9964, 275220.5519
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0221
+
+
+	mu = [0.0533, 0.0615], sigma = [0.0388, 0.0370], area = 235917.9700, 246962.1283
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.00602
+
+
+	mu = [0.0534, 0.0615], sigma = [0.0389, 0.0371], area = 229483.8648, 240449.4297
+	Fit goodness = 10
+	Fraction of windows in state 6 = 0.00201
+
+
+	mu = [0.0534, 0.0615], sigma = [0.0390, 0.0372], area = 227373.1425, 238328.8231
+	Fit goodness = 10
+	Fraction of windows in state 7 = 0.00201
+
+
+	mu = [0.0534, 0.0614], sigma = [0.0390, 0.0372], area = 225180.3452, 236175.1131
+	Fit goodness = 10
+	Fraction of windows in state 8 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.109
+
+
+	mu = [0.7763, 0.7669], sigma = [0.0709, 0.0751], area = 540374.2806, 674379.8709
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.122
+
+
+	mu = [0.2044, 0.1902], sigma = [0.0765, 0.0792], area = 542455.8820, 438379.2850
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.00641
+
+
+	mu = [0.2044, 0.1902], sigma = [0.0766, 0.0789], area = 534372.7986, 430052.6685
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.234
+
+
+	mu = [0.8148, 0.8053], sigma = [0.0763, 0.0747], area = 544438.4751, 664248.6766
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.218
+
+
+	mu = [0.1236, 0.8042], sigma = [0.0760, 0.0778], area = 363568.7104, 347525.6568
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.109
+
+
+	mu = [0.1230, 0.1181], sigma = [0.0775, 0.0778], area = 222949.5952, 248435.8309
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0321
+
+
+	mu = [0.8130, 0.8063], sigma = [0.0799, 0.0828], area = 215675.2291, 204002.5097
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0641
+
+
+	mu = [0.1218, 0.1170], sigma = [0.0782, 0.0763], area = 175151.7827, 194584.4558
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.308
+
+
+	mu = [0.8416, 0.8480], sigma = [0.0631, 0.0617], area = 535017.2426, 649854.3481
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.202
+
+
+	mu = [0.0854, 0.8480], sigma = [0.0587, 0.0632], area = 280509.2295, 349387.8098
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.119
+
+
+	mu = [0.8415, 0.8506], sigma = [0.0649, 0.0685], area = 224386.1817, 203315.2964
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0321
+
+
+	mu = [0.8391, 0.8486], sigma = [0.0648, 0.0692], area = 184631.6319, 165661.4844
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.183
+
+
+	mu = [0.8574, 0.8687], sigma = [0.0437, 0.0430], area = 522922.8357, 648235.2431
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.167
+
+
+	mu = [0.0627, 0.0797], sigma = [0.0392, 0.0389], area = 447418.1430, 341654.6732
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0256
+
+
+	mu = [0.0627, 0.0797], sigma = [0.0392, 0.0393], area = 409710.1622, 306528.9010
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.00641
+
+
+	mu = [0.0628, 0.0796], sigma = [0.0391, 0.0392], area = 402075.2716, 299088.9378
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.138
+
+
+	mu = [0.8787, 0.8837], sigma = [0.0361, 0.0358], area = 531660.7890, 655317.2079
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.138
+
+
+	mu = [0.0538, 0.0622], sigma = [0.0343, 0.0337], area = 512282.5416, 402822.6009
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0128
+
+
+	mu = [0.0538, 0.0623], sigma = [0.0343, 0.0339], area = 496982.6365, 387255.5378
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.04
+
+
+	mu = [0.7766, 0.7666], sigma = [0.0698, 0.0742], area = 553727.0645, 689103.6886
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.075
+
+
+	mu = [0.2046, 0.1908], sigma = [0.0756, 0.0789], area = 659865.1549, 556691.6571
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.167
+
+
+	mu = [0.8153, 0.8055], sigma = [0.0752, 0.0751], area = 553465.7907, 683367.1407
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.172
+
+
+	mu = [0.1234, 0.1187], sigma = [0.0750, 0.0758], area = 468243.5732, 366161.2709
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.00505
+
+
+	mu = [0.1235, 0.1192], sigma = [0.0747, 0.0744], area = 461996.4873, 354833.8686
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.273
+
+
+	mu = [0.8418, 0.8481], sigma = [0.0625, 0.0618], area = 535764.4751, 656621.0096
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.177
+
+
+	mu = [0.0854, 0.8483], sigma = [0.0567, 0.0629], area = 327106.0279, 389759.9437
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.111
+
+
+	mu = [0.8415, 0.8499], sigma = [0.0637, 0.0659], area = 256191.0998, 242961.9668
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0152
+
+
+	mu = [0.0861, 0.0896], sigma = [0.0596, 0.0580], area = 189130.1748, 207768.6967
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.00505
+
+
+	mu = [0.8411, 0.8498], sigma = [0.0635, 0.0658], area = 240152.4983, 227218.8399
+	Fit goodness = 10
+	Fraction of windows in state 5 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.116
+
+
+	mu = [0.0632, 0.0806], sigma = [0.0379, 0.0379], area = 574583.4052, 458716.2929
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0101
+
+
+	mu = [0.0631, 0.0806], sigma = [0.0379, 0.0378], area = 561227.3143, 445393.9373
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0657
+
+
+	mu = [0.0541, 0.0626], sigma = [0.0328, 0.0324], area = 641881.3956, 523391.9726
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0242
+
+
+	mu = [0.7766, 0.7667], sigma = [0.0692, 0.0744], area = 542123.4116, 682552.5417
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0242
+
+
+	mu = [0.2055, 0.1910], sigma = [0.0755, 0.0793], area = 686490.3632, 575871.7347
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.113
+
+
+	mu = [0.8156, 0.8056], sigma = [0.0744, 0.0746], area = 555604.5360, 688216.4418
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.113
+
+
+	mu = [0.1242, 0.1190], sigma = [0.0741, 0.0746], area = 555999.0764, 449798.4500
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.226
+
+
+	mu = [0.8416, 0.8481], sigma = [0.0623, 0.0617], area = 537280.5287, 664558.7725
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.145
+
+
+	mu = [0.0855, 0.0905], sigma = [0.0567, 0.0582], area = 396322.7917, 294333.3029
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.105
+
+
+	mu = [0.0634, 0.0806], sigma = [0.0379, 0.0379], area = 587107.8703, 470822.2985
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0161
+
+
+	mu = [0.0542, 0.0625], sigma = [0.0325, 0.0322], area = 713600.4019, 595772.2631
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0513
+
+
+	mu = [0.8156, 0.8058], sigma = [0.0746, 0.0742], area = 564387.8296, 692587.9480
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0641
+
+
+	mu = [0.1246, 0.1199], sigma = [0.0747, 0.0769], area = 670177.5126, 557771.4696
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0128
+
+
+	mu = [0.1244, 0.1197], sigma = [0.0736, 0.0772], area = 635083.3665, 531861.1763
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.0128
+
+
+	mu = [0.1244, 0.1197], sigma = [0.0737, 0.0769], area = 618561.7972, 513751.9504
+	Fit goodness = 10
+	Fraction of windows in state 4 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.179
+
+
+	mu = [0.8414, 0.8490], sigma = [0.0621, 0.0622], area = 545979.4915, 678872.6215
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0897
+
+
+	mu = [0.0859, 0.0906], sigma = [0.0562, 0.0567], area = 477297.5035, 362178.7580
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0385
+
+
+	mu = [0.0634, 0.0804], sigma = [0.0375, 0.0371], area = 693955.0082, 568463.9583
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0128
+
+
+	mu = [0.0541, 0.0625], sigma = [0.0325, 0.0322], area = 716586.0875, 598248.0815
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.1
+
+
+	mu = [0.0854, 0.0911], sigma = [0.0565, 0.0575], area = 624496.9399, 503619.7350
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.1248, 0.1199], sigma = [0.0735, 0.0751], area = 777266.5678, 660214.7571
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0864, 0.0911], sigma = [0.0558, 0.0572], area = 792083.3343, 668955.8801
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0635, 0.0804], sigma = [0.0375, 0.0369], area = 766839.9357, 642166.3794
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.0542, 0.0626], sigma = [0.0323, 0.0318], area = 753880.8954, 635657.5624
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.0
+
+
+	mu = [0.2051, 0.1911], sigma = [0.0746, 0.0785], area = 744130.9878, 637497.6175
+	Fit goodness = 10
+	Fraction of windows in state 0 = 0.347
+
+
+	mu = [0.7753, 0.7660], sigma = [0.0703, 0.0757], area = 486955.9570, 613038.4193
+	Fit goodness = 10
+	Fraction of windows in state 1 = 0.322
+
+
+	mu = [0.2004, 0.7580], sigma = [0.0848, 0.0810], area = 191957.8883, 180482.2491
+	Fit goodness = 10
+	Fraction of windows in state 2 = 0.148
+
+
+	mu = [0.7644, 0.1881], sigma = [0.0808, 0.0857], area = 79214.8747, 93319.6382
+	Fit goodness = 10
+	Fraction of windows in state 3 = 0.066
+
+
+	mu = [0.1895, 0.1831], sigma = [0.1238, 0.1251], area = 43541.3917, 40851.3250
+	Fit goodness = 9
+	Fraction of windows in state 4 = 0.0462
+
+
+	mu = [0.7393, 0.7454], sigma = [0.1724, 0.1005], area = 36311.8020, 25184.9539
+	Fit goodness = 5
+	Fraction of windows in state 5 = 0.035
+
+
+	mu = [0.1844, 1.0000], sigma = [0.1044, 0.2728], area = 7524.6024, 44932.1063
+	Fit goodness = 1
+	Fraction of windows in state 6 = 0.00625
+
+
+	mu = [0.1621, 0.7482], sigma = [0.1348, 0.1083], area = 5364.3344, 5016.4659
+	Fit goodness = 9
+	Fraction of windows in state 7 = 0.00425
+
+
+	mu = [0.7336, 0.2386], sigma = [0.1527, 0.3534], area = 4573.9838, 15247.7547
+	Fit goodness = 5
+	Fraction of windows in state 8 = 0.00725
+
+
+	mu = [0.1801, 0.1706], sigma = [0.1523, 0.1051], area = 3825.7825, 3022.4034
+	Fit goodness = 6
+	Fraction of windows in state 9 = 0.00175
+
+
+	mu = [0.0914, 0.1664], sigma = [0.2318, 0.1108], area = 6635.3920, 2533.6027
+	Fit goodness = 5
+	Fraction of windows in state 10 = 0.001
+
+
+	mu = [0.0000, 0.1684], sigma = [0.4776, 0.1125], area = 7982.2079, 1945.4827
+	Fit goodness = 5
+	Fraction of windows in state 11 = 0.00275
+
+
+	mu = [0.1783, 0.7476], sigma = [0.1397, 0.1177], area = 2317.2208, 1993.4558
+	Fit goodness = 6
+	Fraction of windows in state 12 = 0.001
+
+
+	mu = [0.1777, 0.7457], sigma = [0.1165, 0.1413], area = 1881.0678, 1886.7195
+	Fit goodness = 10
+	Fraction of windows in state 13 = 0.00025
+
+
+	mu = [0.1759, 0.7449], sigma = [0.1087, 0.1352], area = 1751.1820, 1791.7666
+	Fit goodness = 10
+	Fraction of windows in state 14 = 0.0
