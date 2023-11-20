@@ -51,7 +51,6 @@ class Parameters:
 			key, value = [ s for s in line.strip().split('\t') if s != '']
 			if key == 'tau_window':
 				self.tau_w = int(value)
-				print(int(value))
 			elif key == 't_smooth':
 				self.t_smooth = int(value)
 			elif key == 't_delay':
@@ -64,4 +63,4 @@ class Parameters:
 				self.example_ID = int(value)
 			if key == 'bins':
 				self.bins = int(value)
-				print('\tWARNING: overriding histogram binning')
+				print('\tWARNING: overriding \'auto\' histogram binning')
