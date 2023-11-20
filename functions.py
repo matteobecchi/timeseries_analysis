@@ -563,15 +563,15 @@ def print_mol_labels_fbf_gro(all_the_labels):
 def print_signal_with_labels(M, all_the_labels):
 	with open('signal_with_labels.dat', 'w+') as f:
 		if M.shape[2] == 2:
-				print("Signal 1 Signal 2 Cluster", file=f)
+				print("Signal 1 Signal 2 Cluster Frame", file=f)
 		else:
-				print("Signal 1 Signal 2 Signal 3 Cluster", file=f)
+				print("Signal 1 Signal 2 Signal 3 Cluster Frame", file=f)
 		for t in range(all_the_labels.shape[1]):
 			for n in range(all_the_labels.shape[0]):
 				if M.shape[2] == 2:
-					print(M[n][t][0], M[n][t][1], int(all_the_labels[n][t]), file=f)
+					print(M[n][t][0], M[n][t][1], int(all_the_labels[n][t]),t+1, file=f)
 				else:
-					print(M[n][t][0], M[n][t][1], M[n][t][2], int(all_the_labels[n][t]), file=f)
+					print(M[n][t][0], M[n][t][1], M[n][t][2], int(all_the_labels[n][t]),t+1, file=f)
 
 def print_mol_labels_fbf_xyz(all_the_labels):
 	print('* Print color IDs for Ovito...')
