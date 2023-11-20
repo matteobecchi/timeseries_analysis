@@ -600,6 +600,7 @@ def full_output_analysis(M_raw, PAR):
 	# 	sankey(all_the_labels, frame_list, 10, PAR[3], 'Fig4_' + str(i))
 
 def TRA_analysis(M_raw, PAR, perform_anew):
+	### If you want to change the range of the parameters tested, this is the point ###
 	t_smooth_max = 5	# 5
 	num_of_points = 20	# 20
 	Tau_window, T_smooth = param_grid(M_raw.shape[1], t_smooth_max, num_of_points)

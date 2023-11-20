@@ -625,6 +625,7 @@ def full_output_analysis(M_raw, PAR):
 	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, PAR)
 
 def TRA_analysis(M_raw, PAR, perform_anew):
+	### If you want to change the range of the parameters tested, this is the point ###
 	t_smooth_max = 5 	# 5
 	num_of_points = 20 	# 20
 	Tau_window, T_smooth = param_grid(M_raw[0].shape[1], t_smooth_max, num_of_points)
