@@ -26,7 +26,7 @@ class State:
 		self.th_inf = [mu - number_of_sigmas*sigma, -1]	# Lower thrashold of the state
 		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
 
-class State_multi_D:
+class State_multi:
 	def __init__(self, mu, sigma, A):
 		number_of_sigmas = 2.0 				# The amplitude of the fluctiations INSIDE a state
 		self.mu = mu 						# Mean of the Gaussians
