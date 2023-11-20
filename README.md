@@ -14,6 +14,7 @@ Examples of this two files are contained in this repository.
 From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
 
 ## input_parameters.txt
+The keyword and the value must be separated by tab. 
 * `tau_window`: the length of the time window (in number of frames). 
 * `t_smooth`: the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. 
 * `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. By default, use 0. 

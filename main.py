@@ -255,31 +255,45 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Calculate the number of windows in the trajectory
 	number_of_windows = all_the_labels.shape[1]
 
+	# # Initialize an empty list to store non-stable windows
+	# M2 = []
+	# # Initialize a counter to keep track of the number of stable windows found
+	# counter = 0
+	# # Loop over each particle's trajectory
+	# for i, x in enumerate(M):
+	# 	# Loop over each window in the trajectory
+	# 	for w in range(number_of_windows):
+	# 		# Check if the window is already assigned to a state with a label > 0
+	# 		if all_the_labels[i][w] > 0.5:
+	# 			# If yes, skip this window and continue to the next one
+	# 			continue
+	# 		else:
+	# 			# If the window is not assigned to any state yet, extract the window's data
+	# 			x_w = x[w*tau_window:(w + 1)*tau_window]
+	# 			# Check if the window is stable (all data points within the specified range)
+	# 			if np.amin(x_w) > state.th_inf[0] and np.amax(x_w) < state.th_sup[0]:
+	# 				# If stable, assign the window to the current state offset and increment the counter
+	# 				all_the_labels[i][w] = offset + 1
+	# 				counter += 1
+	# 			else:
+	# 				# If not stable, add the window's data to the list of non-stable windows
+	# 				M2.append(x_w)
+
+	mask_unclassified = all_the_labels < 0.5
+	M_reshaped = M[:, :number_of_windows*tau_window].reshape(M.shape[0], number_of_windows, tau_window)
+	mask_inf = np.min(M_reshaped, axis=2) >= state.th_inf[0]
+	mask_sup = np.max(M_reshaped, axis=2) <= state.th_sup[0]
+	mask = mask_unclassified & mask_inf & mask_sup
+
+	all_the_labels[mask] = offset + 1
+	counter = np.sum(mask)
+
 	# Initialize an empty list to store non-stable windows
 	M2 = []
-
-	# Initialize a counter to keep track of the number of stable windows found
-	counter = 0
-
-	# Loop over each particle's trajectory
-	for i, x in enumerate(M):
-		# Loop over each window in the trajectory
-		for w in range(number_of_windows):
-			# Check if the window is already assigned to a state with a label > 0
-			if all_the_labels[i][w] > 0.5:
-				# If yes, skip this window and continue to the next one
-				continue
-			else:
-				# If the window is not assigned to any state yet, extract the window's data
-				x_w = x[w*tau_window:(w + 1)*tau_window]
-				# Check if the window is stable (all data points within the specified range)
-				if np.amin(x_w) > state.th_inf[0] and np.amax(x_w) < state.th_sup[0]:
-					# If stable, assign the window to the current state offset and increment the counter
-					all_the_labels[i][w] = offset + 1
-					counter += 1
-				else:
-					# If not stable, add the window's data to the list of non-stable windows
-					M2.append(x_w)
+	mask_remaining = mask_unclassified & ~mask
+	for i, w in np.argwhere(mask_remaining):
+		r_w = M[i, w*tau_window:(w + 1)*tau_window]
+		M2.append(r_w)
 
 	# Calculate the fraction of stable windows found
 	fw = counter/(all_the_labels.size)
