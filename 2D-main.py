@@ -59,6 +59,7 @@ def preparing_the_data(tmp_M_raw, PAR):
 		M.append(m)
 
 	M = np.array(M)
+	M_limits = [ [np.min(x), np.max(x) ] for x in M ]
 	M = np.transpose(M, axes=(1, 2, 0))
 
 	total_particles = M.shape[0]
@@ -71,7 +72,7 @@ def preparing_the_data(tmp_M_raw, PAR):
 	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv) + ' ' + t_units + ').')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ' + t_units + ').')
 
-	return M
+	return M, M_limits
 
 def plot_input_data(M, PAR, filename):
 	tau_window, tau_delay, t_conv, t_units, bins = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.bins
@@ -137,7 +138,7 @@ def plot_input_data(M, PAR, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(M, bins, filename):
+def gauss_fit_max(M, M_limits, bins, filename):
 	print('* Gaussian fit...')
 	flat_M = M.reshape((M.shape[0]*M.shape[1], M.shape[2]))
 
@@ -201,7 +202,7 @@ def gauss_fit_max(M, bins, filename):
 	goodness_min = 0
 	for dim in range(M.shape[2]):
 		try:
-			flag_min, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
+			flag_min, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap, M_limits)
 			popt[2] *= flat_M.T[0].size
 			popt_min.extend(popt)
 			goodness_min += goodness
@@ -245,7 +246,7 @@ def gauss_fit_max(M, bins, filename):
 	goodness_half = 0
 	for dim in range(M.shape[2]):
 		try:
-			flag_half, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap)
+			flag_half, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap, M_limits)
 			popt[2] *= flat_M.T[0].size
 			popt_half.extend(popt)
 			goodness_half += goodness
@@ -426,7 +427,7 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return M2, fw, one_last_state
 
-def iterative_search(M, PAR, name):
+def iterative_search(M, M_limits, PAR, name):
 	tau_w, bins = PAR.tau_w, PAR.bins
 
 	# Initialize an array to store labels for each window.
@@ -440,7 +441,7 @@ def iterative_search(M, PAR, name):
 	one_last_state = False
 	while True:
 		### Locate and fit maximum in the signal distribution
-		state = gauss_fit_max(M1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		state = gauss_fit_max(M1, M_limits, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if state == None:
 			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')			
 			break
@@ -559,10 +560,10 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 def timeseries_analysis(M_raw, PAR):
 	tau_w, t_smooth = PAR.tau_w, PAR.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M = preparing_the_data(M_raw, PAR)
+	M, M_limits = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, M_limits, PAR, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
@@ -624,10 +625,10 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 
 def full_output_analysis(M_raw, PAR):
 	tau_w = PAR.tau_w
-	M = preparing_the_data(M_raw, PAR)
+	M, M_limits = preparing_the_data(M_raw, PAR)
 	plot_input_data(M, PAR, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, PAR, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(M, M_limits, PAR, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return

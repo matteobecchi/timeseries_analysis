@@ -167,7 +167,7 @@ def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, A):
 	gauss = np.exp(-arg)*A/norm
 	return gauss.ravel()
 
-def custom_fit(dim, max_ind, minima, edges, counts, gap):
+def custom_fit(dim, max_ind, minima, edges, counts, gap, M_limits):
 	# Initialize flag and goodness variables
 	flag = 1
 	goodness = 5
@@ -186,7 +186,7 @@ def custom_fit(dim, max_ind, minima, edges, counts, gap):
 	try:
 		# Attempt to fit a Gaussian using curve_fit
 		popt, pcov = scipy.optimize.curve_fit(Gaussian, Edges, Counts,
-			p0=[mu0, sigma0, A0], bounds=([0.0, 0.0, 0.0], [1.0, np.inf, np.inf]))
+			p0=[mu0, sigma0, A0], bounds=([M_limits[dim][0], 0.0, 0.0], [M_limits[dim][1], np.inf, np.inf]))
 
 		# Check goodness of fit and update the goodness variable
 		if popt[0] < Edges[0] or popt[0] > Edges[-1]:
