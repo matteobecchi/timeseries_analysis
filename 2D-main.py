@@ -559,6 +559,32 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
+def plot_one_trajectory(M, PAR, all_the_labels, filename):
+	tau_window, tau_delay, t_conv, t_units, example_ID = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.example_ID
+
+	# Get the signal of the example particle
+	signal_x = M[example_ID].T[0][:all_the_labels.shape[1]]
+	signal_y = M[example_ID].T[1][:all_the_labels.shape[1]]
+
+	fig, ax = plt.subplots(figsize=(6, 6))
+	colormap = 'viridis'
+
+	# Create a colormap to map colors to the labels of the example particle
+	cmap = plt.get_cmap(colormap, int(np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1))
+	color = all_the_labels[example_ID]
+	ax.plot(signal_x, signal_y, c='black', lw=0.1)
+
+	ax.scatter(signal_x, signal_y, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
+
+	# Set plot titles and axis labels
+	fig.suptitle('Example particle: ID = ' + str(example_ID))
+	ax.set_xlabel(r'$x$')
+	ax.set_ylabel(r'$y$')
+
+	plt.show()
+	fig.savefig('output_figures/' + filename + '.png', dpi=600)
+	plt.close(fig)
+
 def timeseries_analysis(M_raw, PAR):
 	tau_w, t_smooth = PAR.tau_w, PAR.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
@@ -638,6 +664,7 @@ def full_output_analysis(M_raw, PAR):
 	compute_cluster_mean_seq(M, all_the_labels, tau_w)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
+	plot_one_trajectory(M, PAR, all_the_labels, 'Fig1')
 
 	print_mol_labels_fbf_xyz(all_the_labels)
 	print_signal_with_labels(M, all_the_labels)
@@ -678,7 +705,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, True)
+	TRA_analysis(M_raw, PAR, False)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
