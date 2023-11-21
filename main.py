@@ -255,6 +255,7 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# Calculate the number of windows in the trajectory
 	number_of_windows = all_the_labels.shape[1]
 
+	### This version, done with for loops, whold be removed after the new one is tested #######################
 	# # Initialize an empty list to store non-stable windows
 	# M2 = []
 	# # Initialize a counter to keep track of the number of stable windows found
@@ -278,6 +279,7 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	# 			else:
 	# 				# If not stable, add the window's data to the list of non-stable windows
 	# 				M2.append(x_w)
+	##########################################################################################################
 
 	mask_unclassified = all_the_labels < 0.5
 	M_reshaped = M[:, :number_of_windows*tau_window].reshape(M.shape[0], number_of_windows, tau_window)
@@ -300,8 +302,8 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 
 	# Print the fraction of stable windows
 	with open(output_file, 'a') as f:
-		print(f'\tFraction of windows in state {offset} = {fw:.3}')
-		print(f'\tFraction of windows in state {offset} = {fw:.3}', file=f)
+		print(f'\tFraction of windows in state {offset + 1} = {fw:.3}')
+		print(f'\tFraction of windows in state {offset + 1} = {fw:.3}', file=f)
 	
 	# Convert the list of non-stable windows to a NumPy array
 	M2 = np.array(M2)
