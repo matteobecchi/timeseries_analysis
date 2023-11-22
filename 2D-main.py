@@ -2,6 +2,7 @@ from classes import *
 from functions import *
 
 output_file = 'states_output.txt'
+colormap = 'viridis'
 show_plot = False
 
 def all_the_input_stuff():
@@ -473,7 +474,6 @@ def iterative_search(M, M_limits, PAR, name):
 def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	n_states = len(list_of_states) + 1
-	colormap = 'viridis'
 	x = plt.get_cmap(colormap, n_states)
 	colors_from_cmap = x(np.arange(0, 1, 1/n_states))
 	colors_from_cmap[-1] = x(1.0)
@@ -567,7 +567,6 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	signal_y = M[example_ID].T[1][:all_the_labels.shape[1]]
 
 	fig, ax = plt.subplots(figsize=(6, 6))
-	colormap = 'viridis'
 
 	# Create a colormap to map colors to the labels of the example particle
 	cmap = plt.get_cmap(colormap, int(np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1))
