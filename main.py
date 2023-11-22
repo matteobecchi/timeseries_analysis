@@ -638,8 +638,8 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 				tmp1.append(f0)
 			number_of_states.append(tmp)
 			fraction_0.append(tmp1)
-		header = 'tau_window\t t_s = 1\t t_s = 2\t t_s = 3\t t_s = 4\t t_s = 5'
-		np.savetxt('number_of_states.txt', number_of_states, delimiter=' ', header=header)
+		header = 'tau_window t_s = 1 t_s = 2 t_s = 3 t_s = 4 t_s = 5'
+		np.savetxt('number_of_states.txt', number_of_states, fmt='%i', delimiter='\t', header=header)
 		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ', header=header)
 	else:
 		### Otherwise, just do this ###

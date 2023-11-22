@@ -574,14 +574,15 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	color = all_the_labels[example_ID]
 	ax.plot(signal_x, signal_y, c='black', lw=0.1)
 
-	ax.scatter(signal_x, signal_y, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
+	ax.scatter(signal_x, signal_y, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0, zorder=10)
 
 	# Set plot titles and axis labels
 	fig.suptitle('Example particle: ID = ' + str(example_ID))
 	ax.set_xlabel(r'$x$')
 	ax.set_ylabel(r'$y$')
 
-	plt.show()
+	if show_plot:
+		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -664,7 +665,7 @@ def full_output_analysis(M_raw, PAR):
 	compute_cluster_mean_seq(M, all_the_labels, tau_w)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
-	plot_one_trajectory(M, PAR, all_the_labels, 'Fig1')
+	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
 
 	print_mol_labels_fbf_xyz(all_the_labels)
 	print_signal_with_labels(M, all_the_labels)
@@ -693,8 +694,8 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 				tmp1.append(f0)
 			number_of_states.append(tmp)
 			fraction_0.append(tmp1)
-		header = 'tau_window\t t_s = 1\t t_s = 2\t t_s = 3\t t_s = 4\t t_s = 5'
-		np.savetxt('number_of_states.txt', number_of_states, delimiter=' ', header=header)
+		header = 'tau_window t_s = 1 t_s = 2 t_s = 3 t_s = 4 t_s = 5'
+		np.savetxt('number_of_states.txt', number_of_states, fmt='%i', delimiter='\t', header=header)
 		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ', header=header)
 	else:
 		### Otherwise, just do this ###
@@ -705,7 +706,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, False)
+	TRA_analysis(M_raw, PAR, True)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
