@@ -55,7 +55,7 @@ def preparing_the_data(tmp_M_raw, PAR):
 		# Normalize the data to the range [0, 1].
 		sig_max = np.max(m)
 		sig_min = np.min(m)
-		m = (m - sig_min)/(sig_max - sig_min)
+		# m = (m - sig_min)/(sig_max - sig_min)
 
 		M.append(m)
 
@@ -140,6 +140,7 @@ def plot_input_data(M, PAR, filename):
 	plt.close(fig)
 
 def gauss_fit_max(M, M_limits, bins, filename):
+	print(M_limits)
 	print('* Gaussian fit...')
 	flat_M = M.reshape((M.shape[0]*M.shape[1], M.shape[2]))
 
@@ -305,7 +306,7 @@ def gauss_fit_max(M, M_limits, bins, filename):
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
 		ax.set_xlim(M_limits[0][0], M_limits[0][1])
-		ax.set_ylim(M_limits[1][0], M_limits[1][0])
+		ax.set_ylim(M_limits[1][0], M_limits[1][1])
 	elif M.shape[2] == 3:
 		with open(output_file, 'a') as f:
 			print('\n', file=f)
