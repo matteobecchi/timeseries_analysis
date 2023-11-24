@@ -509,7 +509,7 @@ def assign_single_frames(all_the_labels, tau_window):
 	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
 	return new_labels
 
-def plot_TRA_figure(number_of_states, fraction_0, PAR):
+def plot_TRA_figure(number_of_states, fraction_0, PAR, show_plot):
 	t_conv, units = PAR.t_conv, PAR.t_units
 	number_of_states = np.array(number_of_states)
 	x = np.array(number_of_states.T[0])*t_conv
@@ -550,7 +550,8 @@ def plot_TRA_figure(number_of_states, fraction_0, PAR):
 	axr.plot(x, y2, marker='o', c='#ff7f0e')
 	axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
 
-	plt.show()
+	if show_plot:
+		plt.show()
 	fig.savefig('Time_resolution_analysis.png', dpi=600)
 
 def print_mol_labels_fbf_gro(all_the_labels):
@@ -614,7 +615,7 @@ def print_colored_trj_from_xyz(trj_file, all_the_labels, PAR):
 		with open('colored_trj.xyz', "w+") as f:
 			i = 0
 			for t in range(T):
-				print(tmp[i][0], file=f)
+				print(N, file=f)
 				print(tmp[i + 1][0], file=f)
 				for n in range(N):
 					print(all_the_labels[n][t], tmp[i + 2 + n][1], tmp[i + 2 + n][2], tmp[i + 2 + n][3], file=f)

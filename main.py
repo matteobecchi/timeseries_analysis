@@ -409,7 +409,8 @@ def plot_cumulative_figure(M, PAR, list_of_states, filename):
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
 
-	plt.show()
+	if show_plot:
+		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
@@ -588,7 +589,8 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 	ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 	ax.legend()
 
-	plt.show()
+	if show_plot:
+		plt.show()
 	fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def full_output_analysis(M_raw, PAR):
@@ -646,7 +648,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 		number_of_states = np.loadtxt('number_of_states.txt')
 		fraction_0 = np.loadtxt('fraction_0.txt')
 
-	plot_TRA_figure(number_of_states, fraction_0, PAR)
+	plot_TRA_figure(number_of_states, fraction_0, PAR, show_plot)
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
