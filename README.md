@@ -42,7 +42,7 @@ Then, the analysis with the values of `tau_window` and `t_smooth`  specified in 
 * `output_figure/Fig3.png` plots the colored signal for the particle with `example_ID` ID. 
 * `output_figure/Fig4.png` shows the mean time sequence inside each state, and it's useful for checking the meaningfulness of the results. 
 * The file `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not super friendly to use. 
-* If the trajectory from which the signal was computed is present in the working directory, and called `trajectory.xyz`, a new file, `colored_trj.xyz` will be printed, with the correct typing according to the clustering. But a bit of fine-tuning will be necessary inside the function `print_colored_trj_from_xyz(trj_file, all_the_labels, PAR)` in `function.py`. 
+* If the trajectory from which the signal was computed is present in the working directory, and called `trajectory.xyz`, a new file, `colored_trj.xyz` will be printed, with the correct typing according to the clustering. But a bit of fine-tuning will be necessary inside the function `print_colored_trj_from_xyz()` in `function.py`. 
 
 ## Multivariate time-series version
 The `2D-main.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. 
