@@ -575,14 +575,22 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 		center_list.append(np.mean(tmp, axis=0))
 		std_list.append(np.std(tmp, axis=0))
 
-	# Plotting
+	# Create a color palette
+	palette = []
+	cmap = plt.get_cmap(colormap, np.unique(all_the_labels).size)
+	palette.append(matplotlib.colors.rgb2hex(cmap(0)))
+	for i in range(1, cmap.N):
+		rgba = cmap(i)
+		palette.append(matplotlib.colors.rgb2hex(rgba))
+
+	# Plot
 	fig, ax = plt.subplots()
 	x = range(tau_window)
 	for l, center in enumerate(center_list):
 		err_inf = center - std_list[l]
 		err_sup = center + std_list[l]
-		ax.fill_between(x, err_inf, err_sup, alpha=0.25)
-		ax.plot(x, center, label='ENV'+str(l), marker='o')
+		ax.fill_between(x, err_inf, err_sup, alpha=0.25, color=palette[l])
+		ax.plot(x, center, label='ENV'+str(l), marker='o', c=palette[l])
 	fig.suptitle('Average time sequence inside each environments')
 	ax.set_xlabel(r'Time $t$ [frames]')
 	ax.set_ylabel(r'Signal')

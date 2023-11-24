@@ -628,7 +628,7 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 		# Iterate through molecules and their labels
 		for i, mol in enumerate(all_the_labels):
 			for w, l in enumerate(mol):
-				 # Define time interval
+				# Define time interval
 				t0 = w*tau_window
 				t1 = (w + 1)*tau_window
 				# If the label matches the current cluster, append the corresponding data to tmp
@@ -637,14 +637,21 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 	
 		# Calculate mean and standard deviation for the current cluster
 		center_list.append(np.mean(tmp, axis=0))
-		# std_list.append(np.std(tmp, axis=0))
 
-	# Plotting
+	# Create a color palette
+	palette = []
+	cmap = plt.get_cmap(colormap, np.unique(all_the_labels).size)
+	palette.append(matplotlib.colors.rgb2hex(cmap(0)))
+	for i in range(1, cmap.N):
+		rgba = cmap(i)
+		palette.append(matplotlib.colors.rgb2hex(rgba))
+
+	# Plot
 	fig, ax = plt.subplots()
 	for l, center in enumerate(center_list):
 		x = center[:, 0]
 		y = center[:, 1]
-		ax.plot(x, y, label='ENV'+str(l), marker='o')
+		ax.plot(x, y, label='ENV'+str(l), marker='o', c=palette[l])
 	fig.suptitle('Average time sequence inside each environments')
 	ax.set_xlabel(r'Signal 1')
 	ax.set_ylabel(r'Signal 2')
@@ -709,7 +716,7 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 
 def main():
 	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, True)
+	TRA_analysis(M_raw, PAR, False)
 	full_output_analysis(M_raw, PAR)
 
 if __name__ == "__main__":
