@@ -8,20 +8,20 @@ show_plot = False
 def all_the_input_stuff():
 	# Read input parameters from files.
 	data_directory = read_input_data()
-	PAR = Parameters('input_parameters.txt')
+	par = Parameters('input_parameters.txt')
 
-	tmp_M_raw = []
+	tmp_m_raw = []
 	for d in range(len(data_directory)):
 		# Read raw data from the specified directory/files.
-		M_raw = read_data(data_directory[d])
+		m_raw = read_data(data_directory[d])
 
 		# Remove initial frames based on 'tau_delay'.
-		M_raw = M_raw[:, PAR.t_delay:]
+		m_raw = m_raw[:, par.t_delay:]
 
-		tmp_M_raw.append(M_raw)
+		tmp_m_raw.append(m_raw)
 
-	for d in range(len(tmp_M_raw) - 1):
-		if tmp_M_raw[d].shape != tmp_M_raw[d + 1].shape :
+	for d in range(len(tmp_m_raw) - 1):
+		if tmp_m_raw[d].shape != tmp_m_raw[d + 1].shape :
 			print('ERROR: The signals do not correspond. Abort.')
 			return
 
@@ -42,29 +42,29 @@ def all_the_input_stuff():
 			print(f'Failed to delete {file_path}. Reason: {e}')
 
 	# Return required data for further analysis.
-	return tmp_M_raw, PAR
+	return tmp_m_raw, par
 
-def preparing_the_data(tmp_M_raw, PAR):
-	tau_window, t_smooth, t_conv, t_units = PAR.tau_w, PAR.t_smooth, PAR.t_conv, PAR.t_units
+def preparing_the_data(tmp_m_raw, par):
+	tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
-	M = []
-	for d, M_raw in enumerate(tmp_M_raw):
+	m = []
+	for d, m_raw in enumerate(tmp_m_raw):
 		# Apply filtering on the data
-		m = moving_average(M_raw, t_smooth)
+		tmp_m = moving_average(m_raw, t_smooth)
 
 		# Normalize the data to the range [0, 1].
-		sig_max = np.max(m)
-		sig_min = np.min(m)
+		sig_max = np.max(tmp_m)
+		sig_min = np.min(tmp_m)
 		# m = (m - sig_min)/(sig_max - sig_min)
 
-		M.append(m)
+		m.append(tmp_m)
 
-	M = np.array(M)
-	M_limits = [ [np.min(x), np.max(x) ] for x in M ]
-	M = np.transpose(M, axes=(1, 2, 0))
+	m = np.array(m)
+	m_limits = [ [np.min(x), np.max(x) ] for x in m ]
+	m = np.transpose(m, axes=(1, 2, 0))
 
-	total_particles = M.shape[0]
-	total_time = M.shape[1]
+	total_particles = m.shape[0]
+	total_time = m.shape[1]
 	# Calculate the number of windows for the analysis.
 	num_windows = int(total_time / tau_window)
 
@@ -73,21 +73,21 @@ def preparing_the_data(tmp_M_raw, PAR):
 	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv) + ' ' + t_units + ').')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ' + t_units + ').')
 
-	return M, M_limits
+	return m, m_limits
 
-def plot_input_data(M, PAR, filename):
-	tau_window, tau_delay, t_conv, t_units, bins = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.bins
-	Bins = []
-	Counts = []
-	for d in range(M.shape[2]):
-		# Flatten the M matrix and compute histogram counts and bins
-		flat_M = M[:,:,d].flatten()
-		counts0, bins0 = np.histogram(flat_M, bins=bins, density=True)
-		counts0 *= flat_M.size
-		Bins.append(bins0)
-		Counts.append(counts0)
+def plot_input_data(m, par, filename):
+	tau_window, tau_delay, t_conv, t_units, bins = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.bins
+	bin_selection = []
+	counts_selection = []
+	for d in range(m.shape[2]):
+		# Flatten the m matrix and compute histogram counts and bins
+		flat_m = m[:,:,d].flatten()
+		counts0, bins0 = np.histogram(flat_m, bins=bins, density=True)
+		counts0 *= flat_m.size
+		bin_selection.append(bins0)
+		counts_selection.append(counts0)
 
-	if M.shape[2] == 2:
+	if m.shape[2] == 2:
 		# Create a plot with two subplots (side-by-side)
 		fig = plt.figure(figsize=(9, 9))
 		grid = fig.add_gridspec(4, 4)
@@ -100,33 +100,33 @@ def plot_input_data(M, PAR, filename):
 		ax3.set_yticklabels([])
 		
 		# Plot histograms
-		ax1.stairs(Counts[0], Bins[0], fill=True)
-		ax3.stairs(Counts[1], Bins[1], fill=True, orientation='horizontal')
+		ax1.stairs(counts_selection[0], bin_selection[0], fill=True)
+		ax3.stairs(counts_selection[1], bin_selection[1], fill=True, orientation='horizontal')
 
 		# Plot the individual trajectories in the first subplot (left side)
-		ID_max, ID_min = 0, 0
-		for idx, mol in enumerate(M):
-			if np.max(mol) == np.max(M):
-				ID_max = idx
-			if np.min(mol) == np.min(M):
-				ID_min = idx
-		step = 10 if M.size > 1000000 else 1
-		for idx, mol in enumerate(M[::step]):
+		id_max, id_min = 0, 0
+		for idx, mol in enumerate(m):
+			if np.max(mol) == np.max(m):
+				id_max = idx
+			if np.min(mol) == np.min(m):
+				id_min = idx
+		step = 10 if m.size > 1000000 else 1
+		for idx, mol in enumerate(m[::step]):
 			ax2.plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
-		ax2.plot(M[ID_min][:,0], M[ID_min][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
-		ax2.plot(M[ID_max][:,0], M[ID_max][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+		ax2.plot(m[id_min][:,0], m[id_min][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+		ax2.plot(m[id_max][:,0], m[id_max][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
 
 		# Set labels and titles for the plots
 		ax2.set_ylabel('Signal 1')
 		ax2.set_xlabel('Signal 2')
 
-	elif M.shape[2] == 3:
+	elif m.shape[2] == 3:
 		fig = plt.figure(figsize=(6, 6))
 		ax = plt.axes(projection='3d')
 		
 		# Plot the individual trajectories
-		step = 1 if M.size > 1000000 else 1
-		for idx, mol in enumerate(M[::step]):
+		step = 1 if m.size > 1000000 else 1
+		for idx, mol in enumerate(m[::step]):
 			ax.plot(mol[:,0], mol[:,1], mol[:,2], color='black', marker='o', ms=0.5, lw=0.2, alpha=1.0, rasterized=True)
 
 		# Set labels and titles for the plots
@@ -139,14 +139,14 @@ def plot_input_data(M, PAR, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(M, M_limits, bins, filename):
+def gauss_fit_max(m, m_limits, bins, filename):
 	print('* Gaussian fit...')
-	flat_M = M.reshape((M.shape[0]*M.shape[1], M.shape[2]))
+	flat_m = m.reshape((m.shape[0]*m.shape[1], m.shape[2]))
 
 	### 1. Histogram with 'auto' binning ###
 	if bins == 'auto':
-		bins = max(int(np.power(M.size, 1/3)*2), 10)
-	counts, edges = np.histogramdd(flat_M, bins=bins, density=True)
+		bins = max(int(np.power(m.size, 1/3)*2), 10)
+	counts, edges = np.histogramdd(flat_m, bins=bins, density=True)
 	gap = 1
 	if np.all([e.size > 40 for e in edges]):
 		gap = 3
@@ -167,8 +167,7 @@ def gauss_fit_max(M, M_limits, bins, filename):
 	def find_minima_around_max(data, max_ind, gap):
 		minima = []
 
-		D = data.ndim
-		for dim in range(D):
+		for dim in range(data.ndim):
 			min_id0 = max(max_ind[dim] - gap, 0)
 			min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
@@ -201,10 +200,10 @@ def gauss_fit_max(M, M_limits, bins, filename):
 	### 5. Try the fit between the minima and check its goodness ###
 	popt_min = []
 	goodness_min = 0
-	for dim in range(M.shape[2]):
+	for dim in range(m.shape[2]):
 		try:
-			flag_min, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap, M_limits)
-			popt[2] *= flat_M.T[0].size
+			flag_min, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits)
+			popt[2] *= flat_m.T[0].size
 			popt_min.extend(popt)
 			goodness_min += goodness
 		except:
@@ -217,8 +216,7 @@ def gauss_fit_max(M, M_limits, bins, filename):
 		max_val = data.max()
 		minima = []
 
-		D = data.ndim
-		for dim in range(D):
+		for dim in range(data.ndim):
 			half_id0 = max(max_ind[dim] - gap, 0)
 			half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
@@ -245,10 +243,10 @@ def gauss_fit_max(M, M_limits, bins, filename):
 	### 7. Try the fit between the minima and check its goodness ###
 	popt_half = []
 	goodness_half = 0
-	for dim in range(M.shape[2]):
+	for dim in range(m.shape[2]):
 		try:
-			flag_half, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap, M_limits)
-			popt[2] *= flat_M.T[0].size
+			flag_half, goodness, popt = custom_fit(dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits)
+			popt[2] *= flat_m.T[0].size
 			popt_half.extend(popt)
 			goodness_half += goodness
 		except:
@@ -273,20 +271,20 @@ def gauss_fit_max(M, M_limits, bins, filename):
 		print('\tWARNING: this fit is not converging.')
 		return None
 
-	if len(popt) != M.shape[2]*3:
+	if len(popt) != m.shape[2]*3:
 		print('\tWARNING: this fit is not converging.')
 		return None		
 
 	### Find the tresholds for state identification
-	mu, sigma, A, a = [], [], [], []
-	for dim in range(M.shape[2]):
+	mu, sigma, area = [], [], []
+	for dim in range(m.shape[2]):
 		mu.append(popt[3*dim])
 		sigma.append(popt[3*dim + 1])
-		A.append(popt[3*dim + 2])
-	state = State_multi(np.array(mu), np.array(sigma), np.array(A))
+		area.append(popt[3*dim + 2])
+	state = State_multi(np.array(mu), np.array(sigma), np.array(area))
 
 	### Plot the distribution and the fitted Gaussians
-	if M.shape[2] == 2:
+	if m.shape[2] == 2:
 		with open(output_file, 'a') as f:
 			print('\n', file=f)
 			print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}')
@@ -304,9 +302,9 @@ def gauss_fit_max(M, M_limits, bins, filename):
 		circle2 = matplotlib.patches.Ellipse(mu, state.a[0], state.a[1], color='r', fill=False)
 		ax.add_patch(circle1)
 		ax.add_patch(circle2)
-		ax.set_xlim(M_limits[0][0], M_limits[0][1])
-		ax.set_ylim(M_limits[1][0], M_limits[1][1])
-	elif M.shape[2] == 3:
+		ax.set_xlim(m_limits[0][0], m_limits[0][1])
+		ax.set_ylim(m_limits[1][0], m_limits[1][1])
+	elif m.shape[2] == 3:
 		with open(output_file, 'a') as f:
 			print('\n', file=f)
 			print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}')
@@ -345,12 +343,12 @@ def gauss_fit_max(M, M_limits, bins, filename):
 		ax[1][0].add_patch(circle1)
 		ax[1][0].add_patch(circle2)
 
-		ax[0][0].set_xlim(M_limits[0][0], M_limits[0][1])
-		ax[0][0].set_ylim(M_limits[1][0], M_limits[1][1])
-		ax[0][1].set_xlim(M_limits[2][0], M_limits[2][1])
-		ax[0][1].set_ylim(M_limits[1][0], M_limits[1][1])
-		ax[1][0].set_xlim(M_limits[0][0], M_limits[0][1])
-		ax[1][0].set_ylim(M_limits[2][0], M_limits[2][1])
+		ax[0][0].set_xlim(m_limits[0][0], m_limits[0][1])
+		ax[0][0].set_ylim(m_limits[1][0], m_limits[1][1])
+		ax[0][1].set_xlim(m_limits[2][0], m_limits[2][1])
+		ax[0][1].set_ylim(m_limits[1][0], m_limits[1][1])
+		ax[1][0].set_xlim(m_limits[0][0], m_limits[0][1])
+		ax[1][0].set_ylim(m_limits[2][0], m_limits[2][1])
 
 	if show_plot:
 	 	plt.show()
@@ -359,47 +357,15 @@ def gauss_fit_max(M, M_limits, bins, filename):
 
 	return state
 
-def find_stable_trj(M, tau_window, state, all_the_labels, offset):
+def find_stable_trj(m, tau_window, state, all_the_labels, offset):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
-	number_of_windows = int(M.shape[1] / tau_window )
-
-	### This version, done with for loops, whold be removed after the new one is tested #######################
-	# # Initialize an empty list to store non-stable windows
-	# M2 = []
-	# # Initialize a counter to keep track of the number of stable windows found
-	# counter = 0
-	# # Loop over each particle's trajectory
-	# for i, r in enumerate(M):
-	# 	# Loop over each window in the trajectory
-	# 	for w in range(number_of_windows):
-	# 		if w == all_the_labels.shape[1]:
-	# 			continue ## Why does this happen?
-	# 		# Check if the window is already assigned to a state with a label > 0
-	# 		if all_the_labels[i][w] > 0.5:
-	# 			# If yes, skip this window and continue to the next one
-	# 			continue
-	# 		else:
-	# 			# If the window is not assigned to any state yet, extract the window's data
-	# 			r_w = r[w*tau_window:(w + 1)*tau_window]
-	# 			# Check if the window is stable (all data points within the specified ellises)
-	# 			shifted = r_w - state.mu
-	# 			rescaled = shifted / state.a
-
-	# 			squared_distances = np.sum(rescaled**2, axis=1)
-	# 			if np.max(squared_distances) <= 1.0:
-	# 				# If stable, assign the window to the current state offset and increment the counter
-	# 				all_the_labels[i][w] = offset + 1
-	# 				counter += 1
-	# 			else:
-	# 				# If not stable, add the window's data to the list of non-stable windows
-	# 				M2.append(r_w)
-	#############################################################################################################
+	number_of_windows = int(m.shape[1] / tau_window )
 
 	mask_unclassified = all_the_labels < 0.5
-	M_reshaped = M[:, :number_of_windows*tau_window].reshape(M.shape[0], number_of_windows, tau_window, M.shape[2])
-	shifted = M_reshaped - state.mu
+	m_reshaped = m[:, :number_of_windows*tau_window].reshape(m.shape[0], number_of_windows, tau_window, m.shape[2])
+	shifted = m_reshaped - state.mu
 	rescaled = shifted / state.a
 	squared_distances = np.sum(rescaled**2, axis=3)
 	mask_dist = np.max(squared_distances, axis=2) <= 1.0
@@ -409,11 +375,11 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 	counter = np.sum(mask)				# The number of stable windows found
 
 	# Store non-stable windows in a list, for the next iteration
-	M2 = []
+	m2 = []
 	mask_remaining = mask_unclassified & ~mask
 	for i, w in np.argwhere(mask_remaining):
-		r_w = M[i, w*tau_window:(w + 1)*tau_window]
-		M2.append(r_w)
+		r_w = m[i, w*tau_window:(w + 1)*tau_window]
+		m2.append(r_w)
 
 	# Calculate the fraction of stable windows found
 	fw = counter/(all_the_labels.size)
@@ -424,35 +390,35 @@ def find_stable_trj(M, tau_window, state, all_the_labels, offset):
 		print(f'\tFraction of windows in state {offset + 1} = {fw:.3}', file=f)
 	
 	# Convert the list of non-stable windows to a NumPy array
-	M2 = np.array(M2)
+	m2 = np.array(m2)
 	one_last_state = True
-	if len(M2) == 0:
+	if len(m2) == 0:
 		one_last_state = False
 
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
-	return M2, fw, one_last_state
+	return m2, fw, one_last_state
 
-def iterative_search(M, M_limits, PAR, name):
-	tau_w, bins = PAR.tau_w, PAR.bins
+def iterative_search(m, m_limits, par, name):
+	tau_w, bins = par.tau_w, par.bins
 
 	# Initialize an array to store labels for each window.
-	num_windows = int(M.shape[1] / tau_w)
-	all_the_labels = np.zeros((M.shape[0], num_windows))
+	num_windows = int(m.shape[1] / tau_w)
+	all_the_labels = np.zeros((m.shape[0], num_windows))
 
 	states_list = []
-	M1 = M
+	m1 = m
 	iteration_id = 1
 	states_counter = 0
 	one_last_state = False
 	while True:
 		### Locate and fit maximum in the signal distribution
-		state = gauss_fit_max(M1, M_limits, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		state = gauss_fit_max(m1, m_limits, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if state == None:
 			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')			
 			break
 
 		### Find the windows in which the trajectories are stable in the maximum
-		M2, c, one_last_state = find_stable_trj(M, tau_w, state, all_the_labels, states_counter)
+		m2, c, one_last_state = find_stable_trj(m, tau_w, state, all_the_labels, states_counter)
 		state.perc = c
 
 		if c > 0.0:
@@ -464,16 +430,16 @@ def iterative_search(M, M_limits, PAR, name):
 		if c <= 0.0:
 			print('Iterations interrupted because no data points have been assigned to the last state. ')
 			break
-		elif M2.size == 0:
+		elif m2.size == 0:
 			print('Iterations interrupted because all data points have been assigned to one state. ')
 			break
 		else:
-			M1 = M2
+			m1 = m2
 
 	all_the_labels, list_of_states = relabel_states_2D(all_the_labels, states_list)
 	return all_the_labels, list_of_states, one_last_state
 
-def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
+def plot_cumulative_figure(m, par, all_the_labels, list_of_states, filename):
 	print('* Printing cumulative figure...')
 	n_states = len(list_of_states) + 1
 	x = plt.get_cmap(colormap, n_states)
@@ -481,75 +447,75 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	colors_from_cmap[-1] = x(1.0)
 	
 	fig = plt.figure(figsize=(6, 6))
-	if M.shape[2] == 3:
+	if m.shape[2] == 3:
 		ax = plt.axes(projection='3d')
 
 		# Plot the individual trajectories
-		ID_max, ID_min = 0, 0
-		for idx, mol in enumerate(M):
-			if np.max(mol) == np.max(M):
-				ID_max = idx
-			if np.min(mol) == np.min(M):
-				ID_min = idx
+		id_max, id_min = 0, 0
+		for idx, mol in enumerate(m):
+			if np.max(mol) == np.max(m):
+				id_max = idx
+			if np.min(mol) == np.min(m):
+				id_min = idx
 
 		lw = 0.05
 
-		step = 5 if M.size > 1000000 else 1
+		step = 5 if m.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
-		for i, mol in enumerate(M[::step]):
+		for i, mol in enumerate(m[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], mol.T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 		
-		c = [ int(l) for l in all_the_labels[ID_min] ]
-		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
-		ax.scatter(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], M[ID_min].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
-		c = [ int(l) for l in all_the_labels[ID_max] ]
-		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
-		ax.scatter(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], M[ID_max].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
+		c = [ int(l) for l in all_the_labels[id_min] ]
+		ax.plot(m[id_min].T[0,:max_T], m[id_min].T[1,:max_T], m[id_min].T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
+		ax.scatter(m[id_min].T[0,:max_T], m[id_min].T[1,:max_T], m[id_min].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
+		c = [ int(l) for l in all_the_labels[id_max] ]
+		ax.plot(m[id_max].T[0,:max_T], m[id_max].T[1,:max_T], m[id_max].T[2,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
+		ax.scatter(m[id_max].T[0,:max_T], m[id_max].T[1,:max_T], m[id_max].T[2,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
-		for S_id, S in enumerate(list_of_states):
+		for s_id, S in enumerate(list_of_states):
 			u = np.linspace(0, 2*np.pi, 100)
 			v = np.linspace(0, np.pi, 100)
 			x = S.a[0]*np.outer(np.cos(u), np.sin(v)) + S.mu[0]
 			y = S.a[1]*np.outer(np.sin(u), np.sin(v)) + S.mu[1]
 			z = S.a[2]*np.outer(np.ones_like(u), np.cos(v)) + S.mu[2]
-			ax.plot_surface(x, y, z, alpha=0.25, color=colors_from_cmap[S_id+1])
+			ax.plot_surface(x, y, z, alpha=0.25, color=colors_from_cmap[s_id+1])
 
 		# Set plot titles and axis labels
 		ax.set_xlabel(r'$x$')
 		ax.set_ylabel(r'$y$')
 		ax.set_zlabel(r'$z$')
-	elif M.shape[2] == 2:
+	elif m.shape[2] == 2:
 		ax = plt.axes()
 
 		# Plot the individual trajectories
-		ID_max, ID_min = 0, 0
-		for idx, mol in enumerate(M):
-			if np.max(mol) == np.max(M):
-				ID_max = idx
-			if np.min(mol) == np.min(M):
-				ID_min = idx
+		id_max, id_min = 0, 0
+		for idx, mol in enumerate(m):
+			if np.max(mol) == np.max(m):
+				id_max = idx
+			if np.min(mol) == np.min(m):
+				id_min = idx
 
 		lw = 0.05
 
-		step = 5 if M.size > 1000000 else 1
+		step = 5 if m.size > 1000000 else 1
 		max_T = all_the_labels.shape[1]
-		for i, mol in enumerate(M[::step]):
+		for i, mol in enumerate(m[::step]):
 			ax.plot(mol.T[0,:max_T], mol.T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
 			c = [ int(l) for l in all_the_labels[i*step] ]
 			ax.scatter(mol.T[0,:max_T], mol.T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
-		c = [ int(l) for l in all_the_labels[ID_min] ]
-		ax.plot(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
-		ax.scatter(M[ID_min].T[0,:max_T], M[ID_min].T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
-		c = [ int(l) for l in all_the_labels[ID_max] ]
-		ax.plot(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
-		ax.scatter(M[ID_max].T[0,:max_T], M[ID_max].T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
+		c = [ int(l) for l in all_the_labels[id_min] ]
+		ax.plot(m[id_min].T[0,:max_T], m[id_min].T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
+		ax.scatter(m[id_min].T[0,:max_T], m[id_min].T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
+		c = [ int(l) for l in all_the_labels[id_max] ]
+		ax.plot(m[id_max].T[0,:max_T], m[id_max].T[1,:max_T], c='black', lw=lw, rasterized=True, zorder=0)
+		ax.scatter(m[id_max].T[0,:max_T], m[id_max].T[1,:max_T], c=c, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
 		# Plot the Gaussian distributions of states
-		for S_id, S in enumerate(list_of_states):
+		for s_id, S in enumerate(list_of_states):
 			ellipse = matplotlib.patches.Ellipse(S.mu, S.a[0], S.a[1], color='black', fill=False)
 			ax.add_patch(ellipse)
 
@@ -562,12 +528,12 @@ def plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def plot_one_trajectory(M, PAR, all_the_labels, filename):
-	tau_window, tau_delay, t_conv, t_units, example_ID = PAR.tau_w, PAR.t_delay, PAR.t_conv, PAR.t_units, PAR.example_ID
+def plot_one_trajectory(m, par, all_the_labels, filename):
+	tau_window, tau_delay, t_conv, t_units, example_ID = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_ID
 
 	# Get the signal of the example particle
-	signal_x = M[example_ID].T[0][:all_the_labels.shape[1]]
-	signal_y = M[example_ID].T[1][:all_the_labels.shape[1]]
+	signal_x = m[example_ID].T[0][:all_the_labels.shape[1]]
+	signal_y = m[example_ID].T[1][:all_the_labels.shape[1]]
 
 	fig, ax = plt.subplots(figsize=(6, 6))
 
@@ -588,24 +554,24 @@ def plot_one_trajectory(M, PAR, all_the_labels, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def timeseries_analysis(M_raw, PAR):
-	tau_w, t_smooth = PAR.tau_w, PAR.t_smooth
+def timeseries_analysis(m_raw, par):
+	tau_w, t_smooth = par.tau_w, par.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
-	M, M_limits = preparing_the_data(M_raw, PAR)
-	plot_input_data(M, PAR, name + 'Fig0')
+	m, m_limits = preparing_the_data(m_raw, par)
+	plot_input_data(m, par, name + 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, M_limits, PAR, name)
+	all_the_labels, list_of_states, one_last_state = iterative_search(m, m_limits, par, name)
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
-		del M_raw
-		del M
+		del m_raw
+		del m
 		del all_the_labels
 		return 1, 1.0
 	
 	# We need to free the memory otherwise it accumulates
-	del M_raw
-	del M
+	del m_raw
+	del m
 	del all_the_labels
 
 	fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
@@ -614,8 +580,8 @@ def timeseries_analysis(M_raw, PAR):
 	else:
 		return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(M, all_the_labels, tau_window):
-	if M.shape[2] > 2:
+def compute_cluster_mean_seq(m, all_the_labels, tau_window):
+	if m.shape[2] > 2:
 		return
 
 	# Initialize lists to store cluster means and standard deviations
@@ -633,7 +599,7 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 				t1 = (w + 1)*tau_window
 				# If the label matches the current cluster, append the corresponding data to tmp
 				if l == L:
-					tmp.append(M[i][t0:t1])
+					tmp.append(m[i][t0:t1])
 	
 		# Calculate mean and standard deviation for the current cluster
 		center_list.append(np.mean(tmp, axis=0))
@@ -662,44 +628,44 @@ def compute_cluster_mean_seq(M, all_the_labels, tau_window):
 		plt.show()
 	fig.savefig('output_figures/Fig4.png', dpi=600)
 
-def full_output_analysis(M_raw, PAR):
-	tau_w = PAR.tau_w
-	M, M_limits = preparing_the_data(M_raw, PAR)
-	plot_input_data(M, PAR, 'Fig0')
+def full_output_analysis(m_raw, par):
+	tau_w = par.tau_w
+	m, m_limits = preparing_the_data(m_raw, par)
+	plot_input_data(m, par, 'Fig0')
 
-	all_the_labels, list_of_states, one_last_state = iterative_search(M, M_limits, PAR, '')
+	all_the_labels, list_of_states, one_last_state = iterative_search(m, m_limits, par, '')
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		return
 
-	compute_cluster_mean_seq(M, all_the_labels, tau_w)
+	compute_cluster_mean_seq(m, all_the_labels, tau_w)
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
-	plot_cumulative_figure(M, PAR, all_the_labels, list_of_states, 'Fig2')
-	plot_one_trajectory(M, PAR, all_the_labels, 'Fig3')
+	plot_cumulative_figure(m, par, all_the_labels, list_of_states, 'Fig2')
+	plot_one_trajectory(m, par, all_the_labels, 'Fig3')
 
 	print_mol_labels_fbf_xyz(all_the_labels)
-	print_signal_with_labels(M, all_the_labels)
-	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, PAR)
+	print_signal_with_labels(m, all_the_labels)
+	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
-def TRA_analysis(M_raw, PAR, perform_anew):
+def TRA_analysis(m_raw, par, perform_anew):
 	### If you want to change the range of the parameters tested, this is the point ###
 	t_smooth_max = 5 	# 5
 	num_of_points = 20 	# 20
-	Tau_window, T_smooth = param_grid(M_raw[0].shape[1], t_smooth_max, num_of_points)
+	tau_window_list, t_smooth_list = param_grid(m_raw[0].shape[1], t_smooth_max, num_of_points)
 
 	if perform_anew:
 		### If the analysis hat to be performed anew ###
 		number_of_states = []
 		fraction_0 = []
-		for tau_w in Tau_window:
+		for tau_w in tau_window_list:
 			tmp = [tau_w]
 			tmp1 = [tau_w]
-			for t_s in T_smooth:
+			for t_s in t_smooth_list:
 				print('\n* New analysis: ', tau_w, t_s)
-				tmp_PAR = copy.deepcopy(PAR)
-				tmp_PAR.tau_w = tau_w
-				tmp_PAR.t_smooth = t_s
-				n_s, f0 = timeseries_analysis(M_raw, tmp_PAR)
+				tmp_par = copy.deepcopy(par)
+				tmp_par.tau_w = tau_w
+				tmp_par.t_smooth = t_s
+				n_s, f0 = timeseries_analysis(m_raw, tmp_par)
 				tmp.append(n_s)
 				tmp1.append(f0)
 			number_of_states.append(tmp)
@@ -712,12 +678,12 @@ def TRA_analysis(M_raw, PAR, perform_anew):
 		number_of_states = np.loadtxt('number_of_states.txt')
 		fraction_0 = np.loadtxt('fraction_0.txt')
 
-	plot_TRA_figure(number_of_states, fraction_0, PAR, show_plot)
+	plot_TRA_figure(number_of_states, fraction_0, par, show_plot)
 
 def main():
-	M_raw, PAR = all_the_input_stuff()
-	TRA_analysis(M_raw, PAR, False)
-	full_output_analysis(M_raw, PAR)
+	m_raw, par = all_the_input_stuff()
+	TRA_analysis(m_raw, par, True)
+	full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":
 	main()

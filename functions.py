@@ -37,13 +37,13 @@ def read_data(filename):
 				with np.load(filename) as data:
 					# Load the first variable (assumed to be the data) into a NumPy array.
 					data_name = data.files[0]
-					M = np.array(data[data_name])
+					m = np.array(data[data_name])
 			elif filename.endswith('.npy'):
-				M = np.load(filename)
+				m = np.load(filename)
 			else: # .txt file
-				M = np.loadtxt(filename)
-			print('\tOriginal data shape:', M.shape)
-			return M
+				m = np.loadtxt(filename)
+			print('\tOriginal data shape:', m.shape)
+			return m
 		except Exception as e:
 			print(f'\tERROR: Failed to read data from {filename}. Reason: {e}')
 			return None
@@ -58,14 +58,14 @@ def butter_lowpass_filter(x, cutoff, fs, order):
 	y = filtfilt(b, a, x)
 	return y
 
-def Savgol_filter(M, window):
+def Savgol_filter(m, window):
 	# Step 1: Set the polynomial order for the Savitzky-Golay filter.
 	poly_order = 2
 
-	# Step 2: Apply the Savitzky-Golay filter to each row (x) in the input data matrix 'M'.
+	# Step 2: Apply the Savitzky-Golay filter to each row (x) in the input data matrix 'm'.
 	# The result is stored in a temporary array 'tmp'.
 	# 'window' is the window size for the filter.
-	tmp = np.array([savgol_filter(x, window, poly_order) for x in M])
+	tmp = np.array([savgol_filter(x, window, poly_order) for x in m])
 
 	# Step 3: Since the Savitzky-Golay filter operates on a sliding window, 
 	# it introduces edge artifacts at the beginning and end of each row.
@@ -88,10 +88,10 @@ def moving_average(data, window):
 	else:
 		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
-def moving_average_2D(data, L):
-	if L % 2 == 0:								# Check if L is an odd number
+def moving_average_2D(data, l):
+	if l % 2 == 0:								# Check if L is an odd number
 		raise ValueError("L must be an odd number.")
-	half_width = (L - 1) // 2					# Calculate the half-width of the moving window
+	half_width = (l - 1) // 2					# Calculate the half-width of the moving window
 	result = np.zeros_like(data, dtype=float)	# Initialize the result array with zeros
 	num_dims = data.ndim						# Get the number of dimensions in the input data
 
@@ -136,64 +136,64 @@ def param_grid(total_time, t_smooth_max, n_windows):
 
 	return tau_window, t_smooth
 
-def sigmoidal(x, A, B, alpha):
-	return B + A/(1 + np.exp(x*alpha))
+def sigmoidal(x, a, b, alpha):
+	return b + a/(1 + np.exp(x*alpha))
 
-def Gaussian(x, m, sigma, A):
+def Gaussian(x, m, sigma, area):
 	# "m" is the Gaussians' mean value
 	# "sigma" is the Gaussians' standard deviation
-	# "A" is the Gaussian area
-	return np.exp(-((x - m)/sigma)**2)*A/(np.sqrt(np.pi)*sigma)
+	# "a" is the Gaussian area
+	return np.exp(-((x - m)/sigma)**2)*area/(np.sqrt(np.pi)*sigma)
 
-def Gaussian_2D(r, mx, my, sigmax, sigmay, A):
+def Gaussian_2D(r, mx, my, sigmax, sigmay, area):
 	# "m" is the Gaussians' mean value (2d array)
 	# "sigma" is the Gaussians' standard deviation matrix
-	# "A" is the Gaussian area
+	# "a" is the Gaussian area
 	r[0] -= mx
 	r[1] -= my
 	arg = (r[0]/sigmax)**2 + (r[1]/sigmay)**2
 	norm = np.pi*sigmax*sigmay
-	gauss = np.exp(-arg)*A/norm
+	gauss = np.exp(-arg)*area/norm
 	return gauss.ravel()
 
-def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, A):
+def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, area):
 	# "m" is the Gaussians' mean value (2d array)
 	# "sigma" is the Gaussians' standard deviation matrix
-	# "A" is the Gaussian area
+	# "area" is the Gaussian area
 	r[0] -= mx
 	r[1] -= my
 	arg = (r[0]/sigmax)**2 + (r[1]/sigmay)**2 + 2*r[0]*r[1]/sigmaxy**2
 	norm = np.pi*sigmax*sigmay/np.sqrt(1 - (sigmax*sigmay/sigmaxy**2)**2)
-	gauss = np.exp(-arg)*A/norm
+	gauss = np.exp(-arg)*area/norm
 	return gauss.ravel()
 
-def custom_fit(dim, max_ind, minima, edges, counts, gap, M_limits):
+def custom_fit(dim, max_ind, minima, edges, counts, gap, m_limits):
 	# Initialize flag and goodness variables
 	flag = 1
 	goodness = 5
 
 	# Extract relevant data within the specified minima
-	Edges = edges[minima[2*dim]:minima[2*dim + 1]]
+	edges_selection = edges[minima[2*dim]:minima[2*dim + 1]]
 	all_axes = tuple(i for i in range(counts.ndim) if i != dim)
-	Counts = np.sum(counts, axis=all_axes)
-	Counts = Counts[minima[2*dim]:minima[2*dim + 1]]
+	counts_selection = np.sum(counts, axis=all_axes)
+	counts_selection = counts_selection[minima[2*dim]:minima[2*dim + 1]]
 
 	# Initial parameter guesses
 	mu0 = edges[max_ind]
 	sigma0 = (edges[minima[2*dim + 1]] - edges[minima[2*dim]])/2
-	A0 = max(Counts)*np.sqrt(np.pi)*sigma0
+	a0 = max(counts_selection)*np.sqrt(np.pi)*sigma0
 
 	try:
 		# Attempt to fit a Gaussian using curve_fit
-		popt, pcov = scipy.optimize.curve_fit(Gaussian, Edges, Counts,
-			p0=[mu0, sigma0, A0], bounds=([M_limits[dim][0], 0.0, 0.0], [M_limits[dim][1], np.inf, np.inf]))
+		popt, pcov = scipy.optimize.curve_fit(Gaussian, edges_selection, counts_selection,
+			p0=[mu0, sigma0, a0], bounds=([m_limits[dim][0], 0.0, 0.0], [m_limits[dim][1], np.inf, np.inf]))
 
 		# Check goodness of fit and update the goodness variable
-		if popt[0] < Edges[0] or popt[0] > Edges[-1]:
+		if popt[0] < edges_selection[0] or popt[0] > edges_selection[-1]:
 			goodness -= 1
-		if popt[1] > Edges[-1] - Edges[0]:
+		if popt[1] > edges_selection[-1] - edges_selection[0]:
 			goodness -= 1
-		if popt[2] < A0/2:
+		if popt[2] < a0/2:
 			goodness -= 1
 
 		# Calculate parameter errors
@@ -226,34 +226,34 @@ def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
 	goodness = 11
 
 	# Extract relevant data within the specified minima
-	Xedges = xedges[minima[0]:minima[1]]
-	Yedges = yedges[minima[2]:minima[3]]
-	Counts = counts[minima[0]:minima[1],minima[2]:minima[3]]
+	x_edges = xedges[minima[0]:minima[1]]
+	y_edges = yedges[minima[2]:minima[3]]
+	counts_selection = counts[minima[0]:minima[1],minima[2]:minima[3]]
 
 	# Initial parameter guesses
 	mux0 = xedges[max_ind[0]]
 	muy0 = yedges[max_ind[1]]
 	sigmax0 = (xedges[minima[1]] - xedges[minima[0]])/3
 	sigmay0 = (yedges[minima[3]] - yedges[minima[2]])/3
-	A0 = counts[max_ind[0]][max_ind[1]]
+	a0 = counts[max_ind[0]][max_ind[1]]
 
 	# Create a meshgrid for fitting
-	x, y = np.meshgrid(Xedges, Yedges)
+	x, y = np.meshgrid(x_edges, y_edges)
 	try:
 		# Attempt to fit a 2D Gaussian using curve_fit
-		popt, pcov = scipy.optimize.curve_fit(Gaussian_2D, (x, y), Counts.ravel(),
-			p0=[mux0, muy0, sigmax0, sigmay0, A0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, np.inf, np.inf, np.inf]))
+		popt, pcov = scipy.optimize.curve_fit(Gaussian_2D, (x, y), counts_selection.ravel(),
+			p0=[mux0, muy0, sigmax0, sigmay0, a0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, np.inf, np.inf, np.inf]))
 
 		# Check goodness of fit and update the goodness variable
-		if popt[4] < A0/2:
+		if popt[4] < a0/2:
 			goodness -= 1
-		if popt[0] < Xedges[0] or popt[0] > Xedges[-1]:
+		if popt[0] < x_edges[0] or popt[0] > x_edges[-1]:
 			goodness -= 1
-		if popt[1] < Yedges[0] or popt[1] > Yedges[-1]:
+		if popt[1] < y_edges[0] or popt[1] > y_edges[-1]:
 			goodness -= 1
-		if popt[2] > Xedges[-1] - Xedges[0]:
+		if popt[2] > x_edges[-1] - x_edges[0]:
 			goodness -= 1
-		if popt[3] > Yedges[-1] - Yedges[0]:
+		if popt[3] > y_edges[-1] - y_edges[0]:
 			goodness -= 1
 
 		# Calculate parameter errors
@@ -308,7 +308,7 @@ def relabel_states(all_the_labels, states_list):
 
 	return tmp2, list1
 
-def set_final_states(list_of_states, all_the_labels, M_range):
+def set_final_states(list_of_states, all_the_labels, m_range):
 	# Step 1: Define a criterion to determine which states are considered "final."
 	# Iterate over pairs of states to compare their properties.
 	old_to_new_map = []
@@ -345,7 +345,7 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	new_labels = np.vectorize(label_to_index.get)(all_the_labels)
 
 	# Step 3: Calculate the final threshold values and their types based on the intercept between neighboring states.
-	list_of_states[0].th_inf[0] = M_range[0]
+	list_of_states[0].th_inf[0] = m_range[0]
 	list_of_states[0].th_inf[1] = 0
 
 	for n in range(len(list_of_states) - 1):
@@ -353,11 +353,11 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 		S1 = list_of_states[n + 1]
 		a = S1.sigma**2 - S0.sigma**2
 		b = -2*(S0.mu*S1.sigma**2 - S1.mu*S0.sigma**2)
-		c = (S0.mu*S1.sigma)**2 - (S1.mu*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.A*S1.sigma/S1.A/S0.sigma)
+		c = (S0.mu*S1.sigma)**2 - (S1.mu*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.area*S1.sigma/S1.area/S0.sigma)
 		Delta = b**2 - 4*a*c
 		# Determine the type of the threshold (0, 1 or 2). 
 		if a == 0.0:
-			th = (S0.mu + S1.mu)/2 - S0.sigma**2 / 2 / (S1.mu - S0.mu) * np.log(S0.A/S1.A)
+			th = (S0.mu + S1.mu)/2 - S0.sigma**2 / 2 / (S1.mu - S0.mu) * np.log(S0.a/S1.area)
 			list_of_states[n].th_sup[0] = th
 			list_of_states[n].th_sup[1] = 1
 			list_of_states[n + 1].th_inf[0] = th
@@ -365,8 +365,8 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 		elif Delta >= 0:
 			th_plus = (- b + np.sqrt(Delta))/(2*a)
 			th_minus = (- b - np.sqrt(Delta))/(2*a)
-			intercept_plus = Gaussian(th_plus, S0.mu, S0.sigma, S0.A)
-			intercept_minus = Gaussian(th_minus, S0.mu, S0.sigma, S0.A)
+			intercept_plus = Gaussian(th_plus, S0.mu, S0.sigma, S0.area)
+			intercept_minus = Gaussian(th_minus, S0.mu, S0.sigma, S0.area)
 			if intercept_plus >= intercept_minus:
 				list_of_states[n].th_sup[0] = th_plus
 				list_of_states[n].th_sup[1] = 1
@@ -384,7 +384,7 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 			list_of_states[n + 1].th_inf[0] = th_aver
 			list_of_states[n + 1].th_inf[1] = 2
 
-	list_of_states[-1].th_sup[0] = M_range[1]
+	list_of_states[-1].th_sup[0] = m_range[1]
 	list_of_states[-1].th_sup[1] = 0
 
 	# Step 4: Write the final states and final thresholds to text files.
@@ -392,7 +392,7 @@ def set_final_states(list_of_states, all_the_labels, M_range):
 	with open('final_states.txt', 'w') as f:
 		print('# Mu \t Sigma \t A \t state_fraction', file=f)
 		for state in list_of_states:
-			print(state.mu, state.sigma, state.A, state.perc, file=f)
+			print(state.mu, state.sigma, state.area, state.perc, file=f)
 	with open('final_thresholds.txt', 'w') as f:
 		for state in list_of_states:
 			print(state.th_inf[0], state.th_sup[0], file=f)
@@ -430,17 +430,13 @@ def relabel_states_2D(all_the_labels, states_list):
 	el_to_del = []
 	for p0 in range(len(merge_pairs)):
 		for p1 in range(p0 + 1, len(merge_pairs)):
-			### TO REMOVE ###################################
-			# if merge_pairs[p1][1] == merge_pairs[p0][1]:
-			# 	el_to_del.append(p1)
-			#################################################
 			if merge_pairs[p1][1] == merge_pairs[p0][1]:
 				s0 = sorted_states[merge_pairs[p0][1] - 1]
-				sA = sorted_states[merge_pairs[p0][0] - 1]
-				sB = sorted_states[merge_pairs[p1][0] - 1]
-				diff_A = sA.mu - s0.mu
-				diff_B = sB.mu - s0.mu
-				if sum(pow(diff, 2) for diff in diff_A) < sum(pow(diff, 2) for diff in diff_B):
+				sa = sorted_states[merge_pairs[p0][0] - 1]
+				sb = sorted_states[merge_pairs[p1][0] - 1]
+				diff_a = sa.mu - s0.mu
+				diff_b = sb.mu - sb.mu
+				if sum(pow(diff, 2) for diff in diff_a) < sum(pow(diff, 2) for diff in diff_b):
 					el_to_del.append(p0)
 				else:
 					el_to_del.append(p1)
@@ -490,16 +486,16 @@ def relabel_states_2D(all_the_labels, states_list):
 	with open('final_states.txt', 'w') as f:
 		print('#center_coords, semiaxis, fraction_of_data', file=f)
 		for s in updated_states:
-			C = s.mu
-			centers = '[' + str(C[0]) + ', '
-			for ck in C[1:-1]:
+			center = s.mu
+			centers = '[' + str(center[0]) + ', '
+			for ck in center[1:-1]:
 				centers += str(ck) + ', '
-			centers += str(C[-1]) + ']'
-			A = s.a
-			axis = '[' + str(A[0]) + ', '
-			for ck in A[1:-1]:
+			centers += str(center[-1]) + ']'
+			a = s.area
+			axis = '[' + str(a[0]) + ', '
+			for ck in a[1:-1]:
 				axis += str(ck) + ', '
-			axis += str(A[-1]) + ']'
+			axis += str(a[-1]) + ']'
 			print(centers, axis, s.perc, file=f)
 
 	return updated_labels, updated_states
@@ -509,8 +505,8 @@ def assign_single_frames(all_the_labels, tau_window):
 	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
 	return new_labels
 
-def plot_TRA_figure(number_of_states, fraction_0, PAR, show_plot):
-	t_conv, units = PAR.t_conv, PAR.t_units
+def plot_TRA_figure(number_of_states, fraction_0, par, show_plot):
+	t_conv, units = par.t_conv, par.t_units
 	number_of_states = np.array(number_of_states)
 	x = np.array(number_of_states.T[0])*t_conv
 	number_of_states = number_of_states[:, 1:]
@@ -561,18 +557,18 @@ def print_mol_labels_fbf_gro(all_the_labels):
 			# Join the elements of 'labels' using a space as the separator and write to the file.
 			print(' '.join(map(str, labels)), file=f)
 
-def print_signal_with_labels(M, all_the_labels):
+def print_signal_with_labels(m, all_the_labels):
 	with open('signal_with_labels.dat', 'w+') as f:
-		if M.shape[2] == 2:
+		if m.shape[2] == 2:
 				print("Signal 1 Signal 2 Cluster Frame", file=f)
 		else:
 				print("Signal 1 Signal 2 Signal 3 Cluster Frame", file=f)
 		for t in range(all_the_labels.shape[1]):
 			for n in range(all_the_labels.shape[0]):
-				if M.shape[2] == 2:
-					print(M[n][t][0], M[n][t][1], int(all_the_labels[n][t]),t+1, file=f)
+				if m.shape[2] == 2:
+					print(m[n][t][0], m[n][t][1], int(all_the_labels[n][t]),t+1, file=f)
 				else:
-					print(M[n][t][0], M[n][t][1], M[n][t][2], int(all_the_labels[n][t]),t+1, file=f)
+					print(m[n][t][0], m[n][t][1], m[n][t][2], int(all_the_labels[n][t]),t+1, file=f)
 
 def print_mol_labels_fbf_xyz(all_the_labels):
 	print('* Print color IDs for Ovito...')
@@ -594,32 +590,32 @@ def print_mol_labels_fbf_lam(all_the_labels):
 			# Use np.savetxt to write the labels for each time step efficiently.
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
-def print_colored_trj_from_xyz(trj_file, all_the_labels, PAR):
+def print_colored_trj_from_xyz(trj_file, all_the_labels, par):
 	if os.path.exists(trj_file):
 		with open(trj_file, "r") as f:
 			tmp = [ x.split()  for x in f.readlines() ]
 
-		N = all_the_labels.shape[0]
-		T = all_the_labels.shape[1]
-		nlines = (N + 2)*T
+		n = all_the_labels.shape[0]
+		t = all_the_labels.shape[1]
+		nlines = (n + 2)*t
 
-		print('\t Removing the first', int(PAR.t_smooth/2) + PAR.t_delay, 'frames...')
-		for t in range(int(PAR.t_smooth/2) + PAR.t_delay):
-			for n in range(N + 2):
+		print('\t Removing the first', int(par.t_smooth/2) + par.t_delay, 'frames...')
+		for t in range(int(par.t_smooth/2) + par.t_delay):
+			for n in range(n + 2):
 				tmp.pop(0)
 
-		print('\t Removing the last', int((len(tmp) - nlines)/(N + 2)), 'frames...')
+		print('\t Removing the last', int((len(tmp) - nlines)/(n + 2)), 'frames...')
 		while len(tmp) > nlines:
 			tmp.pop(-1)
 
 		with open('colored_trj.xyz', "w+") as f:
 			i = 0
-			for t in range(T):
-				print(N, file=f)
+			for t in range(t):
+				print(n, file=f)
 				print(tmp[i + 1][0], file=f)
-				for n in range(N):
+				for n in range(n):
 					print(all_the_labels[n][t], tmp[i + 2 + n][1], tmp[i + 2 + n][2], tmp[i + 2 + n][3], file=f)
-				i += N + 2
+				i += n + 2
 	else:
 		print('No ' + trj_file + ' found for coloring the trajectory.')
 

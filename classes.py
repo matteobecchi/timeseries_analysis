@@ -16,22 +16,22 @@ import plotly.io as pio
 import plotly.express as px
 
 class State:
-	def __init__(self, mu, sigma, A):
+	def __init__(self, mu, sigma, area):
 		number_of_sigmas = 2.0 							# The amplitude of the fluctiations INSIDE a state
 		self.mu = mu 									# Mean of the Gaussian
 		self.sigma = sigma 								# Variance of the Gaussian
-		self.A = A 										# Area below the Gaussian
-		self.peak = A/sigma/np.sqrt(np.pi)				# Height of the Gaussian peak
+		self.area = area 								# Area below the Gaussian
+		self.peak = area/sigma/np.sqrt(np.pi)			# Height of the Gaussian peak
 		self.perc = 0 									# Fraction of data points classified in this state
 		self.th_inf = [mu - number_of_sigmas*sigma, -1]	# Lower thrashold of the state
 		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
 
 class State_multi:
-	def __init__(self, mu, sigma, A):
+	def __init__(self, mu, sigma, area):
 		number_of_sigmas = 2.0 				# The amplitude of the fluctiations INSIDE a state
 		self.mu = mu 						# Mean of the Gaussians
 		self.sigma = sigma 					# Variance of the Gaussians
-		self.A = A 							# Area below the Gaussians
+		self.area = area 					# Area below the Gaussians
 		self.perc = 0 						# Fraction of data points classified in this state
 		self.a = number_of_sigmas*sigma		# Axes of the state
 
