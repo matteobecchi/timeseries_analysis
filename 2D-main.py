@@ -649,11 +649,8 @@ def full_output_analysis(m_raw: np.array, par: Parameters):
 	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
 def TRA_analysis(m_raw: np.array, par: Parameters, perform_anew: bool):
-	### If you want to change the range of the parameters tested, this is the point ###
-	t_smooth_max = 5 	# 5
-	num_of_points = 20 	# 20
-	tau_window_list, t_smooth_list = param_grid(m_raw[0].shape[1], t_smooth_max, num_of_points)
-
+	tau_window_list, t_smooth_list = param_grid(par, m_raw[0].shape[1])
+	
 	if perform_anew:
 		### If the analysis hat to be performed anew ###
 		number_of_states = []
@@ -683,7 +680,7 @@ def TRA_analysis(m_raw: np.array, par: Parameters, perform_anew: bool):
 
 def main():
 	m_raw, par = all_the_input_stuff()
-	TRA_analysis(m_raw, par, False)
+	TRA_analysis(m_raw, par, True)
 	full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":

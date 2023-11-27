@@ -30,7 +30,17 @@ class Parameters:
 		if len(lines) < 6 or len(lines) > 7:
 			print('\tinput_parameters.txt file wrongly formatted.')
 
+		self.t_smooth = 1
+		self.t_delay = 1
+		self.t_conv = 1
+		self.t_units = '[frames]'
+		self.example_ID = 0
 		self.bins = 'auto'
+		self.num_tau_w = 20
+		self.min_tau_w = 2
+		self.max_tau_w = None
+		self.min_t_smooth = 1
+		self.max_t_smooth = 5
 
 		for line in lines:
 			key, value = [ s for s in line.strip().split('\t') if s != '']
@@ -46,6 +56,15 @@ class Parameters:
 				self.t_units = r'[' + str(value) + r']'
 			elif key == 'example_ID':
 				self.example_ID = int(value)
-			if key == 'bins':
+			elif key == 'bins':
 				self.bins = int(value)
-				print('\tWARNING: overriding \'auto\' histogram binning')
+			elif key == 'num_tau_w':
+				self.num_tau_w = int(value)
+			elif key == 'min_tau_w':
+				self.min_tau_w = int(value)
+			elif key == 'max_tau_w':
+				self.max_tau_w = int(value)
+			elif key == 'min_t_smooth':
+				self.min_t_smooth = int(value)
+			elif key == 'max_t_smooth':
+				self.max_t_smooth = int(value)

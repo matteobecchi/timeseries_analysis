@@ -123,15 +123,15 @@ def plot_histo(ax, counts: np.array, bins: np.array):
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
-def param_grid(total_time: int, t_smooth_max: int, n_windows: int):
-	### The following is to have num_of_points log-spaced points
-	base = (total_time - t_smooth_max)**(1/n_windows)
-	tmp = [ int(base**n) + 1 for n in range(1, n_windows + 1) ]
+def param_grid(par: Parameters, trj_len: int):
+	if par.max_tau_w == None:
+		par.max_tau_w = trj_len - par.max_t_smooth
+	tmp = np.geomspace(par.min_tau_w, par.max_tau_w, num=par.num_tau_w, dtype=int)
 	tau_window = []
 	[ tau_window.append(x) for x in tmp if x not in tau_window ]
 	print('* Tau_w used:', tau_window)
 
-	t_smooth = [ ts for ts in range(1, t_smooth_max + 1) ]
+	t_smooth = [ ts for ts in range(par.min_t_smooth, par.max_t_smooth + 1) ]
 	print('* t_smooth used:', t_smooth)
 
 	return tau_window, t_smooth

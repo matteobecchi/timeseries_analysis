@@ -15,13 +15,18 @@ From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`.
 
 ## input_parameters.txt
 The keyword and the value must be separated by tab. 
-* `tau_window`: the length of the time window (in number of frames). 
-* `t_smooth`: the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. 
-* `tau_delay`: is for ignoring the first tau_delay frames of the trajectory. By default, use 0. 
-* `t_conv`: converts number of frames in time units. By default, use 1. 
-* `time_units`: a string indicating the time units (e.g., `ns`). 
-* `example_ID`: plots the trajectory of the molecule with this ID, colored according to the identified states. By default, use 0. 
-* An **optional** parameter, `bins`, the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
+* `tau_window` (int): the length of the time window (in number of frames). 
+* `t_smooth` (int, optional): the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. Default is 1. 
+* `tau_delay` (int, optional): is for ignoring the first tau_delay frames of the trajectory. Default is 0. 
+* `t_conv` (int, optional): converts number of frames in time units. Default is 1. 
+* `time_units` (str, optional): a string indicating the time units. Default is `frames`.  
+* `example_ID` (int, optional): plots the trajectory of the molecule with this ID, colored according to the identified states. Default is 0. 
+* `bins` (int, optional): the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
+* `num_tau_w` (int, optional): the number of different tau_window values tested. Default is 20. 
+* `min_tau_w` (int, optional): the smaller tau_window value tested. It has to be larger that 1. Default is 2. 
+* `max_tau_w` (int, optional): the larger tau_window value tested. It has to be larger that 2. Default is the largest possible window. 
+* `min_t_smooth` (int, optional): the smaller t_smooth value tested. It has to be larger that 0. Default is 1. 
+* `max_t_smooth` (int, optional): the larger t_smooth value tested. It has to be larger that 0. Default is 5. 
 
 ## Output
 The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 5 frames) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length). 
