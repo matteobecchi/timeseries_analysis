@@ -1,8 +1,6 @@
-from classes import *
 from functions import *
 
 output_file = 'states_output.txt'
-colormap = 'viridis'
 show_plot = False
 
 def all_the_input_stuff():
@@ -44,7 +42,7 @@ def all_the_input_stuff():
 	# Return required data for further analysis.
 	return tmp_m_raw, par
 
-def preparing_the_data(tmp_m_raw, par):
+def preparing_the_data(tmp_m_raw: np.array, par: Parameters):
 	tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
 	m = []
@@ -75,7 +73,7 @@ def preparing_the_data(tmp_m_raw, par):
 
 	return m, m_limits
 
-def plot_input_data(m, par, filename):
+def plot_input_data(m: np.array, par: Parameters, filename: str):
 	tau_window, tau_delay, t_conv, t_units, bins = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.bins
 	bin_selection = []
 	counts_selection = []
@@ -139,7 +137,7 @@ def plot_input_data(m, par, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(m, m_limits, bins, filename):
+def gauss_fit_max(m: np.array, m_limits: list, bins, filename: str):
 	print('* Gaussian fit...')
 	flat_m = m.reshape((m.shape[0]*m.shape[1], m.shape[2]))
 
@@ -357,7 +355,7 @@ def gauss_fit_max(m, m_limits, bins, filename):
 
 	return state
 
-def find_stable_trj(m, tau_window, state, all_the_labels, offset):
+def find_stable_trj(m: np.array, tau_window: int, state: State_multi, all_the_labels: np.array, offset: int):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
@@ -398,7 +396,7 @@ def find_stable_trj(m, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return m2, fw, one_last_state
 
-def iterative_search(m, m_limits, par, name):
+def iterative_search(m: np.array, m_limits: list, par: Parameters, name: str):
 	tau_w, bins = par.tau_w, par.bins
 
 	# Initialize an array to store labels for each window.
@@ -439,8 +437,9 @@ def iterative_search(m, m_limits, par, name):
 	all_the_labels, list_of_states = relabel_states_2D(all_the_labels, states_list)
 	return all_the_labels, list_of_states, one_last_state
 
-def plot_cumulative_figure(m, par, all_the_labels, list_of_states, filename):
+def plot_cumulative_figure(m: np.array, par: Parameters, all_the_labels: np.array, list_of_states: list, filename: str):
 	print('* Printing cumulative figure...')
+	colormap = 'viridis'
 	n_states = len(list_of_states) + 1
 	x = plt.get_cmap(colormap, n_states)
 	colors_from_cmap = x(np.arange(0, 1, 1/n_states))
@@ -528,7 +527,8 @@ def plot_cumulative_figure(m, par, all_the_labels, list_of_states, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def plot_one_trajectory(m, par, all_the_labels, filename):
+def plot_one_trajectory(m: np.array, par: Parameters, all_the_labels: np.array, filename: str):
+	colormap = 'viridis'
 	tau_window, tau_delay, t_conv, t_units, example_ID = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_ID
 
 	# Get the signal of the example particle
@@ -554,7 +554,7 @@ def plot_one_trajectory(m, par, all_the_labels, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def timeseries_analysis(m_raw, par):
+def timeseries_analysis(m_raw: np.array, par: Parameters):
 	tau_w, t_smooth = par.tau_w, par.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
 	m, m_limits = preparing_the_data(m_raw, par)
@@ -580,7 +580,7 @@ def timeseries_analysis(m_raw, par):
 	else:
 		return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(m, all_the_labels, tau_window):
+def compute_cluster_mean_seq(m: np.array, all_the_labels: np.array, tau_window: int):
 	if m.shape[2] > 2:
 		return
 
@@ -606,7 +606,7 @@ def compute_cluster_mean_seq(m, all_the_labels, tau_window):
 
 	# Create a color palette
 	palette = []
-	cmap = plt.get_cmap(colormap, np.unique(all_the_labels).size)
+	cmap = plt.get_cmap('viridis', np.unique(all_the_labels).size)
 	palette.append(matplotlib.colors.rgb2hex(cmap(0)))
 	for i in range(1, cmap.N):
 		rgba = cmap(i)
@@ -628,7 +628,7 @@ def compute_cluster_mean_seq(m, all_the_labels, tau_window):
 		plt.show()
 	fig.savefig('output_figures/Fig4.png', dpi=600)
 
-def full_output_analysis(m_raw, par):
+def full_output_analysis(m_raw: np.array, par: Parameters):
 	tau_w = par.tau_w
 	m, m_limits = preparing_the_data(m_raw, par)
 	plot_input_data(m, par, 'Fig0')
@@ -642,12 +642,13 @@ def full_output_analysis(m_raw, par):
 	all_the_labels = assign_single_frames(all_the_labels, tau_w)
 	plot_cumulative_figure(m, par, all_the_labels, list_of_states, 'Fig2')
 	plot_one_trajectory(m, par, all_the_labels, 'Fig3')
+	sankey(all_the_labels, [0, 1000, 2000, 3000], par, 'Fig5', show_plot)
 
 	print_mol_labels_fbf_xyz(all_the_labels)
 	print_signal_with_labels(m, all_the_labels)
 	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
-def TRA_analysis(m_raw, par, perform_anew):
+def TRA_analysis(m_raw: np.array, par: Parameters, perform_anew: bool):
 	### If you want to change the range of the parameters tested, this is the point ###
 	t_smooth_max = 5 	# 5
 	num_of_points = 20 	# 20
@@ -682,7 +683,7 @@ def TRA_analysis(m_raw, par, perform_anew):
 
 def main():
 	m_raw, par = all_the_input_stuff()
-	TRA_analysis(m_raw, par, True)
+	TRA_analysis(m_raw, par, False)
 	full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":

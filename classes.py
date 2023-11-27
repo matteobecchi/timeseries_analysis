@@ -1,22 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import sys
-import os
-from pylab import *
-import copy
-import math
-import scipy.optimize
-from scipy.signal import savgol_filter
-from scipy.signal import butter,filtfilt
-from matplotlib.colors import LogNorm
-import plotly
-plotly.__version__
-import plotly.graph_objects as go
-import plotly.io as pio
-import plotly.express as px
 
 class State:
-	def __init__(self, mu, sigma, area):
+	def __init__(self, mu: float, sigma: float, area: float):
 		number_of_sigmas = 2.0 							# The amplitude of the fluctiations INSIDE a state
 		self.mu = mu 									# Mean of the Gaussian
 		self.sigma = sigma 								# Variance of the Gaussian
@@ -27,7 +12,7 @@ class State:
 		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
 
 class State_multi:
-	def __init__(self, mu, sigma, area):
+	def __init__(self, mu: np.array, sigma: np.array, area: np.array):
 		number_of_sigmas = 2.0 				# The amplitude of the fluctiations INSIDE a state
 		self.mu = mu 						# Mean of the Gaussians
 		self.sigma = sigma 					# Variance of the Gaussians
@@ -36,7 +21,7 @@ class State_multi:
 		self.a = number_of_sigmas*sigma		# Axes of the state
 
 class Parameters:
-	def __init__(self, input_file):
+	def __init__(self, input_file: str):
 		try:
 			with open(input_file, 'r') as file:
 				lines = file.readlines()

@@ -1,8 +1,6 @@
-from classes import *
 from functions import *
 
 output_file = 'states_output.txt'
-colormap = 'viridis'
 show_plot = False
 
 def all_the_input_stuff():
@@ -37,7 +35,7 @@ def all_the_input_stuff():
 
 	return m_raw, par
 
-def preparing_the_data(m_raw, par):
+def preparing_the_data(m_raw: np.array, par: Parameters):
 	tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
 	# Apply filtering on the data
@@ -67,7 +65,7 @@ def preparing_the_data(m_raw, par):
 
 	return m, [sig_min, sig_max]
 
-def plot_input_data(m, par, filename):
+def plot_input_data(m: np.array, par: Parameters, filename: str):
 	# Extract relevant parameters from par
 	tau_window, tau_delay, t_conv, t_units = par.tau_w, par.t_delay, par.t_conv, par.t_units
 
@@ -101,7 +99,7 @@ def plot_input_data(m, par, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(m, bins, filename):
+def gauss_fit_max(m: np.array, bins: int, filename: str):
 	print('* Gaussian fit...')
 	flat_m = m.flatten()
 
@@ -249,7 +247,7 @@ def gauss_fit_max(m, bins, filename):
 
 	return state
 
-def find_stable_trj(m, tau_window, state, all_the_labels, offset):
+def find_stable_trj(m: np.array, tau_window: int, state: State, all_the_labels: np.array, offset: int):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
@@ -288,7 +286,7 @@ def find_stable_trj(m, tau_window, state, all_the_labels, offset):
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
 	return m2, fw, one_last_state
 
-def iterative_search(m, par, name):
+def iterative_search(m: np.array, par: Parameters, name: str):
 	tau_w, bins = par.tau_w, par.bins
 	
 	# Initialize an array to store labels for each window.
@@ -325,7 +323,7 @@ def iterative_search(m, par, name):
 	atl, lis = relabel_states(all_the_labels, states_list)
 	return atl, lis, one_last_state
 
-def plot_cumulative_figure(m, par, list_of_states, filename):
+def plot_cumulative_figure(m: np.array, par: Parameters, list_of_states: list, filename: str):
 	print('* Printing cumulative figure...')
 	tau_window, tau_delay, t_conv, t_units, bins = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.bins
 	n_states = len(list_of_states)
@@ -343,7 +341,7 @@ def plot_cumulative_figure(m, par, list_of_states, filename):
 
 	# Create a color palette for plotting states
 	palette = []
-	cmap = plt.get_cmap(colormap, n_states + 1)
+	cmap = plt.get_cmap('viridis', n_states + 1)
 	for i in range(1, cmap.N):
 		rgba = cmap(i)
 		palette.append(matplotlib.colors.rgb2hex(rgba))
@@ -388,7 +386,7 @@ def plot_cumulative_figure(m, par, list_of_states, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def plot_one_trajectory(m, par, all_the_labels, filename):
+def plot_one_trajectory(m: np.array, par: Parameters, all_the_labels: list, filename: str):
 	tau_window, tau_delay, t_conv, t_units, example_ID = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_ID
 	# Get the signal of the example particle
 	signal = m[example_ID][:all_the_labels.shape[1]]
@@ -401,7 +399,7 @@ def plot_one_trajectory(m, par, all_the_labels, filename):
 	fig, ax = plt.subplots()
 
 	# Create a colormap to map colors to the labels of the example particle
-	cmap = plt.get_cmap(colormap, np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
+	cmap = plt.get_cmap('viridis', np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
 	color = all_the_labels[example_ID]
 	ax.plot(times, signal, c='black', lw=0.1)
 
@@ -418,87 +416,7 @@ def plot_one_trajectory(m, par, all_the_labels, filename):
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def sankey(all_the_labels, frame_list, aver_window, t_conv, filename):
-	print('* Computing and plotting the averaged Sankey diagrams...')
-
-	# Check if the required frame range is within the bounds of the input data.
-	if frame_list[-1] + aver_window > all_the_labels.shape[1]:
-		print('\tERROR: the required frame range is out of bound.')
-		return
-
-	# Determine the number of unique states in the data.
-	n_states = np.unique(all_the_labels).size
-
-	# Create arrays to store the source, target, and value data for the Sankey diagram.
-	source = np.empty((frame_list.size - 1) * n_states**2)
-	target = np.empty((frame_list.size - 1) * n_states**2)
-	value = np.empty((frame_list.size - 1) * n_states**2)
-
-	# Initialize a counter variable.
-	c = 0
-
-	# Create temporary lists to store node labels for the Sankey diagram.
-	tmp_label1 = []
-	tmp_label2 = []
-
-	# Loop through the frame_list and calculate the transition matrix for each time window.
-	for i, t0 in enumerate(frame_list[:-1]):
-		# Calculate the time jump for the current time window.
-		t_jump = frame_list[i + 1] - frame_list[i]
-
-		# Initialize a matrix to store the transition counts between states.
-		T = np.zeros((n_states, n_states))
-	    
-		# Iterate through the current time window and increment the transition counts in T.
-		for t in range(t0, t0 + aver_window):
-			for label in all_the_labels:
-				T[int(label[t])][int(label[t + t_jump])] += 1
-
-		# Store the source, target, and value for the Sankey diagram based on T.
-		for n1 in range(len(T)):
-			for n2 in range(len(T[n1])):
-				source[c] = n1 + i * n_states
-				target[c] = n2 + (i + 1) * n_states
-				value[c] = T[n1][n2]
-				c += 1
-
-		# Calculate the starting and ending fractions for each state and store node labels.
-		for n in range(n_states):
-			starting_fraction = np.sum(T[n]) / np.sum(T)
-			ending_fraction = np.sum(T.T[n]) / np.sum(T)
-			if i == 0:
-				tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction * 100) + '%')
-			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction * 100) + '%')
-
-	# Concatenate the temporary labels to create the final node labels.
-	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
-
-	# Generate a color palette for the Sankey diagram.
-	palette = []
-	cmap = plt.get_cmap(colormap, n_states)
-	for i in range(cmap.N):
-		rgba = cmap(i)
-		palette.append(matplotlib.colors.rgb2hex(rgba))
-
-	# Tile the color palette to match the number of frames.
-	color = np.tile(palette, frame_list.size)
-
-	# Create dictionaries to define the Sankey diagram nodes and links.
-	node = dict(label=label, pad=30, thickness=20, color=color)
-	link = dict(source=source, target=target, value=value)
-
-	# Create the Sankey diagram using Plotly.
-	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
-	fig = go.Figure(Data)
-
-	# Add the title with the time information.
-	fig.update_layout(title='Frames: ' + str(frame_list * t_conv) + ' ns')
-
-	if show_plot:
-		fig.show()
-	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
-
-def timeseries_analysis(m_raw, par):
+def timeseries_analysis(m_raw: np.array, par: Parameters):
 	tau_w, t_smooth = par.tau_w, par.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
 	m, m_range = preparing_the_data(m_raw, par)
@@ -527,7 +445,7 @@ def timeseries_analysis(m_raw, par):
 	else:
 		return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(m, all_the_labels, tau_window):
+def compute_cluster_mean_seq(m: np.array, all_the_labels: np.array, tau_window: int):
 	# Initialize lists to store cluster means and standard deviations
 	center_list = []
 	std_list = []
@@ -551,7 +469,7 @@ def compute_cluster_mean_seq(m, all_the_labels, tau_window):
 
 	# Create a color palette
 	palette = []
-	cmap = plt.get_cmap(colormap, np.unique(all_the_labels).size)
+	cmap = plt.get_cmap('viridis', np.unique(all_the_labels).size)
 	palette.append(matplotlib.colors.rgb2hex(cmap(0)))
 	for i in range(1, cmap.N):
 		rgba = cmap(i)
@@ -575,7 +493,7 @@ def compute_cluster_mean_seq(m, all_the_labels, tau_window):
 		plt.show()
 	fig.savefig('output_figures/Fig4.png', dpi=600)
 
-def full_output_analysis(m_raw, par):
+def full_output_analysis(m_raw: np.array, par: Parameters):
 	tau_w = par.tau_w
 	m, m_range = preparing_the_data(m_raw, par)
 	plot_input_data(m, par, 'Fig0')
@@ -592,14 +510,12 @@ def full_output_analysis(m_raw, par):
 
 	plot_cumulative_figure(m, par, list_of_states, 'Fig2')
 	plot_one_trajectory(m, par, all_the_labels, 'Fig3')
+	# sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', show_plot)
 
 	print_mol_labels_fbf_xyz(all_the_labels)
 	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
-	# for i, frame_list in enumerate([np.array([0, 1]), np.array([0, 100, 200])]):
-	# 	sankey(all_the_labels, frame_list, 10, par[3], 'Fig4_' + str(i))
-
-def TRA_analysis(m_raw, par, perform_anew):
+def TRA_analysis(m_raw: np.array, par: Parameters, perform_anew: bool):
 	### If you want to change the range of the parameters tested, this is the point ###
 	t_smooth_max = 5	# 5
 	num_of_points = 20	# 20

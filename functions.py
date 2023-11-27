@@ -6,14 +6,14 @@ from pylab import *
 import copy
 import math
 import scipy.optimize
-from scipy.signal import savgol_filter
-from scipy.signal import butter,filtfilt
-from matplotlib.colors import LogNorm
+import scipy.signal
 import plotly
 plotly.__version__
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
+
+from classes import *
 
 def read_input_data():
 	# Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
@@ -29,7 +29,7 @@ def read_input_data():
 	else:
 		return data_dir
 
-def read_data(filename):
+def read_data(filename: str):
 	# Check if the filename ends with a supported format.
 	if filename.endswith(('.npz', '.npy', '.txt')):
 		try:
@@ -51,21 +51,21 @@ def read_data(filename):
 		print('\tERROR: unsupported format for input file.')
 		return None
 
-def butter_lowpass_filter(x, cutoff, fs, order):
+def butter_lowpass_filter(x: np.array, cutoff: float, fs: float, order: int):
 	nyq = 0.5
 	normal_cutoff = cutoff / nyq
-	b, a = butter(order, normal_cutoff, btype='low', analog=False)
-	y = filtfilt(b, a, x)
+	b, a = scipy.signal.butter(order, normal_cutoff, btype='low', analog=False)
+	y = scipy.signal.filtfilt(b, a, x)
 	return y
 
-def Savgol_filter(m, window):
+def Savgol_filter(m: np.array, window: int):
 	# Step 1: Set the polynomial order for the Savitzky-Golay filter.
 	poly_order = 2
 
 	# Step 2: Apply the Savitzky-Golay filter to each row (x) in the input data matrix 'm'.
 	# The result is stored in a temporary array 'tmp'.
 	# 'window' is the window size for the filter.
-	tmp = np.array([savgol_filter(x, window, poly_order) for x in m])
+	tmp = np.array([scipy.signal.savgol_filter(x, window, poly_order) for x in m])
 
 	# Step 3: Since the Savitzky-Golay filter operates on a sliding window, 
 	# it introduces edge artifacts at the beginning and end of each row.
@@ -73,7 +73,7 @@ def Savgol_filter(m, window):
 	# The amount of removal on each side is half of the 'window' value, converted to an integer.
 	return tmp[:, int(window/2):-int(window/2)]
 
-def moving_average(data, window):
+def moving_average(data: np.array, window: int):
 	# Step 1: Create a NumPy array 'weights' with the values 1.0 repeated 'window' times.
 	# Then, divide each element of 'weights' by the 'window' value to get the average weights.
 	weights = np.ones(window) / window
@@ -88,7 +88,7 @@ def moving_average(data, window):
 	else:
 		raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
-def moving_average_2D(data, l):
+def moving_average_2D(data: np.array, l: int):
 	if l % 2 == 0:								# Check if L is an odd number
 		raise ValueError("L must be an odd number.")
 	half_width = (l - 1) // 2					# Calculate the half-width of the moving window
@@ -104,7 +104,7 @@ def moving_average_2D(data, l):
 
 	return result
 
-def normalize_array(x):
+def normalize_array(x: np.array):
 	# Step 1: Calculate the mean value and the standard deviation of the input array 'x'.
 	mean = np.mean(x)
 	stddev = np.std(x)
@@ -118,12 +118,12 @@ def normalize_array(x):
 	# The returned values can be useful for further processing or to revert the normalization if needed.
 	return tmp, mean, stddev
 
-def plot_histo(ax, counts, bins):
+def plot_histo(ax, counts: np.array, bins: np.array):
 	ax.stairs(counts, bins, fill=True)
 	ax.set_xlabel(r'Normalized signal')
 	ax.set_ylabel(r'Probability distribution')
 
-def param_grid(total_time, t_smooth_max, n_windows):
+def param_grid(total_time: int, t_smooth_max: int, n_windows: int):
 	### The following is to have num_of_points log-spaced points
 	base = (total_time - t_smooth_max)**(1/n_windows)
 	tmp = [ int(base**n) + 1 for n in range(1, n_windows + 1) ]
@@ -136,16 +136,16 @@ def param_grid(total_time, t_smooth_max, n_windows):
 
 	return tau_window, t_smooth
 
-def sigmoidal(x, a, b, alpha):
+def sigmoidal(x: float, a: float, b: float, alpha: float):
 	return b + a/(1 + np.exp(x*alpha))
 
-def Gaussian(x, m, sigma, area):
+def Gaussian(x: float, m: float, sigma: float, area: float):
 	# "m" is the Gaussians' mean value
 	# "sigma" is the Gaussians' standard deviation
 	# "a" is the Gaussian area
 	return np.exp(-((x - m)/sigma)**2)*area/(np.sqrt(np.pi)*sigma)
 
-def Gaussian_2D(r, mx, my, sigmax, sigmay, area):
+def Gaussian_2D(r: np.array, mx: float, my: float, sigmax: float, sigmay: float, area: float):
 	# "m" is the Gaussians' mean value (2d array)
 	# "sigma" is the Gaussians' standard deviation matrix
 	# "a" is the Gaussian area
@@ -156,7 +156,7 @@ def Gaussian_2D(r, mx, my, sigmax, sigmay, area):
 	gauss = np.exp(-arg)*area/norm
 	return gauss.ravel()
 
-def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, area):
+def Gaussian_2D_full(r: np.array, mx: float, my: float, sigmax: float, sigmay: float, sigmaxy: float, area: float):
 	# "m" is the Gaussians' mean value (2d array)
 	# "sigma" is the Gaussians' standard deviation matrix
 	# "area" is the Gaussian area
@@ -167,7 +167,7 @@ def Gaussian_2D_full(r, mx, my, sigmax, sigmay, sigmaxy, area):
 	gauss = np.exp(-arg)*area/norm
 	return gauss.ravel()
 
-def custom_fit(dim, max_ind, minima, edges, counts, gap, m_limits):
+def custom_fit(dim: int, max_ind: int, minima: list, edges: list, counts: list, gap: int, m_limits: list):
 	# Initialize flag and goodness variables
 	flag = 1
 	goodness = 5
@@ -220,7 +220,7 @@ def custom_fit(dim, max_ind, minima, edges, counts, gap, m_limits):
 		popt = []
 	return flag, goodness, popt
 
-def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
+def fit_2D(max_ind: int, minima: list, xedges: list, yedges: list, counts: list, gap: int):
 	# Initialize flag and goodness variables
 	flag = 1
 	goodness = 11
@@ -280,7 +280,7 @@ def fit_2D(max_ind, minima, xedges, yedges, counts, gap):
 		popt = []
 	return flag, goodness, popt
 
-def relabel_states(all_the_labels, states_list):
+def relabel_states(all_the_labels: np.array, states_list: list):
 	# Step 1: Remove empty states from the 'list_of_states' and keep only non-empty states.
 	# A non-empty state is one where the third element (index 2) is not equal to 0.0.
 	list1 = [state for state in states_list if state.perc != 0.0]
@@ -308,7 +308,7 @@ def relabel_states(all_the_labels, states_list):
 
 	return tmp2, list1
 
-def set_final_states(list_of_states, all_the_labels, m_range):
+def set_final_states(list_of_states: list, all_the_labels: np.array, m_range: list):
 	# Step 1: Define a criterion to determine which states are considered "final."
 	# Iterate over pairs of states to compare their properties.
 	old_to_new_map = []
@@ -400,7 +400,7 @@ def set_final_states(list_of_states, all_the_labels, m_range):
 	# Step 5: Return the 'list_of_states' as the output of the function.
 	return list_of_states, new_labels
 
-def relabel_states_2D(all_the_labels, states_list):
+def relabel_states_2D(all_the_labels: np.array, states_list: list):
 	### Step 1: sort according to the relevance
 	sorted_indices = [index + 1 for index, _ in sorted(enumerate(states_list), key=lambda x: x[1].perc, reverse=True)]
 	sorted_states = sorted(states_list, key=lambda x: x.perc, reverse=True)
@@ -500,12 +500,12 @@ def relabel_states_2D(all_the_labels, states_list):
 
 	return updated_labels, updated_states
 
-def assign_single_frames(all_the_labels, tau_window):
+def assign_single_frames(all_the_labels: np.array, tau_window: int):
 	print('* Assigning labels to the single frames...')
 	new_labels = np.repeat(all_the_labels, tau_window, axis=1)
 	return new_labels
 
-def plot_TRA_figure(number_of_states, fraction_0, par, show_plot):
+def plot_TRA_figure(number_of_states: np.array, fraction_0: np.array, par: Parameters, show_plot: bool):
 	t_conv, units = par.t_conv, par.t_units
 	number_of_states = np.array(number_of_states)
 	x = np.array(number_of_states.T[0])*t_conv
@@ -550,14 +550,89 @@ def plot_TRA_figure(number_of_states, fraction_0, par, show_plot):
 		plt.show()
 	fig.savefig('Time_resolution_analysis.png', dpi=600)
 
-def print_mol_labels_fbf_gro(all_the_labels):
+def sankey(all_the_labels: np.array, frame_list: np.array, par: Parameters, filename: str, show_plot: bool):
+	print('* Computing and plotting the Sankey diagram...')
+
+	# Determine the number of unique states in the data.
+	frame_list = np.array(frame_list)
+	n_states = np.unique(all_the_labels).size
+
+	# Create arrays to store the source, target, and value data for the Sankey diagram.
+	source = np.empty((frame_list.size - 1) * n_states**2)
+	target = np.empty((frame_list.size - 1) * n_states**2)
+	value = np.empty((frame_list.size - 1) * n_states**2)
+
+	# Initialize a counter variable.
+	c = 0
+
+	# Create temporary lists to store node labels for the Sankey diagram.
+	tmp_label1 = []
+	tmp_label2 = []
+
+	# Loop through the frame_list and calculate the transition matrix for each time window.
+	for i, t0 in enumerate(frame_list[:-1]):
+		# Calculate the time jump for the current time window.
+		t_jump = frame_list[i + 1] - frame_list[i]
+
+		# Initialize a matrix to store the transition counts between states.
+		T = np.zeros((n_states, n_states))
+	    
+		# Iterate through the current time window and increment the transition counts in T.
+		for label in all_the_labels:
+			T[int(label[t0])][int(label[t0 + t_jump])] += 1
+
+		# Store the source, target, and value for the Sankey diagram based on T.
+		for n1 in range(len(T)):
+			for n2 in range(len(T[n1])):
+				source[c] = n1 + i * n_states
+				target[c] = n2 + (i + 1) * n_states
+				value[c] = T[n1][n2]
+				c += 1
+
+		# Calculate the starting and ending fractions for each state and store node labels.
+		for n in range(n_states):
+			starting_fraction = np.sum(T[n]) / np.sum(T)
+			ending_fraction = np.sum(T.T[n]) / np.sum(T)
+			if i == 0:
+				tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction * 100) + '%')
+			tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction * 100) + '%')
+
+	# Concatenate the temporary labels to create the final node labels.
+	label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
+
+	# Generate a color palette for the Sankey diagram.
+	palette = []
+	cmap = plt.get_cmap('viridis', n_states)
+	for i in range(cmap.N):
+		rgba = cmap(i)
+		palette.append(matplotlib.colors.rgb2hex(rgba))
+
+	# Tile the color palette to match the number of frames.
+	color = np.tile(palette, frame_list.size)
+
+	# Create dictionaries to define the Sankey diagram nodes and links.
+	node = dict(label=label, pad=30, thickness=20, color=color)
+	link = dict(source=source, target=target, value=value)
+
+	# Create the Sankey diagram using Plotly.
+	Data = go.Sankey(link=link, node=node, arrangement="perpendicular")
+	fig = go.Figure(Data)
+
+	# Add the title with the time information.
+	fig.update_layout(title='Frames: ' + str(frame_list * par.t_conv) + ' ns')
+
+	if show_plot:
+		fig.show()
+	fig.write_image('output_figures/' + filename + '.png', scale=5.0)
+
+def print_mol_labels_fbf_gro(all_the_labels: np.array):
 	print('* Print color IDs for Ovito...')
 	with open('all_cluster_IDs_gro.dat', 'w') as f:
 		for labels in all_the_labels:
 			# Join the elements of 'labels' using a space as the separator and write to the file.
 			print(' '.join(map(str, labels)), file=f)
 
-def print_signal_with_labels(m, all_the_labels):
+def print_signal_with_labels(m: np.array, all_the_labels: np.array):
 	with open('signal_with_labels.dat', 'w+') as f:
 		if m.shape[2] == 2:
 				print("Signal 1 Signal 2 Cluster Frame", file=f)
@@ -570,7 +645,7 @@ def print_signal_with_labels(m, all_the_labels):
 				else:
 					print(m[n][t][0], m[n][t][1], m[n][t][2], int(all_the_labels[n][t]),t+1, file=f)
 
-def print_mol_labels_fbf_xyz(all_the_labels):
+def print_mol_labels_fbf_xyz(all_the_labels: np.array):
 	print('* Print color IDs for Ovito...')
 	with open('all_cluster_IDs_xyz.dat', 'w+') as f:
 		for t in range(all_the_labels.shape[1]):
@@ -580,7 +655,7 @@ def print_mol_labels_fbf_xyz(all_the_labels):
 			# Use np.savetxt to write the labels for each time step efficiently.
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
-def print_mol_labels_fbf_lam(all_the_labels):
+def print_mol_labels_fbf_lam(all_the_labels: np.array):
 	print('* Print color IDs for Ovito...')
 	with open('all_cluster_IDs_lam.dat', 'w') as f:
 		for t in range(all_the_labels.shape[1]):
@@ -590,7 +665,7 @@ def print_mol_labels_fbf_lam(all_the_labels):
 			# Use np.savetxt to write the labels for each time step efficiently.
 			np.savetxt(f, all_the_labels[:, t], fmt='%d', comments='')
 
-def print_colored_trj_from_xyz(trj_file, all_the_labels, par):
+def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.array, par: Parameters):
 	if os.path.exists(trj_file):
 		with open(trj_file, "r") as f:
 			tmp = [ x.split()  for x in f.readlines() ]
