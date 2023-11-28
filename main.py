@@ -263,7 +263,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
             goodness_half -= 1
         perr = np.sqrt(np.diag(pcov))
         for j, par_err in enumerate(perr):
-            if par_err/popt_min[j] > 0.5:
+            if par_err/popt_half[j] > 0.5:
                 goodness_half -= 1
         if min_id1 - min_id0 < gap:
             goodness_half -= 1

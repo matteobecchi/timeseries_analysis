@@ -277,7 +277,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
         mu.append(popt[3*dim])
         sigma.append(popt[3*dim + 1])
         area.append(popt[3*dim + 2])
-    state = State_multi(np.array(mu), np.array(sigma), np.array(area))
+    state = StateMulti(np.array(mu), np.array(sigma), np.array(area))
 
     ### Plot the distribution and the fitted Gaussians
     if m.shape[2] == 2:
@@ -295,7 +295,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
         ax.add_image(im)
         ax.scatter(mu[0], mu[1], s=8.0, c='red')
         circle1 = Ellipse(tuple(mu), sigma[0], sigma[1], color='r', fill=False)
-        circle2 = Ellipse(tuple(mu), state.a[0], state.a[1], color='r', fill=False)
+        circle2 = Ellipse(tuple(mu), state.axis[0], state.axis[1], color='r', fill=False)
         ax.add_patch(circle1)
         ax.add_patch(circle2)
         ax.set_xlim(m_limits[0][0], m_limits[0][1])
@@ -317,7 +317,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
         ax[0][0].add_image(im)
         ax[0][0].scatter(mu[0], mu[1], s=8.0, c='red')
         circle1 = Ellipse(tuple([mu[0], mu[1]]), sigma[0], sigma[1], color='r', fill=False)
-        circle2 = Ellipse(tuple([mu[0], mu[1]]), state.a[0], state.a[1], color='r', fill=False)
+        circle2 = Ellipse(tuple([mu[0], mu[1]]), state.axis[0], state.axis[1], color='r', fill=False)
         ax[0][0].add_patch(circle1)
         ax[0][0].add_patch(circle2)
 
@@ -326,7 +326,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
         ax[0][1].add_image(im)
         ax[0][1].scatter(mu[2], mu[1], s=8.0, c='red')
         circle1 = Ellipse(tuple([mu[2], mu[1]]), sigma[2], sigma[1], color='r', fill=False)
-        circle2 = Ellipse(tuple([mu[2], mu[1]]), state.a[2], state.a[1], color='r', fill=False)
+        circle2 = Ellipse(tuple([mu[2], mu[1]]), state.axis[2], state.axis[1], color='r', fill=False)
         ax[0][1].add_patch(circle1)
         ax[0][1].add_patch(circle2)
 
@@ -335,7 +335,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
         ax[1][0].add_image(im)
         ax[1][0].scatter(mu[0], mu[2], s=8.0, c='red')
         circle1 = Ellipse(tuple([mu[0], mu[2]]), sigma[0], sigma[2], color='r', fill=False)
-        circle2 = Ellipse(tuple([mu[0], mu[2]]), state.a[0], state.a[2], color='r', fill=False)
+        circle2 = Ellipse(tuple([mu[0], mu[2]]), state.axis[0], state.axis[2], color='r', fill=False)
         ax[1][0].add_patch(circle1)
         ax[1][0].add_patch(circle2)
 
@@ -353,7 +353,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
 
     return state
 
-def find_stable_trj(m: np.ndarray, tau_window: int, state: State_multi, all_the_labels: np.ndarray, offset: int):
+def find_stable_trj(m: np.ndarray, tau_window: int, state: StateMulti, all_the_labels: np.ndarray, offset: int):
     print('* Finding stable windows...')
 
     # Calculate the number of windows in the trajectory
@@ -361,8 +361,8 @@ def find_stable_trj(m: np.ndarray, tau_window: int, state: State_multi, all_the_
 
     mask_unclassified = all_the_labels < 0.5
     m_reshaped = m[:, :number_of_windows*tau_window].reshape(m.shape[0], number_of_windows, tau_window, m.shape[2])
-    shifted = m_reshaped - state.mu
-    rescaled = shifted / state.a
+    shifted = m_reshaped - state.mean
+    rescaled = shifted / state.axis
     squared_distances = np.sum(rescaled**2, axis=3)
     mask_dist = np.max(squared_distances, axis=2) <= 1.0
     mask = mask_unclassified & mask_dist
@@ -435,7 +435,7 @@ def iterative_search(m: np.ndarray, m_limits: list[list[int]], par: Parameters, 
     all_the_labels, list_of_states = relabel_states_2D(all_the_labels, states_list)
     return all_the_labels, list_of_states, one_last_state
 
-def plot_cumulative_figure(m: np.ndarray, par: Parameters, all_the_labels: np.ndarray, list_of_states: list[State_multi], filename: str):
+def plot_cumulative_figure(m: np.ndarray, par: Parameters, all_the_labels: np.ndarray, list_of_states: list[StateMulti], filename: str):
     print('* Printing cumulative figure...')
     colormap = 'viridis'
     n_states = len(list_of_states) + 1
@@ -475,9 +475,9 @@ def plot_cumulative_figure(m: np.ndarray, par: Parameters, all_the_labels: np.nd
         for s_id, S in enumerate(list_of_states):
             u = np.linspace(0, 2*np.pi, 100)
             v = np.linspace(0, np.pi, 100)
-            x = S.a[0]*np.outer(np.cos(u), np.sin(v)) + S.mu[0]
-            y = S.a[1]*np.outer(np.sin(u), np.sin(v)) + S.mu[1]
-            z = S.a[2]*np.outer(np.ones_like(u), np.cos(v)) + S.mu[2]
+            x = S.axis[0]*np.outer(np.cos(u), np.sin(v)) + S.mean[0]
+            y = S.axis[1]*np.outer(np.sin(u), np.sin(v)) + S.mean[1]
+            z = S.axis[2]*np.outer(np.ones_like(u), np.cos(v)) + S.mean[2]
             ax.plot_surface(x, y, z, alpha=0.25, color=colors_from_cmap[s_id+1])
 
         # Set plot titles and axis labels
@@ -513,7 +513,7 @@ def plot_cumulative_figure(m: np.ndarray, par: Parameters, all_the_labels: np.nd
 
         # Plot the Gaussian distributions of states
         for s_id, S in enumerate(list_of_states):
-            ellipse = Ellipse(tuple(S.mu), S.a[0], S.a[1], color='black', fill=False)
+            ellipse = Ellipse(tuple(S.mean), S.axis[0], S.axis[1], color='black', fill=False)
             ax.add_patch(ellipse)
 
         # Set plot titles and axis labels
@@ -680,8 +680,14 @@ def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
     plot_TRA_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
 
 def main():
+    """
+    all_the_input_stuff() reads the data and the parameters
+    time_resolution_analysis() explore the parameter (tau_window, t_smooth) space.
+        Use 'False' to skip it.
+    full_output_analysis() performs a detailed analysis with the chosen parameters.
+    """
     m_raw, par = all_the_input_stuff()
-    TRA_analysis(m_raw, par, False)
+    TRA_analysis(m_raw, par, True)
     full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":

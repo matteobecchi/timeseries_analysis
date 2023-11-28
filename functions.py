@@ -1,9 +1,16 @@
+"""
+Should contains all the functions in common betwee the 2 codes.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
 from matplotlib.image import NonUniformImage
 from matplotlib.patches import Ellipse
 from matplotlib.ticker import MaxNLocator
+import plotly.graph_objects as go
+import plotly.io as pio
+import plotly.express as px
 from mpl_toolkits import mplot3d
 from typing import Union
 import sys
@@ -15,14 +22,12 @@ import scipy.optimize
 import scipy.signal
 import plotly
 plotly.__version__
-import plotly.graph_objects as go
-import plotly.io as pio
-import plotly.express as px
 
 from classes import *
 
 def read_input_data():
-    # Step 1: Attempt to read the content of 'data_directory.txt' file and load it into a NumPy array as strings.
+    # Step 1: Attempt to read the content of 'data_directory.txt' file
+    # and load it into a NumPy array as strings.
     try:
         data_dir = np.loadtxt('data_directory.txt', dtype=str)
     except:
@@ -73,7 +78,7 @@ def Savgol_filter(m: np.ndarray, window: int):
     # 'window' is the window size for the filter.
     tmp = np.array([scipy.signal.savgol_filter(x, window, poly_order) for x in m])
 
-    # Step 3: Since the Savitzky-Golay filter operates on a sliding window, 
+    # Step 3: Since the Savitzky-Golay filter operates on a sliding window,
     # it introduces edge artifacts at the beginning and end of each row.
     # To remove these artifacts, the temporary array 'tmp' is sliced to remove the unwanted edges.
     # The amount of removal on each side is half of the 'window' value, converted to an integer.
@@ -86,11 +91,13 @@ def moving_average(data: np.ndarray, window: int):
 
     # Step 2: Apply the moving average filter to the 'data' array using the 'weights' array.
     # The 'np.convolve' function performs a linear convolution between 'data' and 'weights'.
-    # The result is a smoothed version of the 'data', where each point represents the weighted average of its neighbors.
+    # The result is a smoothed version of the 'data',
+    # where each point represents the weighted average of its neighbors.
     if data.ndim == 1:
         return np.convolve(data, weights, mode='valid')
     elif data.ndim >= 2:
-        return np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'), axis=1, arr=data)
+        return np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
+            axis=1, arr=data)
     else:
         raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
 
@@ -102,7 +109,8 @@ def moving_average_2D(data: np.ndarray, l: int):
     num_dims = data.ndim                        # Get the number of dimensions in the input data
 
     for index in np.ndindex(*data.shape):
-        slices = tuple(slice(max(0, i - half_width), min(data.shape[dim], i + half_width + 1)) for dim, i in enumerate(index))
+        slices = tuple(slice(max(0, i - half_width), min(data.shape[dim], i + half_width + 1))
+            for dim, i in enumerate(index))
         subarray = data[slices]
         # Calculate the average if the subarray is not empty
         if subarray.size > 0:
@@ -116,12 +124,15 @@ def normalize_array(x: np.ndarray):
     stddev = np.std(x)
 
     # Step 2: Create a temporary array 'tmp' containing the normalized version of 'x'.
-    # To normalize, subtract the mean value from each element of 'x' and then divide by the standard deviation.
+    # To normalize, subtract the mean value from each element of 'x'
+    # and then divide by the standard deviation.
     # This centers the data around zero (mean) and scales it based on the standard deviation.
     tmp = (x - mean) / stddev
 
-    # Step 3: Return the normalized array 'tmp', along with the calculated mean and standard deviation.
-    # The returned values can be useful for further processing or to revert the normalization if needed.
+    # Step 3: Return the normalized array 'tmp',
+    # along with the calculated mean and standard deviation.
+    # The returned values can be useful for further processing
+    # or to revert the normalization if needed.
     return tmp, mean, stddev
 
 def plot_histo(ax, counts: np.ndarray, bins: np.ndarray):
@@ -194,7 +205,8 @@ def custom_fit(dim: int, max_ind: int, minima: list[int], edges: np.ndarray, cou
     try:
         # Attempt to fit a Gaussian using curve_fit
         popt, pcov = scipy.optimize.curve_fit(Gaussian, edges_selection, counts_selection,
-            p0=[mu0, sigma0, a0], bounds=([m_limits[dim][0], 0.0, 0.0], [m_limits[dim][1], np.inf, np.inf]))
+            p0=[mu0, sigma0, a0], bounds=([m_limits[dim][0], 0.0, 0.0],
+            [m_limits[dim][1], np.inf, np.inf]))
 
         # Check goodness of fit and update the goodness variable
         if popt[0] < edges_selection[0] or popt[0] > edges_selection[-1]:
@@ -250,7 +262,8 @@ def fit_2D(max_ind: list[int], minima: list[int], xedges: np.ndarray, yedges: np
     try:
         # Attempt to fit a 2D Gaussian using curve_fit
         popt, pcov = scipy.optimize.curve_fit(Gaussian_2D, (x, y), counts_selection.ravel(),
-            p0=[mux0, muy0, sigmax0, sigmay0, a0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, np.inf, np.inf, np.inf]))
+            p0=[mux0, muy0, sigmax0, sigmay0, a0], bounds=([0.0, 0.0, 0.0, 0.0, 0.0],
+            [1.0, 1.0, np.inf, np.inf, np.inf]))
 
         # Check goodness of fit and update the goodness variable
         if popt[4] < a0/2:
@@ -293,7 +306,7 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
     # A non-empty state is one where the third element (index 2) is not equal to 0.0.
     list1 = [state for state in states_list if state.perc != 0.0]
 
-    # Step 2: Get the unique labels from the 'all_the_labels' array. 
+    # Step 2: Get the unique labels from the 'all_the_labels' array.
     list_unique = np.unique(all_the_labels)
 
     # Step 3: Relabel the states from 0 to n_states-1 based on their occurrence in 'all_the_labels'.
@@ -338,7 +351,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     tmp_list = np.unique(tmp_list)[::-1]
     for s in tmp_list:
         list_of_states.pop(s)
-    
+
     list_of_states = sorted(list_of_states, key=lambda x: x.mean)
 
     # Relabel accorind to the new states
@@ -352,7 +365,8 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     label_to_index = {label: index for index, label in enumerate(list_unique)}
     new_labels = np.vectorize(label_to_index.get)(all_the_labels)
 
-    # Step 3: Calculate the final threshold values and their types based on the intercept between neighboring states.
+    # Step 3: Calculate the final threshold values
+    # and their types based on the intercept between neighboring states.
     list_of_states[0].th_inf[0] = m_range[0]
     list_of_states[0].th_inf[1] = 0
 
@@ -361,11 +375,12 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
         S1 = list_of_states[n + 1]
         a = S1.sigma**2 - S0.sigma**2
         b = -2*(S0.mean*S1.sigma**2 - S1.mean*S0.sigma**2)
-        c = (S0.mean*S1.sigma)**2 - (S1.mean*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.area*S1.sigma/S1.area/S0.sigma)
+        tmp_c = np.log(S0.area*S1.sigma/S1.area/S0.sigma)
+        c = (S0.mean*S1.sigma)**2 - (S1.mean*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*tmp_c
         Delta = b**2 - 4*a*c
-        # Determine the type of the threshold (0, 1 or 2). 
+        # Determine the type of the threshold (0, 1 or 2).
         if a == 0.0:
-            th = (S0.mean + S1.mean)/2 - S0.sigma**2 / 2 / (S1.mean - S0.mean) * np.log(S0.area/S1.area)
+            th = (S0.mean + S1.mean)/2 - S0.sigma**2/2/(S1.mean - S0.mean)*np.log(S0.area/S1.area)
             list_of_states[n].th_sup[0] = th
             list_of_states[n].th_sup[1] = 1
             list_of_states[n + 1].th_inf[0] = th
@@ -408,9 +423,10 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     # Step 5: Return the 'list_of_states' as the output of the function.
     return list_of_states, new_labels
 
-def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[State_multi]):
+def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[StateMulti]):
     ### Step 1: sort according to the relevance
-    sorted_indices = [index + 1 for index, _ in sorted(enumerate(states_list), key=lambda x: x[1].perc, reverse=True)]
+    sorted_indices = [index + 1 for index, _ in sorted(enumerate(states_list),
+        key=lambda x: x[1].perc, reverse=True)]
     sorted_states = sorted(states_list, key=lambda x: x.perc, reverse=True)
 
     ### Step 2: relabel all the labels according to the new ordering
@@ -424,8 +440,9 @@ def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[State_multi]
                 else:
                     sorted_all_the_labels[a][b] = 0
 
-    ### Step 3: merge strongly overlapping states. Two states are merged if, along all the directions,
-    ### their means dist less than the larger of their standard deviations in that direction. 
+    ### Step 3: merge strongly overlapping states. Two states are merged if,
+    ### along all the directions, their means dist less than the larger
+    ### of their standard deviations in that direction.
     ### Find all the pairs of states which should be merged
     merge_pairs = []
     for i, s0 in enumerate(sorted_states):
@@ -480,7 +497,6 @@ def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[State_multi]
                 updated_labels[a][b] = state_mapping[label]
             except:
                 continue
-                # print('No classification found.')
 
     ## Update the list of states
     states_to_remove = set(s1 for s0, s1 in merge_pairs)
@@ -594,7 +610,7 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameter
 
         # Initialize a matrix to store the transition counts between states.
         T = np.zeros((n_states, n_states))
-        
+
         # Iterate through the current time window and increment the transition counts in T.
         for label in all_the_labels:
             T[int(label[t0])][int(label[t0 + t_jump])] += 1
@@ -609,11 +625,11 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameter
 
         # Calculate the starting and ending fractions for each state and store node labels.
         for n in range(n_states):
-            starting_fraction = np.sum(T[n]) / np.sum(T)
-            ending_fraction = np.sum(T.T[n]) / np.sum(T)
+            start_fr = np.sum(T[n]) / np.sum(T)
+            end_fr = np.sum(T.T[n]) / np.sum(T)
             if i == 0:
-                tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(starting_fraction * 100) + '%')
-            tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(ending_fraction * 100) + '%')
+                tmp_label1.append('State ' + str(n) + ': ' + "{:.2f}".format(start_fr * 100) + '%')
+            tmp_label2.append('State ' + str(n) + ': ' + "{:.2f}".format(end_fr * 100) + '%')
 
     # Concatenate the temporary labels to create the final node labels.
     label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
@@ -684,9 +700,9 @@ def print_mol_labels_fbf_gro(all_the_labels: np.ndarray):
 def print_signal_with_labels(m: np.ndarray, all_the_labels: np.ndarray):
     with open('signal_with_labels.dat', 'w+') as f:
         if m.shape[2] == 2:
-                print("Signal 1 Signal 2 Cluster Frame", file=f)
+            print("Signal 1 Signal 2 Cluster Frame", file=f)
         else:
-                print("Signal 1 Signal 2 Signal 3 Cluster Frame", file=f)
+            print("Signal 1 Signal 2 Signal 3 Cluster Frame", file=f)
         for t in range(all_the_labels.shape[1]):
             for n in range(all_the_labels.shape[0]):
                 if m.shape[2] == 2:
@@ -738,8 +754,8 @@ def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: P
                 print(n, file=f)
                 print(tmp[i + 1][0], file=f)
                 for n in range(n):
-                    print(all_the_labels[n][t], tmp[i + 2 + n][1], tmp[i + 2 + n][2], tmp[i + 2 + n][3], file=f)
+                    print(all_the_labels[n][t], tmp[i + 2 + n][1],
+                        tmp[i + 2 + n][2], tmp[i + 2 + n][3], file=f)
                 i += n + 2
     else:
         print('No ' + trj_file + ' found for coloring the trajectory.')
-

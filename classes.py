@@ -1,3 +1,7 @@
+"""
+Contains the classes used for storing parameters and system states.
+"""
+
 import numpy as np
 
 class State:
@@ -14,16 +18,22 @@ class State:
         self.th_inf = [mean - number_of_sigmas*sigma, -1] # Lower thrashold of the state
         self.th_sup = [mean + number_of_sigmas*sigma, -1] # Upper thrashold of the state
 
-class State_multi:
-    def __init__(self, mu: np.ndarray, sigma: np.ndarray, area: np.ndarray):
+class StateMulti:
+    """
+    Represents a state as a factorized Gaussian.
+    """
+    def __init__(self, mean: np.ndarray, sigma: np.ndarray, area: np.ndarray):
         number_of_sigmas = 2.0              # The amplitude of the fluctiations INSIDE a state
-        self.mu = mu                        # Mean of the Gaussians
+        self.mean = mean                        # Mean of the Gaussians
         self.sigma = sigma                  # Variance of the Gaussians
         self.area = area                    # Area below the Gaussians
         self.perc = 0                       # Fraction of data points classified in this state
-        self.a = number_of_sigmas*sigma     # Axes of the state
+        self.axis = number_of_sigmas*sigma     # Axes of the state
 
 class Parameters:
+    """
+    Contains the set of parameters for the specific analysis.
+    """
     def __init__(self, input_file: str):
         try:
             with open(input_file, 'r') as file:
@@ -73,6 +83,15 @@ class Parameters:
                 self.max_t_smooth = int(value)
 
     def print_time(self, num_of_steps: int):
+        """
+        Generates time values based on parameters and number of steps.
+
+        Args:
+        - num_of_steps (int): Number of time steps.
+
+        Returns:
+        - np.ndarray: Array of time values.
+        """
         t_start = self.t_delay + int(self.t_smooth/2)
         time = np.linspace(t_start, t_start + num_of_steps, num_of_steps) * self.t_conv
         return time
