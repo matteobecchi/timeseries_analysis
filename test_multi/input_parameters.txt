@@ -1,4 +1,4 @@
-tau_window	5
+tau_window	12
 t_smooth	1
 t_delay		0
 t_conv		200
