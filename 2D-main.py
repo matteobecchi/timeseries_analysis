@@ -637,9 +637,11 @@ def full_output_analysis(m_raw: np.ndarray, par: Parameters):
 
     compute_cluster_mean_seq(m, all_the_labels, tau_w)
     all_the_labels = assign_single_frames(all_the_labels, tau_w)
+    
     plot_cumulative_figure(m, par, all_the_labels, list_of_states, 'Fig2')
     plot_one_trajectory(m, par, all_the_labels, 'Fig3')
     # sankey(all_the_labels, [0, 1000, 2000, 3000], par, 'Fig5', SHOW_PLOT)
+    plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
 
     print_mol_labels_fbf_xyz(all_the_labels)
     print_signal_with_labels(m, all_the_labels)

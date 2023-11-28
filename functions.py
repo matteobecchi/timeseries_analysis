@@ -643,6 +643,38 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameter
         fig.show()
     fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
+def plot_state_populations(all_the_labels: np.ndarray, par: Parameters, filename: str, show_plot: bool):
+    print('* Printing populations vs time...')
+    num_part = all_the_labels.shape[0]
+    t_start = par.t_delay + int(par.t_smooth/2)
+    t_steps = all_the_labels.shape[1]
+    time = np.linspace(t_start, t_start + t_steps, t_steps)*par.t_conv
+    list_of_populations = []
+    for L in np.unique(all_the_labels):
+        population = []
+        for t in range(t_steps):
+            population.append(sum(all_the_labels[:, t] == L))
+        list_of_populations.append(np.array(population)/num_part)
+
+    # Generate the color palette.
+    palette = []
+    n_states = np.unique(all_the_labels).size
+    cmap = plt.get_cmap('viridis', n_states)
+    for i in range(cmap.N):
+        rgba = cmap(i)
+        palette.append(rgb2hex(rgba))
+
+    fig, ax = plt.subplots()
+    for L, pop in enumerate(list_of_populations):
+        ax.plot(time, pop, label='ENV' + str(L), color=palette[L])
+    ax.set_xlabel(r'Time ' + par.t_units)
+    ax.set_ylabel(r'ENV population')
+    ax.legend()
+
+    if show_plot:
+        plt.show()
+    fig.savefig('output_figures/' + filename + '.png', dpi=600)
+
 def print_mol_labels_fbf_gro(all_the_labels: np.ndarray):
     print('* Print color IDs for Ovito...')
     with open('all_cluster_IDs_gro.dat', 'w') as f:
