@@ -12,7 +12,7 @@ class State:
 		self.th_sup = [mu + number_of_sigmas*sigma, -1]	# Upper thrashold of the state
 
 class State_multi:
-	def __init__(self, mu: np.array, sigma: np.array, area: np.array):
+	def __init__(self, mu: np.ndarray, sigma: np.ndarray, area: np.ndarray):
 		number_of_sigmas = 2.0 				# The amplitude of the fluctiations INSIDE a state
 		self.mu = mu 						# Mean of the Gaussians
 		self.sigma = sigma 					# Variance of the Gaussians
@@ -32,7 +32,7 @@ class Parameters:
 
 		self.t_smooth = 1
 		self.t_delay = 1
-		self.t_conv = 1
+		self.t_conv = 1.
 		self.t_units = '[frames]'
 		self.example_ID = 0
 		self.bins = 'auto'

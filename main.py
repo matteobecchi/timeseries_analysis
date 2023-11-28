@@ -1,7 +1,7 @@
 from functions import *
 
-output_file = 'states_output.txt'
-show_plot = False
+OUTPUT_FILE = 'states_output.txt'
+SHOW_PLOT = False
 
 def all_the_input_stuff():
 	# Read input parameters from files.
@@ -18,7 +18,7 @@ def all_the_input_stuff():
 	m_raw = m_raw[:, par.t_delay:]
 
 	### Create files for output
-	with open(output_file, 'w') as f:
+	with open(OUTPUT_FILE, 'w') as f:
 		print('#', file=f)
 	figures_folder = 'output_figures'
 	if not os.path.exists(figures_folder):
@@ -35,7 +35,7 @@ def all_the_input_stuff():
 
 	return m_raw, par
 
-def preparing_the_data(m_raw: np.array, par: Parameters):
+def preparing_the_data(m_raw: np.ndarray, par: Parameters):
 	tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
 	# Apply filtering on the data
@@ -52,20 +52,20 @@ def preparing_the_data(m_raw: np.array, par: Parameters):
 	###################################################################
 
 	# Get the number of particles and total frames in the trajectory.
-	total_particles = m.shape[0]
-	total_time = m.shape[1]
+	tot_N = m.shape[0]
+	tot_T = m.shape[1]
 
 	# Calculate the number of windows for the analysis.
-	num_windows = int(total_time / tau_window)
+	num_windows = int(tot_T / tau_window)
 
 	# Print informative messages about trajectory details.
-	print('\tTrajectory has ' + str(total_particles) + ' particles. ')
-	print('\tTrajectory of length ' + str(total_time) + ' frames (' + str(total_time*t_conv), t_units + ')')
+	print('\tTrajectory has ' + str(tot_N) + ' particles. ')
+	print('\tTrajectory of length ' + str(tot_T) + ' frames (' + str(tot_T*t_conv), t_units + ')')
 	print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) + ' frames (' + str(tau_window*t_conv), t_units + ')')
 
 	return m, [sig_min, sig_max]
 
-def plot_input_data(m: np.array, par: Parameters, filename: str):
+def plot_input_data(m: np.ndarray, par: Parameters, filename: str):
 	# Extract relevant parameters from par
 	tau_window, tau_delay, t_conv, t_units = par.tau_w, par.t_delay, par.t_conv, par.t_units
 
@@ -94,17 +94,17 @@ def plot_input_data(m: np.array, par: Parameters, filename: str):
 	ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
 	ax[1].set_xticklabels([])
 
-	if show_plot:
+	if SHOW_PLOT:
 		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def gauss_fit_max(m: np.array, bins: int, filename: str):
+def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
 	print('* Gaussian fit...')
 	flat_m = m.flatten()
 
-	### 1. Histogram with 'auto' binning ###
-	counts, bins = np.histogram(flat_m, bins=bins, density=True)
+	### 1. Histogram ###
+	counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
 	gap = 1
 	if bins.size > 50:
 		gap = 3
@@ -226,7 +226,7 @@ def gauss_fit_max(m: np.array, bins: int, filename: str):
 
 	state = State(popt[0], popt[1], popt[2])
 
-	with open(output_file, 'a') as f:
+	with open(OUTPUT_FILE, 'a') as f:
 		print('\n', file=f)
 		print(f'\tmu = {state.mu:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}')
 		print(f'\tmu = {state.mu:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}', file=f)
@@ -240,14 +240,14 @@ def gauss_fit_max(m: np.array, bins: int, filename: str):
 	tmp_popt = [state.mu, state.sigma, state.area/flat_m.size]
 	ax.plot(np.linspace(bins[0], bins[-1], 1000), Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
-	if show_plot:
+	if SHOW_PLOT:
 		plt.show()
 	fig.savefig(filename + '.png', dpi=600)
 	plt.close(fig)
 
 	return state
 
-def find_stable_trj(m: np.array, tau_window: int, state: State, all_the_labels: np.array, offset: int):
+def find_stable_trj(m: np.ndarray, tau_window: int, state: State, all_the_labels: np.ndarray, offset: int):
 	print('* Finding stable windows...')
 
 	# Calculate the number of windows in the trajectory
@@ -273,22 +273,22 @@ def find_stable_trj(m: np.array, tau_window: int, state: State, all_the_labels: 
 	fw = counter/(all_the_labels.size)
 
 	# Print the fraction of stable windows
-	with open(output_file, 'a') as f:
+	with open(OUTPUT_FILE, 'a') as f:
 		print(f'\tFraction of windows in state {offset + 1} = {fw:.3}')
 		print(f'\tFraction of windows in state {offset + 1} = {fw:.3}', file=f)
-	
+
 	# Convert the list of non-stable windows to a NumPy array
-	m2 = np.array(m2)
+	m2_array = np.array(m2)
 	one_last_state = True
-	if len(m2) == 0:
+	if len(m2_array) == 0:
 		one_last_state = False
 
 	# Return the array of non-stable windows, the fraction of stable windows, and the updated list_of_states
-	return m2, fw, one_last_state
+	return m2_array, fw, one_last_state
 
-def iterative_search(m: np.array, par: Parameters, name: str):
+def iterative_search(m: np.ndarray, par: Parameters, name: str):
 	tau_w, bins = par.tau_w, par.bins
-	
+
 	# Initialize an array to store labels for each window.
 	num_windows = int(m.shape[1] / tau_w)
 	all_the_labels = np.zeros((m.shape[0], num_windows))
@@ -301,7 +301,7 @@ def iterative_search(m: np.array, par: Parameters, name: str):
 	while True:
 		### Locate and fit maximum in the signal distribution
 		# popt, th, state = gauss_fit_max(m1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
-		state = gauss_fit_max(m1, bins, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+		state = gauss_fit_max(m1, par, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
 		if state == None:
 			print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
 			break
@@ -323,7 +323,7 @@ def iterative_search(m: np.array, par: Parameters, name: str):
 	atl, lis = relabel_states(all_the_labels, states_list)
 	return atl, lis, one_last_state
 
-def plot_cumulative_figure(m: np.array, par: Parameters, list_of_states: list, filename: str):
+def plot_cumulative_figure(m: np.ndarray, par: Parameters, list_of_states: list, filename: str):
 	print('* Printing cumulative figure...')
 	tau_window, tau_delay, t_conv, t_units, bins = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.bins
 	n_states = len(list_of_states)
@@ -344,7 +344,7 @@ def plot_cumulative_figure(m: np.array, par: Parameters, list_of_states: list, f
 	cmap = plt.get_cmap('viridis', n_states + 1)
 	for i in range(1, cmap.N):
 		rgba = cmap(i)
-		palette.append(matplotlib.colors.rgb2hex(rgba))
+		palette.append(mpl_col.rgb2hex(rgba))
 
 	# Define time and y-axis limits for the left subplot (ax[0])
 	y_lim = [np.min(m) - 0.025*(np.max(m) - np.min(m)), np.max(m) + 0.025*(np.max(m) - np.min(m))]
@@ -381,12 +381,12 @@ def plot_cumulative_figure(m: np.array, par: Parameters, list_of_states: list, f
 	ax[0].set_ylim(y_lim)
 	ax[1].set_xticklabels([])
 
-	if show_plot:
+	if SHOW_PLOT:
 		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def plot_one_trajectory(m: np.array, par: Parameters, all_the_labels: list, filename: str):
+def plot_one_trajectory(m: np.ndarray, par: Parameters, all_the_labels: np.ndarray, filename: str):
 	tau_window, tau_delay, t_conv, t_units, example_ID = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_ID
 	# Get the signal of the example particle
 	signal = m[example_ID][:all_the_labels.shape[1]]
@@ -411,19 +411,19 @@ def plot_one_trajectory(m: np.array, par: Parameters, all_the_labels: list, file
 	ax.set_xlabel('Time ' + t_units)
 	ax.set_ylabel('Normalized signal')
 
-	if show_plot:
+	if SHOW_PLOT:
 		plt.show()
 	fig.savefig('output_figures/' + filename + '.png', dpi=600)
 	plt.close(fig)
 
-def timeseries_analysis(m_raw: np.array, par: Parameters):
+def timeseries_analysis(m_raw: np.ndarray, par: Parameters):
 	tau_w, t_smooth = par.tau_w, par.t_smooth
 	name = str(t_smooth) + '_' + str(tau_w) + '_'
 	m, m_range = preparing_the_data(m_raw, par)
 	plot_input_data(m, par, name + 'Fig0')
 
 	all_the_labels, list_of_states, one_last_state = iterative_search(m, par, name)
-	
+
 	if len(list_of_states) == 0:
 		print('* No possible classification was found. ')
 		# We need to free the memory otherwise it accumulates
@@ -445,7 +445,7 @@ def timeseries_analysis(m_raw: np.array, par: Parameters):
 	else:
 		return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(m: np.array, all_the_labels: np.array, tau_window: int):
+def compute_cluster_mean_seq(m: np.ndarray, all_the_labels: np.ndarray, tau_window: int):
 	# Initialize lists to store cluster means and standard deviations
 	center_list = []
 	std_list = []
@@ -470,10 +470,10 @@ def compute_cluster_mean_seq(m: np.array, all_the_labels: np.array, tau_window: 
 	# Create a color palette
 	palette = []
 	cmap = plt.get_cmap('viridis', np.unique(all_the_labels).size)
-	palette.append(matplotlib.colors.rgb2hex(cmap(0)))
+	palette.append(mpl_col.rgb2hex(cmap(0)))
 	for i in range(1, cmap.N):
 		rgba = cmap(i)
-		palette.append(matplotlib.colors.rgb2hex(rgba))
+		palette.append(mpl_col.rgb2hex(rgba))
 
 	# Plot
 	fig, ax = plt.subplots()
@@ -489,11 +489,11 @@ def compute_cluster_mean_seq(m: np.array, all_the_labels: np.array, tau_window: 
 	ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 	ax.legend()
 
-	if show_plot:
+	if SHOW_PLOT:
 		plt.show()
 	fig.savefig('output_figures/Fig4.png', dpi=600)
 
-def full_output_analysis(m_raw: np.array, par: Parameters):
+def full_output_analysis(m_raw: np.ndarray, par: Parameters):
 	tau_w = par.tau_w
 	m, m_range = preparing_the_data(m_raw, par)
 	plot_input_data(m, par, 'Fig0')
@@ -510,12 +510,12 @@ def full_output_analysis(m_raw: np.array, par: Parameters):
 
 	plot_cumulative_figure(m, par, list_of_states, 'Fig2')
 	plot_one_trajectory(m, par, all_the_labels, 'Fig3')
-	# sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', show_plot)
+	# sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', SHOW_PLOT)
 
 	print_mol_labels_fbf_xyz(all_the_labels)
 	print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
-def TRA_analysis(m_raw: np.array, par: Parameters, perform_anew: bool):
+def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
 	tau_window_list, t_smooth_list = param_grid(par, m_raw.shape[1])
 
 	if perform_anew:
@@ -535,15 +535,17 @@ def TRA_analysis(m_raw: np.array, par: Parameters, perform_anew: bool):
 				tmp1.append(f0)
 			number_of_states.append(tmp)
 			fraction_0.append(tmp1)
+		number_of_states_arr = np.array(number_of_states)
+		fraction_0_arr = np.array(fraction_0)
 		header = 'tau_window t_s = 1 t_s = 2 t_s = 3 t_s = 4 t_s = 5'
 		np.savetxt('number_of_states.txt', number_of_states, fmt='%i', delimiter='\t', header=header)
 		np.savetxt('fraction_0.txt', fraction_0, delimiter=' ', header=header)
 	else:
 		### Otherwise, just do this ###
-		number_of_states = np.loadtxt('number_of_states.txt')
-		fraction_0 = np.loadtxt('fraction_0.txt')
+		number_of_states_arr = np.loadtxt('number_of_states.txt')
+		fraction_0_arr = np.loadtxt('fraction_0.txt')
 
-	plot_TRA_figure(number_of_states, fraction_0, par, show_plot)
+	plot_TRA_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
 
 def main():
 	m_raw, par = all_the_input_stuff()
