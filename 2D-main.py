@@ -527,23 +527,23 @@ def plot_cumulative_figure(m: np.ndarray, par: Parameters, all_the_labels: np.nd
 
 def plot_one_trajectory(m: np.ndarray, par: Parameters, all_the_labels: np.ndarray, filename: str):
     colormap = 'viridis'
-    tau_window, tau_delay, t_conv, t_units, example_ID = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_ID
+    tau_window, tau_delay, t_conv, t_units, example_id = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_id
 
     # Get the signal of the example particle
-    signal_x = m[example_ID].T[0][:all_the_labels.shape[1]]
-    signal_y = m[example_ID].T[1][:all_the_labels.shape[1]]
+    signal_x = m[example_id].T[0][:all_the_labels.shape[1]]
+    signal_y = m[example_id].T[1][:all_the_labels.shape[1]]
 
     fig, ax = plt.subplots(figsize=(6, 6))
 
     # Create a colormap to map colors to the labels of the example particle
     cmap = plt.get_cmap(colormap, int(np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1))
-    color = all_the_labels[example_ID]
+    color = all_the_labels[example_id]
     ax.plot(signal_x, signal_y, c='black', lw=0.1)
 
     ax.scatter(signal_x, signal_y, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0, zorder=10)
 
     # Set plot titles and axis labels
-    fig.suptitle('Example particle: ID = ' + str(example_ID))
+    fig.suptitle('Example particle: ID = ' + str(example_id))
     ax.set_xlabel(r'$x$')
     ax.set_ylabel(r'$y$')
 

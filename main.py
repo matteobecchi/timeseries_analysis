@@ -4,12 +4,28 @@ OUTPUT_FILE = 'states_output.txt'
 SHOW_PLOT = False
 
 def all_the_input_stuff():
+    """
+    Reads input parameters and raw data from specified files and directories,
+    processes the raw data, and creates output files.
+
+    Returns:
+    - m_raw: Processed raw data after removing initial frames based on 'tau_delay'.
+    - par: Object containing input parameters.
+
+    Notes:
+    - Ensure 'input_parameters.txt' exists and contains necessary parameters.
+    - 'OUTPUT_FILE' constant specifies the output file.
+    - 'tau_delay' parameter from 'input_parameters.txt' determines frames removal.
+    - Creates 'output_figures' directory for storing output files.
+    """
+
     # Read input parameters from files.
     data_directory = read_input_data()
     par = Parameters('input_parameters.txt')
 
     # Read raw data from the specified directory/files.
-    if type(data_directory) == str:
+    if isinstance(data_directory, str):
+        # if type(data_directory) == str:
         m_raw = read_data(data_directory)
     else:
         print('\tERROR: data_directory.txt is missing or wrongly formatted. ')
@@ -18,8 +34,8 @@ def all_the_input_stuff():
     m_raw = m_raw[:, par.t_delay:]
 
     ### Create files for output
-    with open(OUTPUT_FILE, 'w') as f:
-        print('#', file=f)
+    with open(OUTPUT_FILE, 'w') as file:
+        print('#', file=file)
     figures_folder = 'output_figures'
     if not os.path.exists(figures_folder):
         os.makedirs(figures_folder)
@@ -30,48 +46,79 @@ def all_the_input_stuff():
                 os.remove(file_path)
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
-        except Exception as e:
-            print(f'Failed to delete {file_path}. Reason: {e}')
+        except Exception as ex_msg:
+            print(f'Failed to delete {file_path}. Reason: {ex_msg}')
 
     return m_raw, par
 
 def preparing_the_data(m_raw: np.ndarray, par: Parameters):
+    """
+    Processes raw data for analysis.
+
+    Args:
+    - m_raw (np.ndarray): Raw input data.
+    - par (Parameters): Object containing parameters for data processing.
+
+    Returns:
+    - m (np.ndarray): Processed data after filtering and normalization.
+    - sig_range (list): List containing [min, max] values of the processed data.
+
+    Notes:
+    - Requires 'tau_w', 't_smooth', 't_conv', 't_units' parameters in the 'par' object.
+    - Utilizes moving average filtering on the raw data.
+    - Calculates statistics like maximum and minimum values of the processed data.
+    - Prints informative messages about trajectory details.
+    - Returns processed data and its signal range.
+    """
+
     tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
     # Apply filtering on the data
-    m = moving_average(m_raw, t_smooth)
-    # m = np.array([ butter_lowpass_filter(x, 1/double(t_smooth), 1, 2) for x in m_raw ])
+    m_clean = moving_average(m_raw, t_smooth)
 
-    sig_max = np.max(m)
-    sig_min = np.min(m)
+    sig_max = np.max(m_clean)
+    sig_min = np.min(m_clean)
     ###################################################################
     ### Normalize the data to the range [0, 1]. Usually not needed. ###
-    # m = (m - sig_min)/(sig_max - sig_min)
-    # sig_max = np.max(m)
-    # sig_min = np.min(m)
+    # m_clean = (m_clean - sig_min)/(sig_max - sig_min)
+    # sig_max = np.max(m_clean)
+    # sig_min = np.min(m_clean)
     ###################################################################
 
     # Get the number of particles and total frames in the trajectory.
-    tot_N = m.shape[0]
-    tot_T = m.shape[1]
+    tot_part = m_clean.shape[0]
+    tot_time = m_clean.shape[1]
 
     # Calculate the number of windows for the analysis.
-    num_windows = int(tot_T / tau_window)
+    num_windows = int(tot_time / tau_window)
 
     # Print informative messages about trajectory details.
-    print('\tTrajectory has ' + str(tot_N) + ' particles. ')
-    print('\tTrajectory of length ' + str(tot_T) + ' frames (' + str(tot_T*t_conv), t_units + ')')
+    print('\tTrajectory has ' + str(tot_part) + ' particles. ')
+    print('\tTrajectory of length ' + str(tot_time) + ' frames (' + str(tot_time*t_conv), t_units + ')')
     print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) +
         ' frames (' + str(tau_window*t_conv), t_units + ')')
 
-    return m, [sig_min, sig_max]
+    return m_clean, [sig_min, sig_max]
 
-def plot_input_data(m: np.ndarray, par: Parameters, filename: str):
-    # Extract relevant parameters from par
-    tau_window, tau_delay, t_conv, t_units = par.tau_w, par.t_delay, par.t_conv, par.t_units
+def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
+    """
+    Plots input data for visualization.
 
-    # Flatten the m matrix and compute histogram counts and bins
-    flat_m = m.flatten()
+    Args:
+    - m_clean (np.ndarray): Processed data for plotting.
+    - par (Parameters): Object containing parameters for plotting.
+    - filename (str): Name of the output plot file.
+
+    Notes:
+    - Requires 'tau_w', 'tau_delay', 't_conv', 't_units', 'bins' parameters in the 'par' object.
+    - Plots histogram counts and bins of the flattened data.
+    - Generates a plot with two subplots (signal trajectories and histogram).
+    - Saves the plot as a PNG file in the 'output_figures' directory.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
+    # Flatten the m_clean matrix and compute histogram counts and bins
+    flat_m = m_clean.flatten()
     bins = par.bins
     counts, bins = np.histogram(flat_m, bins=bins, density=True)
     counts *= flat_m.size
@@ -83,18 +130,15 @@ def plot_input_data(m: np.ndarray, par: Parameters, filename: str):
     # Plot histogram in the second subplot (right side)
     ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
 
-    # Compute the time array for the x-axis of the first subplot (left side)
-    time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + m.shape[1],
-        m.shape[1])*t_conv
-
     # Plot the individual trajectories in the first subplot (left side)
-    step = 10 if m.size > 1000000 else 1
-    for idx, mol in enumerate(m[::step]):
+    time = par.print_time(m_clean.shape[1])
+    step = 10 if m_clean.size > 1000000 else 1
+    for mol in m_clean[::step]:
         ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
 
     # Set labels and titles for the plots
     ax[0].set_ylabel('Signal')
-    ax[0].set_xlabel(r'Simulation time $t$ ' + t_units)
+    ax[0].set_xlabel(r'Simulation time $t$ ' + par.t_units)
     ax[1].set_xticklabels([])
 
     if SHOW_PLOT:
@@ -102,9 +146,30 @@ def plot_input_data(m: np.ndarray, par: Parameters, filename: str):
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
+def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
+    """
+    Performs Gaussian fitting on input data.
+
+    Args:
+    - m_clean (np.ndarray): Input data for Gaussian fitting.
+    - par (Parameters): Object containing parameters for fitting.
+    - filename (str): Name of the output plot file.
+
+    Returns:
+    - state (State): Object containing Gaussian fit parameters (mu, sigma, area).
+
+    Notes:
+    - Requires 'bins' parameter in the 'par' object.
+    - Performs Gaussian fitting on flattened input data.
+    - Tries to find the maximum and fit Gaussians based on surrounding minima.
+    - Chooses the best fit among the options or returns None if fitting fails.
+    - Prints fit details and goodness of fit to an output file.
+    - Generates a plot showing the distribution and the fitted Gaussian.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
     print('* Gaussian fit...')
-    flat_m = m.flatten()
+    flat_m = m_clean.flatten()
 
     ### 1. Histogram ###
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
@@ -135,15 +200,15 @@ def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
     selected_counts = counts[min_id0:min_id1]
     mu0 = bins[max_ind]
     sigma0 = (bins[min_id0] - bins[min_id1])/6
-    a0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
+    area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
     try:
         popt_min, pcov = scipy.optimize.curve_fit(Gaussian, selected_bins, selected_counts,
-            p0=[mu0, sigma0, a0])
+            p0=[mu0, sigma0, area0])
         if popt_min[1] < 0:
             popt_min[1] = -popt_min[1]
             popt_min[2] = -popt_min[2]
         gauss_max = popt_min[2]*np.sqrt(np.pi)*popt_min[1]
-        if gauss_max < a0/2:
+        if gauss_max < area0/2:
             goodness_min -= 1
         popt_min[2] *= flat_m.size
         if popt_min[0] < selected_bins[0] or popt_min[0] > selected_bins[-1]:
@@ -151,8 +216,8 @@ def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
         if popt_min[1] > selected_bins[-1] - selected_bins[0]:
             goodness_min -= 1
         perr = np.sqrt(np.diag(pcov))
-        for j in range(len(perr)):
-            if perr[j]/popt_min[j] > 0.5:
+        for j, par_err in enumerate(perr):
+            if par_err/popt_min[j] > 0.5:
                 goodness_min -= 1
         if min_id1 - min_id0 <= gap:
             goodness_min -= 1
@@ -181,15 +246,15 @@ def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
     selected_counts = counts[half_id0:half_id1]
     mu0 = bins[max_ind]
     sigma0 = (bins[half_id0] - bins[half_id1])/6
-    a0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
+    area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
     try:
         popt_half, pcov = scipy.optimize.curve_fit(Gaussian, selected_bins, selected_counts,
-            p0=[mu0, sigma0, a0])
+            p0=[mu0, sigma0, area0])
         if popt_half[1] < 0:
             popt_half[1] = -popt_half[1]
             popt_half[2] = -popt_half[2]
         gauss_max = popt_half[2]*np.sqrt(np.pi)*popt_half[1]
-        if gauss_max < a0/2:
+        if gauss_max < area0/2:
             goodness_half -= 1
         popt_half[2] *= flat_m.size
         if popt_half[0] < selected_bins[0] or popt_half[0] > selected_bins[-1]:
@@ -197,8 +262,8 @@ def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
         if popt_half[1] > selected_bins[-1] - selected_bins[0]:
             goodness_half -= 1
         perr = np.sqrt(np.diag(pcov))
-        for j in range(len(perr)):
-            if perr[j]/popt_half[j] > 0.5:
+        for j, par_err in enumerate(perr):
+            if par_err/popt_min[j] > 0.5:
                 goodness_half -= 1
         if min_id1 - min_id0 < gap:
             goodness_half -= 1
@@ -231,18 +296,19 @@ def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
 
     state = State(popt[0], popt[1], popt[2])
 
-    with open(OUTPUT_FILE, 'a') as f:
-        print('\n', file=f)
-        print(f'\tmu = {state.mu:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}')
-        print(f'\tmu = {state.mu:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}', file=f)
-        print('\tFit goodness = ' + str(goodness), file=f)
+    with open(OUTPUT_FILE, 'a') as file:
+        print('\n', file=file)
+        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}')
+        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}', file=file)
+        print('\tFit goodness = ' + str(goodness), file=file)
 
     ### Plot the distribution and the fitted Gaussians
-    y_lim = [np.min(m) - 0.025*(np.max(m) - np.min(m)), np.max(m) + 0.025*(np.max(m) - np.min(m))]
+    y_spread = np.max(m_clean) - np.min(m_clean)
+    y_lim = [np.min(m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
     fig, ax = plt.subplots()
     plot_histo(ax, counts, bins)
     ax.set_xlim(y_lim)
-    tmp_popt = [state.mu, state.sigma, state.area/flat_m.size]
+    tmp_popt = [state.mean, state.sigma, state.area/flat_m.size]
     ax.plot(np.linspace(bins[0], bins[-1], 1000),
         Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
@@ -253,14 +319,36 @@ def gauss_fit_max(m: np.ndarray, par: Parameters, filename: str):
 
     return state
 
-def find_stable_trj(m: np.ndarray, tau_window: int, state: State, all_the_labels: np.ndarray, offset: int):
+def find_stable_trj(m_clean: np.ndarray, tau_window: int, state: State, all_the_labels: np.ndarray, offset: int):
+    """
+    Identifies stable windows in a trajectory based on criteria.
+
+    Args:
+    - m_clean (np.ndarray): Input trajectory data.
+    - tau_window (int): Size of the window for analysis.
+    - state (State): Object containing stable state parameters.
+    - all_the_labels (np.ndarray): Labels indicating window classifications.
+    - offset (int): Offset value for classifying stable windows.
+
+    Returns:
+    - m2_array (np.ndarray): Array of non-stable windows.
+    - fw (float): Fraction of windows classified as stable.
+    - one_last_state (bool): Indicates if there's one last state remaining.
+
+    Notes:
+    - Computes stable windows using criteria based on given state thresholds.
+    - Updates the window labels to indicate stable windows with an offset.
+    - Calculates the fraction of stable windows found and prints the value.
+    - Returns the array of non-stable windows and related information.
+    """
+
     print('* Finding stable windows...')
 
     # Calculate the number of windows in the trajectory
     number_of_windows = all_the_labels.shape[1]
 
     mask_unclassified = all_the_labels < 0.5
-    m_reshaped = m[:, :number_of_windows*tau_window].reshape(m.shape[0],
+    m_reshaped = m_clean[:, :number_of_windows*tau_window].reshape(m_clean.shape[0],
         number_of_windows, tau_window)
     mask_inf = np.min(m_reshaped, axis=2) >= state.th_inf[0]
     mask_sup = np.max(m_reshaped, axis=2) <= state.th_sup[0]
@@ -270,78 +358,112 @@ def find_stable_trj(m: np.ndarray, tau_window: int, state: State, all_the_labels
     counter = np.sum(mask)
 
     # Initialize an empty list to store non-stable windows
-    m2 = []
+    remaning_data = []
     mask_remaining = mask_unclassified & ~mask
-    for i, w in np.argwhere(mask_remaining):
-        r_w = m[i, w*tau_window:(w + 1)*tau_window]
-        m2.append(r_w)
+    for i, window in np.argwhere(mask_remaining):
+        r_w = m_clean[i, window*tau_window:(window + 1)*tau_window]
+        remaning_data.append(r_w)
 
     # Calculate the fraction of stable windows found
-    fw = counter/(all_the_labels.size)
+    window_fraction = counter/(all_the_labels.size)
 
     # Print the fraction of stable windows
-    with open(OUTPUT_FILE, 'a') as f:
-        print(f'\tFraction of windows in state {offset + 1} = {fw:.3}')
-        print(f'\tFraction of windows in state {offset + 1} = {fw:.3}', file=f)
+    with open(OUTPUT_FILE, 'a') as file:
+        print(f'\tFraction of windows in state {offset + 1} = {window_fraction:.3}')
+        print(f'\tFraction of windows in state {offset + 1} = {window_fraction:.3}', file=file)
 
     # Convert the list of non-stable windows to a NumPy array
-    m2_array = np.array(m2)
+    m2_array = np.array(remaning_data)
     one_last_state = True
     if len(m2_array) == 0:
         one_last_state = False
 
     # Return the array of non-stable windows, the fraction of stable windows,
     # and the updated list_of_states
-    return m2_array, fw, one_last_state
+    return m2_array, window_fraction, one_last_state
 
-def iterative_search(m: np.ndarray, par: Parameters, name: str):
-    tau_w, bins = par.tau_w, par.bins
+def iterative_search(m_clean: np.ndarray, par: Parameters, name: str):
+    """
+    Performs an iterative search for stable states in a trajectory.
+
+    Args:
+    - m (np.ndarray): Input trajectory data.
+    - par (Parameters): Object containing parameters for the search.
+    - name (str): Name for identifying output figures.
+
+    Returns:
+    - atl (np.ndarray): Updated labels for each window.
+    - lis (list): List of identified states.
+    - one_last_state (bool): Indicates if there's one last state remaining.
+
+    Notes:
+    - Divides the trajectory into windows and iteratively identifies stable states.
+    - Uses Gaussian fitting and stability criteria to determine stable windows.
+    - Updates labels for each window based on identified stable states.
+    - Returns the updated labels, list of identified states, and a flag for one last state.
+    """
 
     # Initialize an array to store labels for each window.
-    num_windows = int(m.shape[1] / tau_w)
-    all_the_labels = np.zeros((m.shape[0], num_windows))
+    num_windows = int(m_clean.shape[1] / par.tau_w)
+    all_the_labels = np.zeros((m_clean.shape[0], num_windows))
 
     states_list = []
-    m1 = m
+    m_copy = m_clean
     iteration_id = 1
     states_counter = 0
     one_last_state = False
     while True:
         ### Locate and fit maximum in the signal distribution
-        state = gauss_fit_max(m1, par, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
-        if state == None:
+        state = gauss_fit_max(m_copy, par, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+        if state is None:
             print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
             break
 
         ### Find the windows in which the trajectories are stable in the maximum
-        m2, c, one_last_state = find_stable_trj(m, tau_w, state, all_the_labels, states_counter)
-        state.perc = c
+        m_next, counter, one_last_state = find_stable_trj(m_clean, par.tau_w, state, all_the_labels, states_counter)
+        state.perc = counter
 
         states_list.append(state)
         states_counter += 1
         iteration_id += 1
         ### Exit the loop if no new stable windows are found
-        if c <= 0.0:
+        if counter <= 0.0:
             print('Iterations interrupted because no data point has been assigned to last state. ')
             break
-        else:
-            m1 = m2
+        m_copy = m_next
 
     atl, lis = relabel_states(all_the_labels, states_list)
     return atl, lis, one_last_state
 
-def plot_cumulative_figure(m: np.ndarray, par: Parameters, list_of_states: list[State], filename: str):
+def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters, list_of_states: list[State], filename: str):
+    """
+    Generates a cumulative figure with signal trajectories and state Gaussian distributions.
+
+    Args:
+    - m_clean (np.ndarray): Input trajectory data.
+    - par (Parameters): Object containing parameters for plotting.
+    - list_of_states (list[State]): List of identified states.
+    - filename (str): Name for the output figure file.
+
+    Notes:
+    - Plots signal trajectories and Gaussian distributions of identified states.
+    - Visualizes state thresholds and their corresponding signal ranges.
+    - Saves the figure as a PNG file in the 'output_figures' directory.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
     print('* Printing cumulative figure...')
-    tau_window, tau_delay, t_conv, t_units, bins = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.bins
+    t_units, bins = par.t_units, par.bins
     n_states = len(list_of_states)
 
-    # Compute histogram of flattened m
-    flat_m = m.flatten()
+    # Compute histogram of flattened m_clean
+    flat_m = m_clean.flatten()
     counts, bins = np.histogram(flat_m, bins=bins, density=True)
     counts *= flat_m.size
 
     # Create a 1x2 subplots with shared y-axis
-    fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]}, figsize=(9, 4.8))
+    fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]},
+        figsize=(9, 4.8))
 
     # Plot the histogram on the right subplot (ax[1])
     ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
@@ -354,18 +476,20 @@ def plot_cumulative_figure(m: np.ndarray, par: Parameters, list_of_states: list[
         palette.append(rgb2hex(rgba))
 
     # Define time and y-axis limits for the left subplot (ax[0])
-    y_lim = [np.min(m) - 0.025*(np.max(m) - np.min(m)), np.max(m) + 0.025*(np.max(m) - np.min(m))]
-    time = np.linspace(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + m.shape[1], m.shape[1])*t_conv
+    y_spread = np.max(m_clean) - np.min(m_clean)
+    y_lim = [np.min(m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
+    time = par.print_time(m_clean.shape[1])
 
     # Plot the individual trajectories on the left subplot (ax[0])
-    step = 10 if m.size > 1000000 else 1
-    for idx, mol in enumerate(m[::step]):
+    step = 10 if m_clean.size > 1000000 else 1
+    for mol in m_clean[::step]:
         ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
     # Plot the Gaussian distributions of states on the right subplot (ax[1])
-    for s in range(n_states):
-        popt = [list_of_states[s].mu, list_of_states[s].sigma, list_of_states[s].area]
-        ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *popt), np.linspace(bins[0], bins[-1], 1000), color=palette[s])
+    for state_id, state in enumerate(list_of_states):
+        popt = [state.mean, state.sigma, state.area]
+        ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *popt),
+            np.linspace(bins[0], bins[-1], 1000), color=palette[state_id])
 
     # Plot the horizontal lines and shaded regions to mark states' thresholds
     style_color_map = {
@@ -374,12 +498,16 @@ def plot_cumulative_figure(m: np.ndarray, par: Parameters, list_of_states: list[
         2: ('--', 'xkcd:red'),
     }
 
-    time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]), time[-1] + 0.05*(time[-1] - time[0]), 100)
-    for n, state in enumerate(list_of_states):
+    time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]),
+        time[-1] + 0.05*(time[-1] - time[0]), 100)
+    for state_id, state in enumerate(list_of_states):
         linestyle, color = style_color_map.get(state.th_inf[1], ('-', 'xkcd:black'))
-        ax[1].hlines(state.th_inf[0], xmin=0.0, xmax=np.amax(counts), linestyle=linestyle, color=color)
-        ax[0].fill_between(time2, state.th_inf[0], state.th_sup[0], color=palette[n], alpha=0.25)
-    ax[1].hlines(list_of_states[-1].th_sup[0], xmin=0.0, xmax=np.amax(counts), linestyle=linestyle, color='black')
+        ax[1].hlines(state.th_inf[0], xmin=0.0, xmax=np.amax(counts),
+            linestyle=linestyle, color=color)
+        ax[0].fill_between(time2, state.th_inf[0], state.th_sup[0],
+            color=palette[state_id], alpha=0.25)
+    ax[1].hlines(list_of_states[-1].th_sup[0], xmin=0.0, xmax=np.amax(counts),
+        linestyle=linestyle, color='black')
 
     # Set plot titles and axis labels
     ax[0].set_ylabel('Signal')
@@ -393,29 +521,46 @@ def plot_cumulative_figure(m: np.ndarray, par: Parameters, list_of_states: list[
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def plot_one_trajectory(m: np.ndarray, par: Parameters, all_the_labels: np.ndarray, filename: str):
-    tau_window, tau_delay, t_conv, t_units, example_ID = par.tau_w, par.t_delay, par.t_conv, par.t_units, par.example_ID
+def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np.ndarray, filename: str):
+    """
+    Plots a single trajectory of an example particle with labeled data points.
+
+    Args:
+    - m (np.ndarray): Input trajectory data.
+    - par (Parameters): Object containing parameters for plotting.
+    - all_the_labels (np.ndarray): Labels indicating data points' classifications.
+    - filename (str): Name for the output figure file.
+
+    Notes:
+    - Plots a single trajectory with labeled data points based on classifications.
+    - Uses a colormap to differentiate and visualize different data point labels.
+    - Saves the figure as a PNG file in the 'output_figures' directory.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
+    example_id = par.example_id
     # Get the signal of the example particle
-    signal = m[example_ID][:all_the_labels.shape[1]]
+    signal = m_clean[example_id][:all_the_labels.shape[1]]
 
     # Create time values for the x-axis
-    times = np.arange(tau_delay + int(tau_window/2), tau_delay + int(tau_window/2) + m.shape[1]) * t_conv
-    times = times[:all_the_labels.shape[1]]
+    time = par.print_time(all_the_labels.shape[1])
 
     # Create a figure and axes for the plot
     fig, ax = plt.subplots()
 
     # Create a colormap to map colors to the labels of the example particle
-    cmap = plt.get_cmap('viridis', np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
-    color = all_the_labels[example_ID]
-    ax.plot(times, signal, c='black', lw=0.1)
+    cmap = plt.get_cmap('viridis',
+        np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
+    color = all_the_labels[example_id]
+    ax.plot(time, signal, c='black', lw=0.1)
 
     # Plot the signal as a line and scatter plot with colors based on the labels
-    ax.scatter(times, signal, c=color, cmap=cmap, vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
+    ax.scatter(time, signal, c=color, cmap=cmap,
+        vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
 
     # Add title and labels to the axes
-    fig.suptitle('Example particle: ID = ' + str(example_ID))
-    ax.set_xlabel('Time ' + t_units)
+    fig.suptitle('Example particle: ID = ' + str(example_id))
+    ax.set_xlabel('Time ' + par.t_units)
     ax.set_ylabel('Normalized signal')
 
     if SHOW_PLOT:
@@ -424,18 +569,36 @@ def plot_one_trajectory(m: np.ndarray, par: Parameters, all_the_labels: np.ndarr
     plt.close(fig)
 
 def timeseries_analysis(m_raw: np.ndarray, par: Parameters):
+    """
+    Performs an analysis pipeline on time series data.
+
+    Args:
+    - m_raw (np.ndarray): Raw input time series data.
+    - par (Parameters): Object containing parameters for analysis.
+
+    Returns:
+    - num_states (int): Number of identified states.
+    - fraction_0 (float): Fraction of unclassified data points.
+
+    Notes:
+    - Prepares the data, performs an iterative search for states, and sets final states.
+    - Analyzes the time series data based on specified parameters in the 'par' object.
+    - Handles memory cleanup after processing to prevent accumulation.
+    - Returns the number of identified states and the fraction of unclassified data points.
+    """
+
     tau_w, t_smooth = par.tau_w, par.t_smooth
     name = str(t_smooth) + '_' + str(tau_w) + '_'
-    m, m_range = preparing_the_data(m_raw, par)
-    plot_input_data(m, par, name + 'Fig0')
+    m_clean, m_range = preparing_the_data(m_raw, par)
+    plot_input_data(m_clean, par, name + 'Fig0')
 
-    all_the_labels, list_of_states, one_last_state = iterative_search(m, par, name)
+    all_the_labels, list_of_states, one_last_state = iterative_search(m_clean, par, name)
 
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
         # We need to free the memory otherwise it accumulates
         del m_raw
-        del m
+        del m_clean
         del all_the_labels
         return 1, 1.0
 
@@ -443,32 +606,46 @@ def timeseries_analysis(m_raw: np.ndarray, par: Parameters):
 
     # We need to free the memory otherwise it accumulates
     del m_raw
-    del m
+    del m_clean
     del all_the_labels
 
     fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
     if one_last_state:
         return len(list_of_states) + 1, fraction_0
-    else:
-        return len(list_of_states), fraction_0
+    return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(m: np.ndarray, all_the_labels: np.ndarray, tau_window: int):
+def compute_cluster_mean_seq(m_clean: np.ndarray, all_the_labels: np.ndarray, tau_window: int):
+    """
+    Computes and plots the average time sequence inside each identified environment.
+
+    Args:
+    - m_clean (np.ndarray): Input data containing signal trajectories.
+    - all_the_labels (np.ndarray): Labels indicating data points' cluster assignments.
+    - tau_window (int): Size of the time window.
+
+    Notes:
+    - Computes cluster means and standard deviations for each identified cluster.
+    - Plots the average time sequence and standard deviation for each cluster.
+    - Saves the figure as a PNG file in the 'output_figures' directory.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
     # Initialize lists to store cluster means and standard deviations
     center_list = []
     std_list = []
 
     # Loop through unique labels (clusters)
-    for label in np.unique(all_the_labels):
+    for ref_label in np.unique(all_the_labels):
         tmp = []
         # Iterate through molecules and their labels
         for i, mol in enumerate(all_the_labels):
-            for w, l in enumerate(mol):
+            for window, label in enumerate(mol):
                  # Define time interval
-                t0 = w*tau_window
-                t1 = (w + 1)*tau_window
+                time_0 = window*tau_window
+                time_1 = (window + 1)*tau_window
                 # If the label matches the current cluster, append the corresponding data to tmp
-                if l == label:
-                    tmp.append(m[i][t0:t1])
+                if label == ref_label:
+                    tmp.append(m_clean[i][time_0:time_1])
 
         # Calculate mean and standard deviation for the current cluster
         center_list.append(np.mean(tmp, axis=0))
@@ -484,12 +661,12 @@ def compute_cluster_mean_seq(m: np.ndarray, all_the_labels: np.ndarray, tau_wind
 
     # Plot
     fig, ax = plt.subplots()
-    x = range(tau_window)
-    for l, center in enumerate(center_list):
-        err_inf = center - std_list[l]
-        err_sup = center + std_list[l]
-        ax.fill_between(x, err_inf, err_sup, alpha=0.25, color=palette[l])
-        ax.plot(x, center, label='ENV'+str(l), marker='o', c=palette[l])
+    time_seq = range(tau_window)
+    for center_id, center in enumerate(center_list):
+        err_inf = center - std_list[center_id]
+        err_sup = center + std_list[center_id]
+        ax.fill_between(time_seq, err_inf, err_sup, alpha=0.25, color=palette[center_id])
+        ax.plot(time_seq, center, label='ENV'+str(center_id), marker='o', c=palette[center_id])
     fig.suptitle('Average time sequence inside each environments')
     ax.set_xlabel(r'Time $t$ [frames]')
     ax.set_ylabel(r'Signal')
@@ -501,29 +678,60 @@ def compute_cluster_mean_seq(m: np.ndarray, all_the_labels: np.ndarray, tau_wind
     fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def full_output_analysis(m_raw: np.ndarray, par: Parameters):
-    tau_w = par.tau_w
-    m, m_range = preparing_the_data(m_raw, par)
-    plot_input_data(m, par, 'Fig0')
+    """
+    Conducts a comprehensive analysis pipeline on a dataset,
+    generating multiple figures and outputs.
 
-    all_the_labels, list_of_states, one_last_state = iterative_search(m, par, '')
+    Args:
+    - m_raw (np.ndarray): Raw input data.
+    - par (Parameters): Object containing parameters for analysis.
+
+    Notes:
+    - Prepares the data, conducts iterative search for states, and sets final states.
+    - Computes cluster mean sequences, assigns single frames, and generates various plots.
+    - Prints molecular labels and colored trajectories based on analysis results.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
+    tau_w = par.tau_w
+    m_clean, m_range = preparing_the_data(m_raw, par)
+    plot_input_data(m_clean, par, 'Fig0')
+
+    all_the_labels, list_of_states, _ = iterative_search(m_clean, par, '')
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
         return
     list_of_states, all_the_labels = set_final_states(list_of_states, all_the_labels, m_range)
 
-    compute_cluster_mean_seq(m, all_the_labels, tau_w)
+    compute_cluster_mean_seq(m_clean, all_the_labels, tau_w)
 
     all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
-    plot_cumulative_figure(m, par, list_of_states, 'Fig2')
-    plot_one_trajectory(m, par, all_the_labels, 'Fig3')
+    plot_cumulative_figure(m_clean, par, list_of_states, 'Fig2')
+    plot_one_trajectory(m_clean, par, all_the_labels, 'Fig3')
     # sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', SHOW_PLOT)
     plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
 
     print_mol_labels_fbf_xyz(all_the_labels)
     print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
-def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
+def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
+    """
+    Performs Temporal Resolution Analysis (TRA) to explore parameter space and analyze the dataset.
+
+    Args:
+    - m_raw (np.ndarray): Raw input data.
+    - par (Parameters): Object containing parameters for analysis.
+    - perform_anew (bool): Flag to indicate whether to perform analysis anew
+        or load previous results.
+
+    Notes:
+    - Conducts TRA for different combinations of parameters.
+    - Analyzes the dataset with varying 'tau_window' and 't_smooth'.
+    - Saves results to text files and plots TRA figures based on analysis outcomes.
+    - Allows toggling plot display based on 'SHOW_PLOT' constant.
+    """
+
     tau_window_list, t_smooth_list = param_grid(par, m_raw.shape[1])
 
     if perform_anew:
@@ -538,15 +746,16 @@ def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
                 tmp_par = copy.deepcopy(par)
                 tmp_par.tau_w = tau_w
                 tmp_par.t_smooth = t_s
-                n_s, f0 = timeseries_analysis(m_raw, tmp_par)
+                n_s, f_0 = timeseries_analysis(m_raw, tmp_par)
                 tmp.append(n_s)
-                tmp1.append(f0)
+                tmp1.append(f_0)
             number_of_states.append(tmp)
             fraction_0.append(tmp1)
         number_of_states_arr = np.array(number_of_states)
         fraction_0_arr = np.array(fraction_0)
         header = 'tau_window t_s = 1 t_s = 2 t_s = 3 t_s = 4 t_s = 5'
-        np.savetxt('number_of_states.txt', number_of_states, fmt='%i', delimiter='\t', header=header)
+        np.savetxt('number_of_states.txt', number_of_states, fmt='%i',
+            delimiter='\t', header=header)
         np.savetxt('fraction_0.txt', fraction_0, delimiter=' ', header=header)
     else:
         ### Otherwise, just do this ###
@@ -556,8 +765,14 @@ def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
     plot_TRA_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
 
 def main():
+    """
+    all_the_input_stuff() reads the data and the parameters
+    time_resolution_analysis() explore the parameter (tau_window, t_smooth) space.
+        Use 'False' to skip it.
+    full_output_analysis() performs a detailed analysis with the chosen parameters.
+    """
     m_raw, par = all_the_input_stuff()
-    TRA_analysis(m_raw, par, False)
+    time_resolution_analysis(m_raw, par, False)
     full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":

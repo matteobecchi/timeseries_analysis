@@ -307,7 +307,7 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
             tmp1[a][b] = list_unique[tmp1[a][b]]
 
     # Step 4: Order the states according to the mu values in the 'list1' array.
-    list1.sort(key=lambda state: state.mu)
+    list1.sort(key=lambda state: state.mean)
 
     # Create 'tmp2' by relabeling the states based on the sorted order.
     tmp2 = np.zeros_like(tmp1)
@@ -326,10 +326,10 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
             S0 = list_of_states[s0]
             S1 = list_of_states[s1]
             # Check whether the criteria for considering a state as "final" is met.
-            if S0.peak > S1.peak and abs(S1.mu - S0.mu) < S0.sigma:
+            if S0.peak > S1.peak and abs(S1.mean - S0.mean) < S0.sigma:
                 tmp_list.append(s1)
                 old_to_new_map.append([s1, s0])
-            elif S0.peak < S1.peak and abs(S1.mu - S0.mu) < S1.sigma:
+            elif S0.peak < S1.peak and abs(S1.mean - S0.mean) < S1.sigma:
                 tmp_list.append(s0)
                 old_to_new_map.append([s0, s1])
 
@@ -339,7 +339,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     for s in tmp_list:
         list_of_states.pop(s)
     
-    list_of_states = sorted(list_of_states, key=lambda x: x.mu)
+    list_of_states = sorted(list_of_states, key=lambda x: x.mean)
 
     # Relabel accorind to the new states
     for i in range(len(all_the_labels)):
@@ -360,12 +360,12 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
         S0 = list_of_states[n]
         S1 = list_of_states[n + 1]
         a = S1.sigma**2 - S0.sigma**2
-        b = -2*(S0.mu*S1.sigma**2 - S1.mu*S0.sigma**2)
-        c = (S0.mu*S1.sigma)**2 - (S1.mu*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.area*S1.sigma/S1.area/S0.sigma)
+        b = -2*(S0.mean*S1.sigma**2 - S1.mean*S0.sigma**2)
+        c = (S0.mean*S1.sigma)**2 - (S1.mean*S0.sigma)**2 - ((S0.sigma*S1.sigma)**2)*np.log(S0.area*S1.sigma/S1.area/S0.sigma)
         Delta = b**2 - 4*a*c
         # Determine the type of the threshold (0, 1 or 2). 
         if a == 0.0:
-            th = (S0.mu + S1.mu)/2 - S0.sigma**2 / 2 / (S1.mu - S0.mu) * np.log(S0.area/S1.area)
+            th = (S0.mean + S1.mean)/2 - S0.sigma**2 / 2 / (S1.mean - S0.mean) * np.log(S0.area/S1.area)
             list_of_states[n].th_sup[0] = th
             list_of_states[n].th_sup[1] = 1
             list_of_states[n + 1].th_inf[0] = th
@@ -373,8 +373,8 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
         elif Delta >= 0:
             th_plus = (- b + np.sqrt(Delta))/(2*a)
             th_minus = (- b - np.sqrt(Delta))/(2*a)
-            intercept_plus = Gaussian(th_plus, S0.mu, S0.sigma, S0.area)
-            intercept_minus = Gaussian(th_minus, S0.mu, S0.sigma, S0.area)
+            intercept_plus = Gaussian(th_plus, S0.mean, S0.sigma, S0.area)
+            intercept_minus = Gaussian(th_minus, S0.mean, S0.sigma, S0.area)
             if intercept_plus >= intercept_minus:
                 list_of_states[n].th_sup[0] = th_plus
                 list_of_states[n].th_sup[1] = 1
@@ -386,7 +386,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
                 list_of_states[n + 1].th_inf[0] = th_minus
                 list_of_states[n + 1].th_inf[1] = 1
         else:
-            th_aver = (S0.mu/S0.sigma + S1.mu/S1.sigma)/(1/S0.sigma + 1/S1.sigma)
+            th_aver = (S0.mean/S0.sigma + S1.mean/S1.sigma)/(1/S0.sigma + 1/S1.sigma)
             list_of_states[n].th_sup[0] = th_aver
             list_of_states[n].th_sup[1] = 2
             list_of_states[n + 1].th_inf[0] = th_aver
@@ -400,7 +400,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     with open('final_states.txt', 'w') as f:
         print('# Mu \t Sigma \t A \t state_fraction', file=f)
         for state in list_of_states:
-            print(state.mu, state.sigma, state.area, state.perc, file=f)
+            print(state.mean, state.sigma, state.area, state.perc, file=f)
     with open('final_thresholds.txt', 'w') as f:
         for state in list_of_states:
             print(state.th_inf[0], state.th_sup[0], file=f)
@@ -430,7 +430,7 @@ def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[State_multi]
     merge_pairs = []
     for i, s0 in enumerate(sorted_states):
         for j, s1 in enumerate(sorted_states[i + 1:]):
-            diff = np.abs(np.subtract(s1.mu, s0.mu))
+            diff = np.abs(np.subtract(s1.mean, s0.mean))
             if np.all(diff < [ max(s0.sigma[k], s1.sigma[k]) for k in range(diff.size) ]):
                 merge_pairs.append([i + 1, j + i + 2])
 
@@ -441,7 +441,7 @@ def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[State_multi]
     for p in range(len(merge_pairs)):
         s0 = sorted_states[merge_pairs[p][0] - 1]
         s1 = sorted_states[merge_pairs[p][1] - 1]
-        diff = s1.mu - s0.mu
+        diff = s1.mean - s0.mean
         dist = sum(pow(x, 2) for x in diff)
         list_of_distances.append(dist)
 
@@ -504,7 +504,7 @@ def relabel_states_2D(all_the_labels: np.ndarray, states_list: list[State_multi]
     with open('final_states.txt', 'w') as f:
         print('#center_coords, semiaxis, fraction_of_data', file=f)
         for s in updated_states:
-            center = s.mu
+            center = s.mean
             centers = '[' + str(center[0]) + ', '
             for ck in center[1:-1]:
                 centers += str(ck) + ', '
@@ -646,9 +646,8 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameter
 def plot_state_populations(all_the_labels: np.ndarray, par: Parameters, filename: str, show_plot: bool):
     print('* Printing populations vs time...')
     num_part = all_the_labels.shape[0]
-    t_start = par.t_delay + int(par.t_smooth/2)
     t_steps = all_the_labels.shape[1]
-    time = np.linspace(t_start, t_start + t_steps, t_steps)*par.t_conv
+    time = par.print_time(t_steps)
     list_of_populations = []
     for L in np.unique(all_the_labels):
         population = []

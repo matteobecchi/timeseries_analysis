@@ -1,15 +1,18 @@
 import numpy as np
 
 class State:
-    def __init__(self, mu: float, sigma: float, area: float):
-        number_of_sigmas = 2.0                          # The amplitude of the fluctiations INSIDE a state
-        self.mu = mu                                    # Mean of the Gaussian
+    """
+    Represents a state as a Gaussian.
+    """
+    def __init__(self, mean: float, sigma: float, area: float):
+        number_of_sigmas = 2.0          # The amplitude of the fluctiations INSIDE a state
+        self.mean = mean                                # Mean of the Gaussian
         self.sigma = sigma                              # Variance of the Gaussian
         self.area = area                                # Area below the Gaussian
         self.peak = area/sigma/np.sqrt(np.pi)           # Height of the Gaussian peak
-        self.perc = 0                                   # Fraction of data points classified in this state
-        self.th_inf = [mu - number_of_sigmas*sigma, -1] # Lower thrashold of the state
-        self.th_sup = [mu + number_of_sigmas*sigma, -1] # Upper thrashold of the state
+        self.perc = 0                    # Fraction of data points classified in this state
+        self.th_inf = [mean - number_of_sigmas*sigma, -1] # Lower thrashold of the state
+        self.th_sup = [mean + number_of_sigmas*sigma, -1] # Upper thrashold of the state
 
 class State_multi:
     def __init__(self, mu: np.ndarray, sigma: np.ndarray, area: np.ndarray):
@@ -34,7 +37,7 @@ class Parameters:
         self.t_delay = 1
         self.t_conv = 1.
         self.t_units = '[frames]'
-        self.example_ID = 0
+        self.example_id = 0
         self.bins = 'auto'
         self.num_tau_w = 20
         self.min_tau_w = 2
@@ -55,7 +58,7 @@ class Parameters:
             elif key == 't_units':
                 self.t_units = r'[' + str(value) + r']'
             elif key == 'example_ID':
-                self.example_ID = int(value)
+                self.example_id = int(value)
             elif key == 'bins':
                 self.bins = int(value)
             elif key == 'num_tau_w':
@@ -68,3 +71,8 @@ class Parameters:
                 self.min_t_smooth = int(value)
             elif key == 'max_t_smooth':
                 self.max_t_smooth = int(value)
+
+    def print_time(self, num_of_steps: int):
+        t_start = self.t_delay + int(self.t_smooth/2)
+        time = np.linspace(t_start, t_start + num_of_steps, num_of_steps) * self.t_conv
+        return time
