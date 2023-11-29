@@ -3,7 +3,6 @@ Should contains all the functions in common between the 2 codes.
 """
 
 import os
-from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
