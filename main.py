@@ -1,3 +1,4 @@
+import copy
 from functions import *
 
 OUTPUT_FILE = 'states_output.txt'
@@ -22,6 +23,7 @@ def all_the_input_stuff():
     # Read input parameters from files.
     data_directory = read_input_data()
     par = Parameters('input_parameters.txt')
+    par.print_to_screen()
 
     # Read raw data from the specified directory/files.
     if isinstance(data_directory, str):
@@ -202,7 +204,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     sigma0 = (bins[min_id0] - bins[min_id1])/6
     area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
     try:
-        popt_min, pcov = scipy.optimize.curve_fit(Gaussian, selected_bins, selected_counts,
+        popt_min, pcov = scipy.optimize.curve_fit(gaussian, selected_bins, selected_counts,
             p0=[mu0, sigma0, area0])
         if popt_min[1] < 0:
             popt_min[1] = -popt_min[1]
@@ -248,7 +250,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     sigma0 = (bins[half_id0] - bins[half_id1])/6
     area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
     try:
-        popt_half, pcov = scipy.optimize.curve_fit(Gaussian, selected_bins, selected_counts,
+        popt_half, pcov = scipy.optimize.curve_fit(gaussian, selected_bins, selected_counts,
             p0=[mu0, sigma0, area0])
         if popt_half[1] < 0:
             popt_half[1] = -popt_half[1]
@@ -302,7 +304,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}', file=file)
         print('\tFit goodness = ' + str(goodness), file=file)
 
-    ### Plot the distribution and the fitted Gaussians
+    ### Plot the distribution and the fitted gaussians
     y_spread = np.max(m_clean) - np.min(m_clean)
     y_lim = [np.min(m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
     fig, ax = plt.subplots()
@@ -310,7 +312,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     ax.set_xlim(y_lim)
     tmp_popt = [state.mean, state.sigma, state.area/flat_m.size]
     ax.plot(np.linspace(bins[0], bins[-1], 1000),
-        Gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+        gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
     if SHOW_PLOT:
         plt.show()
@@ -488,7 +490,7 @@ def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters, list_of_states:
     # Plot the Gaussian distributions of states on the right subplot (ax[1])
     for state_id, state in enumerate(list_of_states):
         popt = [state.mean, state.sigma, state.area]
-        ax[1].plot(Gaussian(np.linspace(bins[0], bins[-1], 1000), *popt),
+        ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt),
             np.linspace(bins[0], bins[-1], 1000), color=palette[state_id])
 
     # Plot the horizontal lines and shaded regions to mark states' thresholds
@@ -728,7 +730,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
     Notes:
     - Conducts TRA for different combinations of parameters.
     - Analyzes the dataset with varying 'tau_window' and 't_smooth'.
-    - Saves results to text files and plots TRA figures based on analysis outcomes.
+    - Saves results to text files and plots t.r.a. figures based on analysis outcomes.
     - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
@@ -742,13 +744,14 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
             tmp = [tau_w]
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
-                print('\n* New analysis: ', tau_w, t_s)
+                print('* New analysis: ', tau_w, t_s)
                 tmp_par = copy.deepcopy(par)
                 tmp_par.tau_w = tau_w
                 tmp_par.t_smooth = t_s
                 n_s, f_0 = timeseries_analysis(m_raw, tmp_par)
                 tmp.append(n_s)
                 tmp1.append(f_0)
+                print('Number of states identified:', n_s, '[', f_0 ,']\n')
             number_of_states.append(tmp)
             fraction_0.append(tmp1)
         number_of_states_arr = np.array(number_of_states)
@@ -762,7 +765,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
         number_of_states_arr = np.loadtxt('number_of_states.txt')
         fraction_0_arr = np.loadtxt('fraction_0.txt')
 
-    plot_TRA_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
+    plot_tra_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
 
 def main():
     """
@@ -772,7 +775,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     m_raw, par = all_the_input_stuff()
-    time_resolution_analysis(m_raw, par, False)
+    time_resolution_analysis(m_raw, par, True)
     full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":

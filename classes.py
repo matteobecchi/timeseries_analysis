@@ -40,8 +40,6 @@ class Parameters:
                 lines = file.readlines()
         except:
             print('\tinput_parameters.txt file missing or wrongly formatted.')
-        if len(lines) < 6 or len(lines) > 7:
-            print('\tinput_parameters.txt file wrongly formatted.')
 
         self.t_smooth = 1
         self.t_delay = 1
@@ -95,3 +93,20 @@ class Parameters:
         t_start = self.t_delay + int(self.t_smooth/2)
         time = np.linspace(t_start, t_start + num_of_steps, num_of_steps) * self.t_conv
         return time
+
+    def print_to_screen(self):
+        print('\n########################')
+        print('### Input parameters ###')
+        print('tau_window = ', self.tau_w)
+        print('t_smooth = ', self.t_smooth)
+        print('t_delay = ', self.t_delay)
+        print('t_conv = ', self.t_conv)
+        print('t_units = ', self.t_units)
+        print('example_ID = ', self.example_id)
+        print('bins = ', self.bins)
+        print('num_tau_w = ', self.num_tau_w)
+        print('min_tau_w = ', self.min_tau_w)
+        if self.max_tau_w > 1: print('max_tau_w = ', self.max_tau_w)
+        print('min_t_smooth = ', self.min_t_smooth)
+        print('max_t_smooth = ', self.max_t_smooth)
+        print('########################\n')

@@ -1,3 +1,5 @@
+import copy as copy_name
+from typing import Union
 from functions import *
 
 OUTPUT_FILE = 'states_output.txt'
@@ -7,6 +9,7 @@ def all_the_input_stuff():
     # Read input parameters from files.
     data_directory = read_input_data()
     par = Parameters('input_parameters.txt')
+    par.print_to_screen()
 
     tmp_m_raw = []
     for d in range(len(data_directory)):
@@ -148,7 +151,7 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
         gap = 3
 
     ### 2. Smoothing with tau = 3 ###
-    counts = moving_average_2D(counts, gap)
+    counts = moving_average_2d(counts, gap)
 
     ### 3. Find the maximum ###
     def find_max_index(data):
@@ -167,8 +170,8 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
             min_id0 = max(max_ind[dim] - gap, 0)
             min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-            tmp_max1 = copy.deepcopy(max_ind)
-            tmp_max2 = copy.deepcopy(max_ind)
+            tmp_max1 = copy_name.deepcopy(max_ind)
+            tmp_max2 = copy_name.deepcopy(max_ind)
 
             tmp_max1[dim] = min_id0
             tmp_max2[dim] = min_id0 - 1
@@ -177,8 +180,8 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
                 tmp_max2[dim] -= 1
                 min_id0 -= 1
 
-            tmp_max1 = copy.deepcopy(max_ind)
-            tmp_max2 = copy.deepcopy(max_ind)
+            tmp_max1 = copy_name.deepcopy(max_ind)
+            tmp_max2 = copy_name.deepcopy(max_ind)
 
             tmp_max1[dim] = min_id1
             tmp_max2[dim] = min_id1 + 1
@@ -216,14 +219,14 @@ def gauss_fit_max(m: np.ndarray, m_limits: list[list[int]], bins: Union[int, str
             half_id0 = max(max_ind[dim] - gap, 0)
             half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-            tmp_max = copy.deepcopy(max_ind)
+            tmp_max = copy_name.deepcopy(max_ind)
 
             tmp_max[dim] = half_id0
             while half_id0 > 0 and data[tuple(tmp_max)] > max_val/2:
                 tmp_max[dim] -= 1
                 half_id0 -= 1
 
-            tmp_max = copy.deepcopy(max_ind)
+            tmp_max = copy_name.deepcopy(max_ind)
 
             tmp_max[dim] = half_id1
             while half_id1 < data.shape[dim] - 1 and data[tuple(tmp_max)] > max_val/2:
@@ -432,7 +435,7 @@ def iterative_search(m: np.ndarray, m_limits: list[list[int]], par: Parameters, 
         else:
             m1 = m2
 
-    all_the_labels, list_of_states = relabel_states_2D(all_the_labels, states_list)
+    all_the_labels, list_of_states = relabel_states_2d(all_the_labels, states_list)
     return all_the_labels, list_of_states, one_last_state
 
 def plot_cumulative_figure(m: np.ndarray, par: Parameters, all_the_labels: np.ndarray, list_of_states: list[StateMulti], filename: str):
@@ -659,7 +662,7 @@ def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
                 print('\n* New analysis: ', tau_w, t_s)
-                tmp_par = copy.deepcopy(par)
+                tmp_par = copy_name.deepcopy(par)
                 tmp_par.tau_w = tau_w
                 tmp_par.t_smooth = t_s
                 n_s, f0 = timeseries_analysis(m_raw, tmp_par)
@@ -677,7 +680,7 @@ def TRA_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
         number_of_states_arr = np.loadtxt('number_of_states.txt')
         fraction_0_arr = np.loadtxt('fraction_0.txt')
 
-    plot_TRA_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
+    plot_tra_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
 
 def main():
     """
