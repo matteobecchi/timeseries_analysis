@@ -1,7 +1,6 @@
 """
 Contains the classes used for storing parameters and system states.
 """
-
 import numpy as np
 
 class State:

@@ -50,10 +50,10 @@ Then, the analysis with the values of `tau_window` and `t_smooth`  specified in 
 * If the trajectory from which the signal was computed is present in the working directory, and called `trajectory.xyz`, a new file, `colored_trj.xyz` will be printed, with the correct typing according to the clustering. But a bit of fine-tuning will be necessary inside the function `print_colored_trj_from_xyz()` in `function.py`. 
 
 ## Multivariate time-series version
-The `2D-main.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. 
+The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. 
 
 ## Required Python 3 packages
-`matplotlib`, `numpy`, `os`, `plotly`, `typing`, `scipy`, `sys`. 
+`copy`, `matplotlib`, `numpy`, `os`, `plotly`, `scipy`, `shutil`, `typing`. 
 
 ## Gaussian fitting procedure
 1. The histogram of the timeseries is computed, using the `bins='auto'` numpy option (unless a different `bins` is passed as imput parameter). 
