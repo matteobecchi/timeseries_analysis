@@ -13,12 +13,9 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
 from mpl_toolkits import mplot3d
-from pylab import *
 import scipy.optimize
 import scipy.signal
 import plotly
-plotly.__version__
-
 from classes import *
 
 def read_input_data():
@@ -131,7 +128,7 @@ def moving_average_2d(data: np.ndarray, side: int):
 
     return result
 
-def plot_histo(ax: Axes, counts: np.ndarray, bins: np.ndarray):
+def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     """Plots a histogram on the specified axes.
 
     Args:

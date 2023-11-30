@@ -8,5 +8,5 @@ num_tau_w	15
 min_tau_w	2
 max_tau_w	1000
 min_t_smooth	1
-max_t_smooth	5
+max_t_smooth	2
 bins	50

@@ -1,6 +1,11 @@
-import copy
+"""
+Code for clustering of univariate time-series data. See the documentation for all the details.
+"""
+import copy as copy_name
+import shutil
 from functions import *
 
+NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = 'states_output.txt'
 SHOW_PLOT = False
 
@@ -96,7 +101,8 @@ def preparing_the_data(m_raw: np.ndarray, par: Parameters):
 
     # Print informative messages about trajectory details.
     print('\tTrajectory has ' + str(tot_part) + ' particles. ')
-    print('\tTrajectory of length ' + str(tot_time) + ' frames (' + str(tot_time*t_conv), t_units + ')')
+    print('\tTrajectory of length ' + str(tot_time) +
+        ' frames (' + str(tot_time*t_conv), t_units + ')')
     print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) +
         ' frames (' + str(tau_window*t_conv), t_units + ')')
 
@@ -148,6 +154,65 @@ def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
+def perform_gaussian_fit(id0: int, id1: int, max_ind: int, bins: np.ndarray, counts: np.ndarray, n_data: int, gap: int, interval_type: str):
+    """
+    Perform Gaussian fit on given data within the specified range and parameters.
+
+    Parameters:
+    - id0 (int): Index representing the lower limit for data selection.
+    - id1 (int): Index representing the upper limit for data selection.
+    - bins (np.ndarray): Array containing bin values.
+    - counts (np.ndarray): Array containing counts corresponding to bins.
+    - n_data (int): Number of data points.
+    - gap (int): Gap value for the fit.
+    - interval_type (str): Type of interval.
+
+    Returns:
+    - tuple: A tuple containing:
+        - bool: True if the fit is successful, False otherwise.
+        - int: Goodness value calculated based on fit quality.
+        - array or None: Parameters of the Gaussian fit if successful, None otherwise.
+
+    The function performs a Gaussian fit on the specified data within the provided range.
+    It assesses the goodness of the fit based on various criteria and returns the result.
+    """
+    goodness = 5
+    selected_bins = bins[id0:id1]
+    selected_counts = counts[id0:id1]
+    mu0 = bins[max_ind]
+    sigma0 = (bins[id0] - bins[id1])/6
+    area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
+    try:
+        popt, pcov = scipy.optimize.curve_fit(gaussian, selected_bins, selected_counts,
+            p0=[mu0, sigma0, area0])
+        if popt[1] < 0:
+            popt[1] = -popt[1]
+            popt[2] = -popt[2]
+        gauss_max = popt[2]*np.sqrt(np.pi)*popt[1]
+        if gauss_max < area0/2:
+            goodness -= 1
+        popt[2] *= n_data
+        if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
+            goodness -= 1
+        if popt[1] > selected_bins[-1] - selected_bins[0]:
+            goodness -= 1
+        perr = np.sqrt(np.diag(pcov))
+        for j, par_err in enumerate(perr):
+            if par_err/popt[j] > 0.5:
+                goodness -= 1
+        if id1 - id0 <= gap:
+            goodness -= 1
+        return True, goodness, popt
+    except RuntimeError:
+        print('\t' + interval_type + ' fit: Runtime error. ')
+        return False, goodness, None
+    except TypeError:
+        print('\t' + interval_type + ' fit: TypeError.')
+        return False, goodness, None
+    except ValueError:
+        print('\t' + interval_type + ' fit: ValueError.')
+        return False, goodness, None
+
 def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     """
     Performs Gaussian fitting on input data.
@@ -196,42 +261,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         min_id1 += 1
 
     ### 5. Try the fit between the minima and check its goodness ###
-    flag_min = 1
-    goodness_min = 5
-    selected_bins = bins[min_id0:min_id1]
-    selected_counts = counts[min_id0:min_id1]
-    mu0 = bins[max_ind]
-    sigma0 = (bins[min_id0] - bins[min_id1])/6
-    area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
-    try:
-        popt_min, pcov = scipy.optimize.curve_fit(gaussian, selected_bins, selected_counts,
-            p0=[mu0, sigma0, area0])
-        if popt_min[1] < 0:
-            popt_min[1] = -popt_min[1]
-            popt_min[2] = -popt_min[2]
-        gauss_max = popt_min[2]*np.sqrt(np.pi)*popt_min[1]
-        if gauss_max < area0/2:
-            goodness_min -= 1
-        popt_min[2] *= flat_m.size
-        if popt_min[0] < selected_bins[0] or popt_min[0] > selected_bins[-1]:
-            goodness_min -= 1
-        if popt_min[1] > selected_bins[-1] - selected_bins[0]:
-            goodness_min -= 1
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err/popt_min[j] > 0.5:
-                goodness_min -= 1
-        if min_id1 - min_id0 <= gap:
-            goodness_min -= 1
-    except RuntimeError:
-        print('\tMin fit: Runtime error. ')
-        flag_min = 0
-    except TypeError:
-        print('\tMin fit: TypeError.')
-        flag_min = 0
-    except ValueError:
-        print('\tMin fit: ValueError.')
-        flag_min = 0
+    flag_min, goodness_min, popt_min = perform_gaussian_fit(min_id0, min_id1, max_ind, bins, counts, flat_m.size, gap, 'Min')
 
     ### 6. Find the inrterval of half height ###
     half_id0 = np.max([max_ind - gap, 0])
@@ -242,42 +272,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         half_id1 += 1
 
     ### 7. Try the fit between the minima and check its goodness ###
-    flag_half = 1
-    goodness_half = 5
-    selected_bins = bins[half_id0:half_id1]
-    selected_counts = counts[half_id0:half_id1]
-    mu0 = bins[max_ind]
-    sigma0 = (bins[half_id0] - bins[half_id1])/6
-    area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
-    try:
-        popt_half, pcov = scipy.optimize.curve_fit(gaussian, selected_bins, selected_counts,
-            p0=[mu0, sigma0, area0])
-        if popt_half[1] < 0:
-            popt_half[1] = -popt_half[1]
-            popt_half[2] = -popt_half[2]
-        gauss_max = popt_half[2]*np.sqrt(np.pi)*popt_half[1]
-        if gauss_max < area0/2:
-            goodness_half -= 1
-        popt_half[2] *= flat_m.size
-        if popt_half[0] < selected_bins[0] or popt_half[0] > selected_bins[-1]:
-            goodness_half -= 1
-        if popt_half[1] > selected_bins[-1] - selected_bins[0]:
-            goodness_half -= 1
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err/popt_half[j] > 0.5:
-                goodness_half -= 1
-        if min_id1 - min_id0 < gap:
-            goodness_half -= 1
-    except RuntimeError:
-        print('\tHalf fit: Runtime error. ')
-        flag_half = 0
-    except TypeError:
-        print('\tHalf fit: TypeError.')
-        flag_half = 0
-    except ValueError:
-        print('\tHalf fit: ValueError.')
-        flag_half = 0
+    flag_half, goodness_half, popt_half = perform_gaussian_fit(half_id0, half_id1, max_ind, bins, counts, flat_m.size, gap, 'Half')
 
     ### 8. Choose the best fit ###
     goodness = goodness_min
@@ -297,11 +292,13 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         return None
 
     state = State(popt[0], popt[1], popt[2])
+    state.build_boundaries(NUMBER_OF_SIGMAS)
 
     with open(OUTPUT_FILE, 'a') as file:
         print('\n', file=file)
         print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}')
-        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}', file=file)
+        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}',
+            file=file)
         print('\tFit goodness = ' + str(goodness), file=file)
 
     ### Plot the distribution and the fitted gaussians
@@ -422,7 +419,8 @@ def iterative_search(m_clean: np.ndarray, par: Parameters, name: str):
             break
 
         ### Find the windows in which the trajectories are stable in the maximum
-        m_next, counter, one_last_state = find_stable_trj(m_clean, par.tau_w, state, all_the_labels, states_counter)
+        m_next, counter, one_last_state = find_stable_trj(m_clean, par.tau_w, state,
+            all_the_labels, states_counter)
         state.perc = counter
 
         states_list.append(state)
@@ -711,8 +709,8 @@ def full_output_analysis(m_raw: np.ndarray, par: Parameters):
 
     plot_cumulative_figure(m_clean, par, list_of_states, 'Fig2')
     plot_one_trajectory(m_clean, par, all_the_labels, 'Fig3')
-    # sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', SHOW_PLOT)
-    plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
+    sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', SHOW_PLOT)
+    # plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
 
     print_mol_labels_fbf_xyz(all_the_labels)
     print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
@@ -745,7 +743,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
                 print('* New analysis: ', tau_w, t_s)
-                tmp_par = copy.deepcopy(par)
+                tmp_par = copy_name.deepcopy(par)
                 tmp_par.tau_w = tau_w
                 tmp_par.t_smooth = t_s
                 n_s, f_0 = timeseries_analysis(m_raw, tmp_par)
@@ -775,7 +773,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     m_raw, par = all_the_input_stuff()
-    time_resolution_analysis(m_raw, par, True)
+    # time_resolution_analysis(m_raw, par, True)
     full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":

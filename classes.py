@@ -9,26 +9,44 @@ class State:
     Represents a state as a Gaussian.
     """
     def __init__(self, mean: float, sigma: float, area: float):
-        number_of_sigmas = 2.0          # The amplitude of the fluctiations INSIDE a state
         self.mean = mean                                # Mean of the Gaussian
         self.sigma = sigma                              # Variance of the Gaussian
         self.area = area                                # Area below the Gaussian
         self.peak = area/sigma/np.sqrt(np.pi)           # Height of the Gaussian peak
         self.perc = 0                    # Fraction of data points classified in this state
-        self.th_inf = [mean - number_of_sigmas*sigma, -1] # Lower thrashold of the state
-        self.th_sup = [mean + number_of_sigmas*sigma, -1] # Upper thrashold of the state
+        self.th_inf = [mean - 2.0*sigma, -1]    # Lower thrashold of the state
+        self.th_sup = [mean + 2.0*sigma, -1]    # Upper thrashold of the state
+
+    def build_boundaries(self, number_of_sigmas: float):
+        """
+        Sets the thresholds for the classification of data windows inside the state
+
+        Args:
+        - number of sigmas (float)
+        """
+        self.th_inf = [self.mean - number_of_sigmas*self.sigma, -1] # Lower thrashold of the state
+        self.th_sup = [self.mean + number_of_sigmas*self.sigma, -1] # Upper thrashold of the state
+
 
 class StateMulti:
     """
     Represents a state as a factorized Gaussian.
     """
     def __init__(self, mean: np.ndarray, sigma: np.ndarray, area: np.ndarray):
-        number_of_sigmas = 2.0              # The amplitude of the fluctiations INSIDE a state
         self.mean = mean                        # Mean of the Gaussians
         self.sigma = sigma                  # Variance of the Gaussians
         self.area = area                    # Area below the Gaussians
         self.perc = 0                       # Fraction of data points classified in this state
-        self.axis = number_of_sigmas*sigma     # Axes of the state
+        self.axis = 2.0*sigma     # Axes of the state
+
+    def build_boundaries(self, number_of_sigmas: float):
+        """
+        Sets the thresholds for the classification of data windows inside the state
+
+        Args:
+        - number of sigmas (float)
+        """
+        self.axis = number_of_sigmas*self.sigma     # Axes of the state
 
 class Parameters:
     """
@@ -95,18 +113,21 @@ class Parameters:
         return time
 
     def print_to_screen(self):
+        """
+        Prints to screen all the analysis' parameters.
+        """
         print('\n########################')
         print('### Input parameters ###')
-        print('tau_window = ', self.tau_w)
-        print('t_smooth = ', self.t_smooth)
-        print('t_delay = ', self.t_delay)
-        print('t_conv = ', self.t_conv)
-        print('t_units = ', self.t_units)
-        print('example_ID = ', self.example_id)
-        print('bins = ', self.bins)
-        print('num_tau_w = ', self.num_tau_w)
-        print('min_tau_w = ', self.min_tau_w)
-        if self.max_tau_w > 1: print('max_tau_w = ', self.max_tau_w)
-        print('min_t_smooth = ', self.min_t_smooth)
-        print('max_t_smooth = ', self.max_t_smooth)
+        print('# tau_window = ', self.tau_w)
+        print('# t_smooth = ', self.t_smooth)
+        print('# t_delay = ', self.t_delay)
+        print('# t_conv = ', self.t_conv)
+        print('# t_units = ', self.t_units)
+        print('# example_ID = ', self.example_id)
+        print('# bins = ', self.bins)
+        print('# num_tau_w = ', self.num_tau_w)
+        print('# min_tau_w = ', self.min_tau_w)
+        if self.max_tau_w > 1: print('# max_tau_w = ', self.max_tau_w)
+        print('# min_t_smooth = ', self.min_t_smooth)
+        print('# max_t_smooth = ', self.max_t_smooth)
         print('########################\n')
