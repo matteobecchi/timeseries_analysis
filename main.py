@@ -773,7 +773,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     m_raw, par = all_the_input_stuff()
-    # time_resolution_analysis(m_raw, par, True)
+    time_resolution_analysis(m_raw, par, True)
     full_output_analysis(m_raw, par)
 
 if __name__ == "__main__":
