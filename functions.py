@@ -1,21 +1,14 @@
 """
 Should contains all the functions in common between the 2 codes.
 """
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
-from matplotlib.image import NonUniformImage
-from matplotlib.patches import Ellipse
 from matplotlib.ticker import MaxNLocator
 import plotly.graph_objects as go
-import plotly.io as pio
-import plotly.express as px
-from mpl_toolkits import mplot3d
 import scipy.optimize
 import scipy.signal
-import plotly
 from classes import *
 
 def read_input_data():
@@ -581,9 +574,9 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
                 if label == curr_lab:
                     updated_labels[i][j] = k
 
-    for st_id, _ in enumerate(updated_states):
+    for st_id, state in enumerate(updated_states):
         num_of_points = np.sum(updated_labels == st_id + 1)
-        updated_states[st_id].perc = num_of_points / updated_labels.size
+        state.perc = num_of_points / updated_labels.size
 
     ### Step 5: print informations on the final states
     with open('final_states.txt', 'w') as file:

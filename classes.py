@@ -27,7 +27,6 @@ class State:
         self.th_inf = [self.mean - number_of_sigmas*self.sigma, -1] # Lower thrashold of the state
         self.th_sup = [self.mean + number_of_sigmas*self.sigma, -1] # Upper thrashold of the state
 
-
 class StateMulti:
     """
     Represents a state as a factorized Gaussian.
@@ -127,7 +126,8 @@ class Parameters:
         print('# bins = ', self.bins)
         print('# num_tau_w = ', self.num_tau_w)
         print('# min_tau_w = ', self.min_tau_w)
-        if self.max_tau_w > 1: print('# max_tau_w = ', self.max_tau_w)
+        if self.max_tau_w > 1:
+            print('# max_tau_w = ', self.max_tau_w)
         print('# min_t_smooth = ', self.min_t_smooth)
         print('# max_t_smooth = ', self.max_t_smooth)
         print('########################\n')
