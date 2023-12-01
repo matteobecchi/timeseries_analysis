@@ -52,7 +52,7 @@ def all_the_input_stuff():
             return None, None
 
     ### Create files for output
-    with open(OUTPUT_FILE, 'w') as file:
+    with open(OUTPUT_FILE, 'w', encoding="utf-8") as file:
         file.write('#')
     figures_folder = 'output_figures'
     if not os.path.exists(figures_folder):
@@ -175,8 +175,10 @@ def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
         step = 10 if m_clean.size > 1000000 else 1
         for idx, mol in enumerate(m_clean[::step]):
             ax2.plot(mol[:,0], mol[:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
-        ax2.plot(m_clean[id_min][:,0], m_clean[id_min][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
-        ax2.plot(m_clean[id_max][:,0], m_clean[id_max][:,1], color='black', lw=0.1, alpha=0.5, rasterized=True)
+        ax2.plot(m_clean[id_min][:,0], m_clean[id_min][:,1],
+            color='black', lw=0.1, alpha=0.5, rasterized=True)
+        ax2.plot(m_clean[id_max][:,0], m_clean[id_max][:,1],
+            color='black', lw=0.1, alpha=0.5, rasterized=True)
 
         # Set labels and titles for the plots
         ax2.set_ylabel('Signal 1')
@@ -409,7 +411,7 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
 
     ### Plot the distribution and the fitted Gaussians
     if m_clean.shape[2] == 2:
-        with open(OUTPUT_FILE, 'a') as file:
+        with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
             print('\n', file=file)
             print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}')
             print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}', file=file)
@@ -429,10 +431,14 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
         ax.set_xlim(m_limits[0][0], m_limits[0][1])
         ax.set_ylim(m_limits[1][0], m_limits[1][1])
     elif m_clean.shape[2] == 3:
-        with open(OUTPUT_FILE, 'a') as file:
+        with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
             print('\n', file=file)
-            print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}')
-            print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}', file=file)
+            print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], '
+                f'sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], '
+                f'area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}')
+            print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], '
+                f'sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], '
+                f'area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}', file=file)
             print('\tFit goodness = ' + str(goodness), file=file)
 
         fig, ax = plt.subplots(2, 2, figsize=(6, 6))
@@ -528,7 +534,7 @@ def find_stable_trj(m_clean: np.ndarray, tau_window: int, state: StateMulti, all
     fraction_of_points = counter/(all_the_labels.size)
 
     # Print the fraction of stable windows
-    with open(OUTPUT_FILE, 'a') as file:
+    with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
         print(f'\tFraction of windows in state {offset + 1} = {fraction_of_points:.3}')
         print(f'\tFraction of windows in state {offset + 1} = {fraction_of_points:.3}', file=file)
 
@@ -577,7 +583,8 @@ def iterative_search(m_clean: np.ndarray, m_limits: list[list[int]], par: Parame
             break
 
         ### Find the windows in which the trajectories are stable in the maximum
-        m_new, counter, one_last_state = find_stable_trj(m_clean, tau_w, state, all_the_labels, states_counter)
+        m_new, counter, one_last_state = find_stable_trj(
+            m_clean, tau_w, state, all_the_labels, states_counter)
         state.perc = counter
 
         if counter > 0.0:
@@ -700,8 +707,9 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
         # Plot the Gaussian distributions of states
-        for _, state in enumerate(list_of_states):
-            ellipse = Ellipse(tuple(state.mean), state.axis[0], state.axis[1], color='black', fill=False)
+        for state in list_of_states:
+            ellipse = Ellipse(tuple(state.mean),
+                state.axis[0], state.axis[1], color='black', fill=False)
             ax.add_patch(ellipse)
 
         # Set plot titles and axis labels

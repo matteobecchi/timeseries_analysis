@@ -41,7 +41,7 @@ def all_the_input_stuff():
     m_raw = m_raw[:, par.t_delay:]
 
     ### Create files for output
-    with open(OUTPUT_FILE, 'w') as file:
+    with open(OUTPUT_FILE, 'w', encoding="utf-8") as file:
         print('#', file=file)
     figures_folder = 'output_figures'
     if not os.path.exists(figures_folder):
@@ -261,7 +261,8 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         min_id1 += 1
 
     ### 5. Try the fit between the minima and check its goodness ###
-    flag_min, goodness_min, popt_min = perform_gaussian_fit(min_id0, min_id1, max_ind, bins, counts, flat_m.size, gap, 'Min')
+    flag_min, goodness_min, popt_min = perform_gaussian_fit(min_id0,
+        min_id1, max_ind, bins, counts, flat_m.size, gap, 'Min')
 
     ### 6. Find the inrterval of half height ###
     half_id0 = np.max([max_ind - gap, 0])
@@ -272,7 +273,8 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         half_id1 += 1
 
     ### 7. Try the fit between the minima and check its goodness ###
-    flag_half, goodness_half, popt_half = perform_gaussian_fit(half_id0, half_id1, max_ind, bins, counts, flat_m.size, gap, 'Half')
+    flag_half, goodness_half, popt_half = perform_gaussian_fit(half_id0,
+        half_id1, max_ind, bins, counts, flat_m.size, gap, 'Half')
 
     ### 8. Choose the best fit ###
     goodness = goodness_min
@@ -294,7 +296,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     state = State(popt[0], popt[1], popt[2])
     state.build_boundaries(NUMBER_OF_SIGMAS)
 
-    with open(OUTPUT_FILE, 'a') as file:
+    with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
         print('\n', file=file)
         print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}')
         print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}',
@@ -367,7 +369,7 @@ def find_stable_trj(m_clean: np.ndarray, tau_window: int, state: State, all_the_
     window_fraction = counter/(all_the_labels.size)
 
     # Print the fraction of stable windows
-    with open(OUTPUT_FILE, 'a') as file:
+    with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
         print(f'\tFraction of windows in state {offset + 1} = {window_fraction:.3}')
         print(f'\tFraction of windows in state {offset + 1} = {window_fraction:.3}', file=file)
 

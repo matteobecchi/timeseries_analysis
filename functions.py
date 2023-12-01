@@ -419,11 +419,14 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
         coeff_a = st_1.sigma**2 - st_0.sigma**2
         coeff_b = -2*(st_0.mean*st_1.sigma**2 - st_1.mean*st_0.sigma**2)
         tmp_c = np.log(st_0.area*st_1.sigma/st_1.area/st_0.sigma)
-        coeff_c = (st_0.mean*st_1.sigma)**2 - (st_1.mean*st_0.sigma)**2 - ((st_0.sigma*st_1.sigma)**2)*tmp_c
+        coeff_c = ((st_0.mean*st_1.sigma)**2
+            - (st_1.mean*st_0.sigma)**2
+            - ((st_0.sigma*st_1.sigma)**2)*tmp_c)
         delta = coeff_b**2 - 4*coeff_a*coeff_c
         # Determine the type of the threshold (0, 1 or 2).
         if coeff_a == 0.0:
-            only_th = (st_0.mean + st_1.mean)/2 - st_0.sigma**2/2/(st_1.mean - st_0.mean)*np.log(st_0.area/st_1.area)
+            only_th = ((st_0.mean + st_1.mean)/2
+                - st_0.sigma**2/2/(st_1.mean - st_0.mean)*np.log(st_0.area/st_1.area))
             list_of_states[i].th_sup[0] = only_th
             list_of_states[i].th_sup[1] = 1
             list_of_states[i + 1].th_inf[0] = only_th
@@ -455,11 +458,11 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
 
     # Step 4: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
-    with open('final_states.txt', 'w') as file:
+    with open('final_states.txt', 'w', encoding="utf-8") as file:
         print('# Mu \t Sigma \t A \t state_fraction', file=file)
         for state in list_of_states:
             print(state.mean, state.sigma, state.area, state.perc, file=file)
-    with open('final_thresholds.txt', 'w') as file:
+    with open('final_thresholds.txt', 'w', encoding="utf-8") as file:
         for state in list_of_states:
             print(state.th_inf[0], state.th_sup[0], file=file)
 
@@ -562,7 +565,10 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
 
     ## Update the list of states
     states_to_remove = set(s1 for s0, s1 in merge_pairs)
-    updated_states = [sorted_states[s] for s in range(len(sorted_states)) if s + 1 not in states_to_remove]
+    updated_states = [
+        sorted_states[s] for s in range(len(sorted_states))
+        if s + 1 not in states_to_remove
+    ]
 
     ### Step 4: remove gaps in the labeling
     current_labels = np.unique(updated_labels)
@@ -579,7 +585,7 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
         state.perc = num_of_points / updated_labels.size
 
     ### Step 5: print informations on the final states
-    with open('final_states.txt', 'w') as file:
+    with open('final_states.txt', 'w', encoding="utf-8") as file:
         print('#center_coords, semiaxis, fraction_of_data', file=file)
         for state in updated_states:
             center = state.mean
@@ -835,7 +841,7 @@ def print_mol_labels_fbf_gro(all_the_labels: np.ndarray):
     - Iterates through each frame's molecular labels and writes them to the file in GRO format.
     """
     print('* Print color IDs for Ovito...')
-    with open('all_cluster_IDs_gro.dat', 'w') as file:
+    with open('all_cluster_IDs_gro.dat', 'w', encoding="utf-8") as file:
         for labels in all_the_labels:
             # Join the elements of 'labels' using a space as the separator and write to the file.
             print(' '.join(map(str, labels)), file=file)
@@ -854,7 +860,7 @@ def print_signal_with_labels(m_clean: np.ndarray, all_the_labels: np.ndarray):
     - Assumes the structure of 'm_clean' with signal values based on dimensionality (2D or 3D).
     - Incorporates 'all_the_labels' as cluster labels for respective frames.
     """
-    with open('signal_with_labels.dat', 'w+') as file:
+    with open('signal_with_labels.dat', 'w+', encoding="utf-8") as file:
         if m_clean.shape[2] == 2:
             print("Signal 1 Signal 2 Cluster Frame", file=file)
         else:
@@ -880,7 +886,7 @@ def print_mol_labels_fbf_xyz(all_the_labels: np.ndarray):
     - Iterates through each frame's molecular labels and writes them to the file in XYZ format.
     """
     print('* Print color IDs for Ovito...')
-    with open('all_cluster_IDs_xyz.dat', 'w+') as file:
+    with open('all_cluster_IDs_xyz.dat', 'w+', encoding="utf-8") as file:
         for j in range(all_the_labels.shape[1]):
             # Print two lines containing '#' to separate time steps.
             print('#', file=file)
@@ -900,7 +906,7 @@ def print_mol_labels_fbf_lam(all_the_labels: np.ndarray):
     - Iterates through each frame's molecular labels and writes them to the file in .lammps format.
     """
     print('* Print color IDs for Ovito...')
-    with open('all_cluster_IDs_lam.dat', 'w') as file:
+    with open('all_cluster_IDs_lam.dat', 'w', encoding="utf-8") as file:
         for j in range(all_the_labels.shape[1]):
             # Print nine lines containing '#' to separate time steps.
             for _ in range(9):
@@ -925,7 +931,7 @@ def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: P
     - Creates a new XYZ file 'colored_trj.xyz' by adding cluster labels to the particle entries.
     """
     if os.path.exists(trj_file):
-        with open(trj_file, "r") as in_file:
+        with open(trj_file, "r", encoding="utf-8") as in_file:
             tmp = [ line.split() for line in in_file.readlines() ]
 
         num_of_particles = all_the_labels.shape[0]
@@ -941,7 +947,7 @@ def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: P
         while len(tmp) > nlines:
             tmp.pop(-1)
 
-        with open('colored_trj.xyz', "w+") as out_file:
+        with open('colored_trj.xyz', "w+", encoding="utf-8") as out_file:
             i = 0
             for j in range(total_time):
                 print(tmp[i][0], file=out_file)
