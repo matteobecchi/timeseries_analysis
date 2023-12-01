@@ -1,6 +1,7 @@
 """
 Contains the classes used for storing parameters and system states.
 """
+import copy
 import numpy as np
 
 class State:
@@ -130,3 +131,11 @@ class Parameters:
         print('# min_t_smooth = ', self.min_t_smooth)
         print('# max_t_smooth = ', self.max_t_smooth)
         print('########################\n')
+
+    def create_copy(self):
+        """
+        Returns an independent copy of the Parameter object.
+        Changes to the copy will not affect the original object.
+        """
+        copy_par = copy.deepcopy(self)
+        return copy_par

@@ -246,7 +246,7 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
     counts = moving_average_2d(counts, gap)
 
     ### 3. Find the maximum ###
-    def find_max_index(data):
+    def find_max_index(data: np.ndarray):
         max_val = data.max()
         max_indices = np.argwhere(data == max_val)
         return max_indices[0]
@@ -255,7 +255,7 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
     max_ind = find_max_index(counts)
 
     ### 4. Find the minima surrounding it ###
-    def find_minima_around_max(data, max_ind, gap):
+    def find_minima_around_max(data: np.ndarray, max_ind: tuple, gap: int):
         """
         Find minima surrounding the maximum value in the given data array.
 
@@ -909,7 +909,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
                 print('\n* New analysis: ', tau_w, t_s)
-                tmp_par = copy_name.deepcopy(par)
+                tmp_par = par.create_copy()
                 tmp_par.tau_w = tau_w
                 tmp_par.t_smooth = t_s
                 n_s, f_0 = timeseries_analysis(m_raw, tmp_par)

@@ -1,7 +1,6 @@
 """
 Code for clustering of univariate time-series data. See the documentation for all the details.
 """
-import copy as copy_name
 import shutil
 from functions import *
 
@@ -745,7 +744,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
                 print('* New analysis: ', tau_w, t_s)
-                tmp_par = copy_name.deepcopy(par)
+                tmp_par = par.create_copy()
                 tmp_par.tau_w = tau_w
                 tmp_par.t_smooth = t_s
                 n_s, f_0 = timeseries_analysis(m_raw, tmp_par)
