@@ -761,23 +761,31 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def timeseries_analysis(m_raw: np.ndarray, par: Parameters):
+def timeseries_analysis(m_raw: np.ndarray, par: Parameters, tau_w: int, t_smooth: int):
     """
     Perform time series analysis on the input data.
 
     Args:
     - m_raw (np.ndarray): Raw input time series data.
     - par (Parameters): Parameters object containing necessary parameters.
+    - tau_w (int): the time window for the analysis
+    - t_smooth (int): the width of the moving average for the analysis
 
     Returns:
     - Tuple (int, float): Number of identified states, fraction of unclassified data.
     """
-    tau_w, t_smooth = par.tau_w, par.t_smooth
-    name = str(t_smooth) + '_' + str(tau_w) + '_'
-    m_clean, m_limits = preparing_the_data(m_raw, par)
-    plot_input_data(m_clean, par, name + 'Fig0')
 
-    all_the_labels, list_of_states, one_last_state = iterative_search(m_clean, m_limits, par, name)
+    print('* New analysis: ', tau_w, t_smooth)
+    name = str(t_smooth) + '_' + str(tau_w) + '_'
+
+    tmp_par = par.create_copy()
+    tmp_par.tau_w = tau_w
+    tmp_par.t_smooth = t_smooth
+
+    m_clean, m_limits = preparing_the_data(m_raw, tmp_par)
+    plot_input_data(m_clean, tmp_par, name + 'Fig0')
+
+    all_the_labels, list_of_states, one_last_state = iterative_search(m_clean, m_limits, tmp_par, name)
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
         # We need to free the memory otherwise it accumulates
@@ -793,7 +801,11 @@ def timeseries_analysis(m_raw: np.ndarray, par: Parameters):
 
     fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
     if one_last_state:
+        print('Number of states identified:', len(list_of_states) + 1,
+            '[' + str(fraction_0) + ']\n')
         return len(list_of_states) + 1, fraction_0
+
+    print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
     return len(list_of_states), fraction_0
 
 def compute_cluster_mean_seq(m_clean: np.ndarray, all_the_labels: np.ndarray, tau_window: int):
@@ -908,22 +920,18 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
             tmp = [tau_w]
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
-                print('\n* New analysis: ', tau_w, t_s)
-                tmp_par = par.create_copy()
-                tmp_par.tau_w = tau_w
-                tmp_par.t_smooth = t_s
-                n_s, f_0 = timeseries_analysis(m_raw, tmp_par)
+                n_s, f_0 = timeseries_analysis(m_raw, par, tau_w, t_s)
                 tmp.append(n_s)
                 tmp1.append(f_0)
             number_of_states.append(tmp)
             fraction_0.append(tmp1)
         number_of_states_arr = np.array(number_of_states)
         fraction_0_arr = np.array(fraction_0)
-        header = 'tau_window t_s = 1 t_s = 2 t_s = 3 t_s = 4 t_s = 5'
-        np.savetxt('number_of_states.txt', number_of_states,
-            fmt='%i', delimiter='\t', header=header)
-        np.savetxt('fraction_0.txt', fraction_0,
-            delimiter=' ', header=header)
+
+        np.savetxt('number_of_states.txt', number_of_states, fmt='%i',
+            delimiter='\t', header='tau_window\n number_of_states for different t_smooth')
+        np.savetxt('fraction_0.txt', fraction_0, delimiter=' ',
+            header='tau_window\n fraction in ENV0 for different t_smooth')
     else:
         ### Otherwise, just do this ###
         number_of_states_arr = np.loadtxt('number_of_states.txt')

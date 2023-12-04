@@ -33,7 +33,7 @@ The algorithm will attempt to perform the clustering on the input data, using di
 
 * `number_of_states.txt` contains the number of clusters for each combination of `tau_window` and `t_smooth` tested. 
 * `fraction_0.txt` contains the fraction of unclassified data points for each combination of `tau_window` and `t_smooth` tested. 
-* `Time_resolution_analysis.png` plots the previous two data, for the case `t_smooth = 1`. 
+* `output_figures/Time_resolution_analysis.png` plots the previous two data, for the case `t_smooth = 1`. 
 * Figures with all the Gaussian fittings are saved in the folder `output_figures` with the format `t_smooth_tau_window_Fig1_iteration.png`. 
 
 Then, the analysis with the values of `tau_window` and `t_smooth`  specified in `input_parameters.txt` will be performed. 
@@ -41,11 +41,11 @@ Then, the analysis with the values of `tau_window` and `t_smooth`  specified in 
 * The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. 
 * The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. 
 * The file `final_tresholds.txt` contains the list of the tresholds between states. 
-* `output_figure/Fig0.png` plots the raw data. 
-* `output_figure/Fig1_iteration.png` plot the histograms and best fits for each iteration. 
-* `output_figure/Fig2.png` plots the data with the clustering thresholds and Gaussians. 
-* `output_figure/Fig3.png` plots the colored signal for the particle with `example_ID` ID. 
-* `output_figure/Fig4.png` shows the mean time sequence inside each state, and it's useful for checking the meaningfulness of the results. 
+* `output_figures/Fig0.png` plots the raw data. 
+* `output_figures/Fig1_iteration.png` plot the histograms and best fits for each iteration. 
+* `output_figures/Fig2.png` plots the data with the clustering thresholds and Gaussians. 
+* `output_figures/Fig3.png` plots the colored signal for the particle with `example_ID` ID. 
+* `output_figures/Fig4.png` shows the mean time sequence inside each state, and it's useful for checking the meaningfulness of the results. 
 * The file `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not super friendly to use. 
 * If the trajectory from which the signal was computed is present in the working directory, and called `trajectory.xyz`, a new file, `colored_trj.xyz` will be printed, with the correct typing according to the clustering. But a bit of fine-tuning will be necessary inside the function `print_colored_trj_from_xyz()` in `function.py`. 
 

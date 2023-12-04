@@ -684,7 +684,7 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray, par: P
 
     if show_plot:
         plt.show()
-    fig.savefig('Time_resolution_analysis.png', dpi=600)
+    fig.savefig('output_figures/Time_resolution_analysis.png', dpi=600)
 
 def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameters, filename: str, show_plot: bool):
     """
