@@ -192,7 +192,8 @@ def gaussian(x_points: np.ndarray, x_mean: float, sigma: float, area: float):
 
     return np.exp(-((x_points - x_mean)/sigma)**2)*area/(np.sqrt(np.pi)*sigma)
 
-def gaussian_2d(r_points: np.ndarray, x_mean: float, y_mean: float, sigmax: float, sigmay: float, area: float):
+def gaussian_2d(r_points: np.ndarray, x_mean: float, y_mean: float,
+    sigmax: float, sigmay: float, area: float):
     """Compute the 2D Gaussian function values at given radial points 'r_points'.
 
     Args:
@@ -220,7 +221,8 @@ def gaussian_2d(r_points: np.ndarray, x_mean: float, y_mean: float, sigmax: floa
     gauss = np.exp(-arg)*area/normalization
     return gauss.ravel()
 
-def custom_fit(dim: int, max_ind: int, minima: list[int], edges: np.ndarray, counts: np.ndarray, gap: int, m_limits: list[list[int]]):
+def custom_fit(dim: int, max_ind: int, minima: list[int],
+    edges: np.ndarray, counts: np.ndarray, gap: int, m_limits: list[list[int]]):
     """Fit a Gaussian curve to selected data based on provided parameters.
 
     Args:
@@ -323,7 +325,7 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
     'all_the_labels'.
     """
     # Step 1: Remove states with zero relevance
-    relevant_states = [state for state in states_list if state.perc != 0]
+    relevant_states = [state for state in states_list if state.perc != 0.0]
 
     # Step 2: Sort states according to their mean value
     relevant_states.sort(key=lambda x: x.mean)
@@ -341,6 +343,44 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
                 all_the_labels[i][j] = new_label
 
     return all_the_labels, relevant_states
+
+def find_intersection(st_0: State, st_1: State):
+    """
+    Finds the intersection between two Gaussians.
+
+    Args:
+    - st_0, st_1 (State): the two states we are computing the threshold between
+
+    Returns:
+    - th_val (float): the value of the threshold
+    - th_type (int): the type of the threshold (1 or 2)
+
+    If the intersection exists, the threshold is type 1. If there are 2 intersections,
+    the one with higher value is chosen.
+    If no intersection exists, the threshold is type 2. Its value will be the average
+    between the two means, weighted with the two sigmas.
+    """
+    coeff_a = st_1.sigma**2 - st_0.sigma**2
+    coeff_b = -2*(st_0.mean*st_1.sigma**2 - st_1.mean*st_0.sigma**2)
+    tmp_c = np.log(st_0.area*st_1.sigma/st_1.area/st_0.sigma)
+    coeff_c = ((st_0.mean*st_1.sigma)**2
+        - (st_1.mean*st_0.sigma)**2
+        - ((st_0.sigma*st_1.sigma)**2)*tmp_c)
+    delta = coeff_b**2 - 4*coeff_a*coeff_c
+    if coeff_a == 0.0:
+        only_th = ((st_0.mean + st_1.mean)/2
+            - st_0.sigma**2/2/(st_1.mean - st_0.mean)*np.log(st_0.area/st_1.area))
+        return only_th, 1
+    if delta >= 0:
+        th_plus = (- coeff_b + np.sqrt(delta))/(2*coeff_a)
+        th_minus = (- coeff_b - np.sqrt(delta))/(2*coeff_a)
+        intercept_plus = gaussian(th_plus, st_0.mean, st_0.sigma, st_0.area)
+        intercept_minus = gaussian(th_minus, st_0.mean, st_0.sigma, st_0.area)
+        if intercept_plus >= intercept_minus:
+            return th_plus, 1
+        return th_minus, 1
+    th_aver = (st_0.mean/st_0.sigma + st_1.mean/st_1.sigma)/(1/st_0.sigma + 1/st_1.sigma)
+    return th_aver, 2
 
 def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_range: list[float]):
     """
@@ -379,7 +419,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
 
     list_of_states = sorted(list_of_states, key=lambda x: x.mean)
 
-    # Relabel accorind to the new states
+    # Relabel according to the new states
     for mol_id in range(all_the_labels.shape[0]):
         for window_id in range(all_the_labels.shape[1]):
             for pair_id in range(len(old_to_new_map[::-1])):
@@ -392,48 +432,16 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
 
     # Step 3: Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
+
     list_of_states[0].th_inf[0] = m_range[0]
     list_of_states[0].th_inf[1] = 0
 
     for i in range(len(list_of_states) - 1):
-        st_0 = list_of_states[i]
-        st_1 = list_of_states[i + 1]
-        coeff_a = st_1.sigma**2 - st_0.sigma**2
-        coeff_b = -2*(st_0.mean*st_1.sigma**2 - st_1.mean*st_0.sigma**2)
-        tmp_c = np.log(st_0.area*st_1.sigma/st_1.area/st_0.sigma)
-        coeff_c = ((st_0.mean*st_1.sigma)**2
-            - (st_1.mean*st_0.sigma)**2
-            - ((st_0.sigma*st_1.sigma)**2)*tmp_c)
-        delta = coeff_b**2 - 4*coeff_a*coeff_c
-        # Determine the type of the threshold (0, 1 or 2).
-        if coeff_a == 0.0:
-            only_th = ((st_0.mean + st_1.mean)/2
-                - st_0.sigma**2/2/(st_1.mean - st_0.mean)*np.log(st_0.area/st_1.area))
-            list_of_states[i].th_sup[0] = only_th
-            list_of_states[i].th_sup[1] = 1
-            list_of_states[i + 1].th_inf[0] = only_th
-            list_of_states[i + 1].th_inf[1] = 1
-        elif delta >= 0:
-            th_plus = (- coeff_b + np.sqrt(delta))/(2*coeff_a)
-            th_minus = (- coeff_b - np.sqrt(delta))/(2*coeff_a)
-            intercept_plus = gaussian(th_plus, st_0.mean, st_0.sigma, st_0.area)
-            intercept_minus = gaussian(th_minus, st_0.mean, st_0.sigma, st_0.area)
-            if intercept_plus >= intercept_minus:
-                list_of_states[i].th_sup[0] = th_plus
-                list_of_states[i].th_sup[1] = 1
-                list_of_states[i + 1].th_inf[0] = th_plus
-                list_of_states[i + 1].th_inf[1] = 1
-            else:
-                list_of_states[i].th_sup[0] = th_minus
-                list_of_states[i].th_sup[1] = 1
-                list_of_states[i + 1].th_inf[0] = th_minus
-                list_of_states[i + 1].th_inf[1] = 1
-        else:
-            th_aver = (st_0.mean/st_0.sigma + st_1.mean/st_1.sigma)/(1/st_0.sigma + 1/st_1.sigma)
-            list_of_states[i].th_sup[0] = th_aver
-            list_of_states[i].th_sup[1] = 2
-            list_of_states[i + 1].th_inf[0] = th_aver
-            list_of_states[i + 1].th_inf[1] = 2
+        th_val, th_type = find_intersection(list_of_states[i], list_of_states[i + 1])
+        list_of_states[i].th_sup[0] = th_val
+        list_of_states[i].th_sup[1] = th_type
+        list_of_states[i + 1].th_inf[0] = th_val
+        list_of_states[i + 1].th_inf[1] = th_type
 
     list_of_states[-1].th_sup[0] = m_range[1]
     list_of_states[-1].th_sup[1] = 0
@@ -446,7 +454,8 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
             print(state.mean, state.sigma, state.area, state.perc, file=file)
     with open('final_thresholds.txt', 'w', encoding="utf-8") as file:
         for state in list_of_states:
-            print(state.th_inf[0], state.th_sup[0], file=file)
+            print(state.th_inf[0], state.th_inf[1], file=file)
+        print(list_of_states[-1].th_sup[0], list_of_states[-1].th_sup[1], file=file)
 
     # Step 5: Return the 'list_of_states' as the output of the function.
     return list_of_states, new_labels
@@ -601,7 +610,8 @@ def assign_single_frames(all_the_labels: np.ndarray, tau_window: int):
     new_labels = np.repeat(all_the_labels, tau_window, axis=1)
     return new_labels
 
-def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray, par: Parameters, show_plot: bool):
+def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
+    par: Parameters, show_plot: bool):
     """
     Plots time resolution analysis figures based on the number of states
     and fraction of a specific state.
@@ -668,7 +678,8 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray, par: P
         plt.show()
     fig.savefig('output_figures/Time_resolution_analysis.png', dpi=600)
 
-def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameters, filename: str, show_plot: bool):
+def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
+    par: Parameters, filename: str, show_plot: bool):
     """
     Computes and plots a Sankey diagram based on provided data and parameters.
 
@@ -761,7 +772,8 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int], par: Parameter
         fig.show()
     fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
-def plot_state_populations(all_the_labels: np.ndarray, par: Parameters, filename: str, show_plot: bool):
+def plot_state_populations(all_the_labels: np.ndarray,
+    par: Parameters, filename: str, show_plot: bool):
     """
     Plots the populations of states over time.
 
