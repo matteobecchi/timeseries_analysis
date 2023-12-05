@@ -473,30 +473,24 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
     - tuple[np.ndarray, list[StateMulti]]: A tuple containing:
         - Updated ndarray of labels reflecting the changes in state indices.
         - Modified list of StateMulti objects after merging and relabeling states.
-
-    Steps:
-    1. Sorts states based on relevance (StateMulti.perc).
-    2. Relabels all the labels according to the new ordering.
-    3. Merges strongly overlapping states based on mean and standard deviation comparisons.
-    4. Removes gaps in the labeling and updates state percentages.
-    5. Prints information about the final states to 'final_states.txt'.
-    6. Returns the updated labels and modified list of StateMulti objects.
     """
+    # Step 1: Remove states with zero relevance
+    sorted_states = [state for state in states_list if state.perc != 0.0]
 
-    ### Step 1: sort according to the relevance
-    sorted_indices = [index + 1 for index, _ in sorted(enumerate(states_list),
-        key=lambda x: x[1].perc, reverse=True)]
-    sorted_states = sorted(states_list, key=lambda x: x.perc, reverse=True)
+    # Step 2: Sort states according to their relevance
+    sorted_states.sort(key=lambda x: x.perc, reverse=True)
 
-    ### Step 2: relabel all the labels according to the new ordering
-    sorted_all_the_labels = np.empty(all_the_labels.shape)
-    for i, mol in enumerate(all_the_labels):
-        for j, mol_t in enumerate(mol):
-            for id0, new_id0 in enumerate(sorted_indices):
-                if mol_t == new_id0:
-                    sorted_all_the_labels[i][j] = id0 + 1
-                    break
-                sorted_all_the_labels[i][j] = 0
+    # Create a dictionary to map old state labels to new ones
+    state_mapping = {state_index: index + 1 for index, state_index
+        in enumerate([states_list.index(state) for state in sorted_states])}
+
+    # Relabel the data in all_the_labels according to the new states_list
+    for i, labels_i in enumerate(all_the_labels):
+        for j, label_ij in enumerate(labels_i):
+            old_label = label_ij
+            if old_label != 0:
+                new_label = state_mapping[old_label - 1] if old_label - 1 in state_mapping else 0
+                all_the_labels[i][j] = new_label
 
     ### Step 3: merge strongly overlapping states. Two states are merged if,
     ### along all the directions, their means dist less than the larger
@@ -546,8 +540,10 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
         state_mapping[id_s1] = id_s0
 
     ## Relabel the data points
-    updated_labels = np.empty(sorted_all_the_labels.shape)
-    for i, mol in enumerate(sorted_all_the_labels):
+    # updated_labels = np.empty(sorted_all_the_labels.shape)
+    # for i, mol in enumerate(sorted_all_the_labels):
+    updated_labels = np.empty(all_the_labels.shape)
+    for i, mol in enumerate(all_the_labels):
         for j, label in enumerate(mol):
             try:
                 updated_labels[i][j] = state_mapping[label]
@@ -579,16 +575,14 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
     with open('final_states.txt', 'w', encoding="utf-8") as file:
         print('#center_coords, semiaxis, fraction_of_data', file=file)
         for state in updated_states:
-            center = state.mean
-            centers = '[' + str(center[0]) + ', '
-            for tmp in center[1:-1]:
+            centers = '[' + str(state.mean[0]) + ', '
+            for tmp in state.mean[1:-1]:
                 centers += str(tmp) + ', '
-            centers += str(center[-1]) + ']'
-            area = state.area
-            axis = '[' + str(area[0]) + ', '
-            for tmp in area[1:-1]:
+            centers += str(state.mean[-1]) + ']'
+            axis = '[' + str(state.axis[0]) + ', '
+            for tmp in state.axis[1:-1]:
                 axis += str(tmp) + ', '
-            axis += str(area[-1]) + ']'
+            axis += str(state.axis[-1]) + ']'
             print(centers, axis, state.perc, file=file)
 
     return updated_labels, updated_states
