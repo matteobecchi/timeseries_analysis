@@ -315,50 +315,87 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
 
     Returns:
     - tuple[np.ndarray, list[State]]: A tuple containing:
-        - tmp2 (np.ndarray): Updated labels array with relabeled states.
-        - list1 (list[State]): Updated list of non-empty states, ordered by mean values.
+        - all_the_labels (np.ndarray): Updated labels array with relabeled states.
+        - relevant_states (list[State]): Updated list of non-empty states, ordered by mean values.
 
-    This function performs several operations to relabel the states and update the state list
-    based on their occurrence in 'all_the_labels'. It removes empty states, relabels the states
-    in 'all_the_labels', and reorders 'list1' based on the mean values of the non-empty states.
-
-    The relabeling process:
-    1. Removes empty states (where 'perc' value is 0.0) from 'states_list'.
-    2. Obtains unique labels from the 'all_the_labels' array.
-    3. Relabels the states in 'all_the_labels' from 0 to n_states-1 based on their occurrence.
-    4. Orders the states in 'list1' according to the mean values in ascending order.
-    5. Creates 'tmp2' by relabeling the states in 'all_the_labels' based on the sorted order.
-
-    'tmp2' is the updated labels array with relabeled states.
-    'list1' is the updated list of non-empty states ordered by their mean values.
+    This function performs several operations to relabel the states and update the state list.
+    It removes empty states, reorders them based on the mean values and relabels the labels in
+    'all_the_labels'.
     """
+    # Step 1: Remove states with zero relevance
+    relevant_states = [state for state in states_list if state.perc != 0]
 
-    # Step 1: Remove empty states from the 'list_of_states' and keep only non-empty states.
-    # A non-empty state is one where the third element (index 2) is not equal to 0.0.
-    list1 = [state for state in states_list if state.perc != 0.0]
+    # Step 2: Sort states according to their mean value
+    relevant_states.sort(key=lambda x: x.mean)
 
-    # Step 2: Get the unique labels from the 'all_the_labels' array.
-    list_unique = np.unique(all_the_labels)
+    # Step 3: Create a dictionary to map old state labels to new ones
+    state_mapping = {state_index: index + 1 for index, state_index
+        in enumerate([states_list.index(state) for state in relevant_states])}
 
-    # Step 3: Relabel the states from 0 to n_states-1 based on their occurrence in 'all_the_labels'.
-    # Create a dictionary to map unique labels to new indices.
-    label_to_index = {label: index for index, label in enumerate(list_unique)}
-    # Use vectorized indexing to relabel the states in 'all_the_labels'.
-    tmp1 = np.vectorize(label_to_index.get)(all_the_labels)
+    # Step 4: Relabel the data in all_the_labels according to the new states_list
+    for i, labels_i in enumerate(all_the_labels):
+        for j, label_ij in enumerate(labels_i):
+            old_label = label_ij
+            if old_label != 0:
+                new_label = state_mapping[old_label - 1] if old_label - 1 in state_mapping else 0
+                all_the_labels[i][j] = new_label
 
-    for mol_id in range(tmp1.shape[0]):
-        for time_id in range(tmp1.shape[1]):
-            tmp1[mol_id][time_id] = list_unique[tmp1[mol_id][time_id]]
+    return all_the_labels, relevant_states
 
-    # Step 4: Order the states according to the mu values in the 'list1' array.
-    list1.sort(key=lambda state: state.mean)
+# def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
+#     """Relabel states and update the state list based on occurrence in 'all_the_labels'.
 
-    # Create 'tmp2' by relabeling the states based on the sorted order.
-    tmp2 = np.zeros_like(tmp1)
-    for old_label in list_unique:
-        tmp2[tmp1 == old_label] = label_to_index.get(old_label)
+#     Args:
+#     - all_the_labels (np.ndarray): Array containing labels assigned
+#         to each window in the trajectory.
+#     - states_list (list[State]): List of State objects representing different states.
 
-    return tmp2, list1
+#     Returns:
+#     - tuple[np.ndarray, list[State]]: A tuple containing:
+#         - tmp2 (np.ndarray): Updated labels array with relabeled states.
+#         - list1 (list[State]): Updated list of non-empty states, ordered by mean values.
+
+#     This function performs several operations to relabel the states and update the state list
+#     based on their occurrence in 'all_the_labels'. It removes empty states, relabels the states
+#     in 'all_the_labels', and reorders 'list1' based on the mean values of the non-empty states.
+
+#     The relabeling process:
+#     1. Removes empty states (where 'perc' value is 0.0) from 'states_list'.
+#     2. Obtains unique labels from the 'all_the_labels' array.
+#     3. Relabels the states in 'all_the_labels' from 0 to n_states-1 based on their occurrence.
+#     4. Orders the states in 'list1' according to the mean values in ascending order.
+#     5. Creates 'tmp2' by relabeling the states in 'all_the_labels' based on the sorted order.
+
+#     'tmp2' is the updated labels array with relabeled states.
+#     'list1' is the updated list of non-empty states ordered by their mean values.
+#     """
+
+#     # Step 1: Remove empty states from the 'list_of_states' and keep only non-empty states.
+#     # A non-empty state is one where the third element (index 2) is not equal to 0.0.
+#     list1 = [state for state in states_list if state.perc != 0.0]
+
+#     # Step 2: Get the unique labels from the 'all_the_labels' array.
+#     list_unique = np.unique(all_the_labels)
+
+#     # Step 3: Relabel the states from 0 to n_states-1 based on their occurrence in 'all_the_labels'.
+#     # Create a dictionary to map unique labels to new indices.
+#     label_to_index = {label: index for index, label in enumerate(list_unique)}
+#     # Use vectorized indexing to relabel the states in 'all_the_labels'.
+#     tmp1 = np.vectorize(label_to_index.get)(all_the_labels)
+
+#     for mol_id in range(tmp1.shape[0]):
+#         for time_id in range(tmp1.shape[1]):
+#             tmp1[mol_id][time_id] = list_unique[tmp1[mol_id][time_id]]
+
+#     # Step 4: Order the states according to the mu values in the 'list1' array.
+#     # list1.sort(key=lambda state: state.mean)
+
+#     # Create 'tmp2' by relabeling the states based on the sorted order.
+#     tmp2 = np.zeros_like(tmp1)
+#     for old_label in list_unique:
+#         tmp2[tmp1 == old_label] = label_to_index.get(old_label)
+
+#     return tmp2, list1
 
 def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_range: list[float]):
     """
