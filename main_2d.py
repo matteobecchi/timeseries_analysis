@@ -645,20 +645,18 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
             ax.plot(mol.T[0], mol.T[1], mol.T[2], c='black', lw=lw, rasterized=True, zorder=0)
             color_list = [ int(l) for l in all_the_labels[i*step] ]
             ax.scatter(mol.T[0], mol.T[1], mol.T[2],
-                c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, size=0.5, rasterized=True)
+                c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
 
         color_list = [ int(l) for l in all_the_labels[id_min] ]
         ax.plot(m_resized[id_min].T[0], m_resized[id_min].T[1],
             m_resized[id_min].T[2], c='black', lw=lw, rasterized=True, zorder=0)
-        ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1],
-            m_resized[id_min].T[2], c=color_list, cmap=colormap, vmin=0, vmax=n_states-1,
-            size=0.5, rasterized=True)
+        ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1], m_resized[id_min].T[2],
+            c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
         color_list = [ int(l) for l in all_the_labels[id_max] ]
         ax.plot(m_resized[id_max].T[0], m_resized[id_max].T[1],
             m_resized[id_max].T[2], c='black', lw=lw, rasterized=True, zorder=0)
-        ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1],
-            m_resized[id_max].T[2], c=color_list, cmap=colormap, vmin=0, vmax=n_states-1,
-            size=0.5, rasterized=True)
+        ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1], m_resized[id_max].T[2],
+            c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
 
         # Plot the Gaussian distributions of states
         for s_id, state in enumerate(list_of_states):
