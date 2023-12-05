@@ -504,16 +504,9 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
                 merge_pairs.append([i + 1, j + i + 2])
 
     ## If a state can be merged with more than one state, choose the closest one ###
+    list_of_distances = [np.linalg.norm(sorted_states[pair[1] - 1].mean - sorted_states[pair[0] - 1].mean) for pair in merge_pairs]
+
     pair_to_delete = []
-
-    list_of_distances = []
-    for pair in merge_pairs:
-        st_0 = sorted_states[pair[0] - 1]
-        st_1 = sorted_states[pair[1] - 1]
-        diff = st_1.mean - st_0.mean
-        dist = sum(pow(x, 2) for x in diff)
-        list_of_distances.append(dist)
-
     for i, pair0 in enumerate(merge_pairs):
         list_of_possible_merging = []
         for j, pair1 in enumerate(merge_pairs):
