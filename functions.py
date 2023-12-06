@@ -474,25 +474,24 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
         - Updated ndarray of labels reflecting the changes in state indices.
         - Modified list of StateMulti objects after merging and relabeling states.
     """
-    # Step 1: Remove states with zero relevance
+    all_the_labels = all_the_labels.astype(int)
+
+    ### Step 1: Remove states with zero relevance
     sorted_states = [state for state in states_list if state.perc != 0.0]
 
-    # Step 2: Sort states according to their relevance
+    ### Step 2: Sort states according to their relevance
     sorted_states.sort(key=lambda x: x.perc, reverse=True)
 
     # Create a dictionary to map old state labels to new ones
-    state_mapping = {state_index: index + 1 for index, state_index
-        in enumerate([states_list.index(state) for state in sorted_states])}
+    state_mapping = {index: i + 1 for i, index
+        in enumerate(np.argsort([-state.perc for state in sorted_states]))}
 
     # Relabel the data in all_the_labels according to the new states_list
-    for i, labels_i in enumerate(all_the_labels):
-        for j, label_ij in enumerate(labels_i):
-            old_label = label_ij
-            if old_label != 0:
-                new_label = state_mapping[old_label - 1] if old_label - 1 in state_mapping else 0
-                all_the_labels[i][j] = new_label
+    mask = all_the_labels != 0  # Create a mask for non-zero elements
+    all_the_labels[mask] = np.vectorize(state_mapping.get,
+        otypes=[np.int])(all_the_labels[mask] - 1, 0)
 
-    # Step 3: Merge together the states which are strongly overlapping
+    ### Step 3: Merge together the states which are strongly overlapping
     # Find all the possible merges
     proposed_merge = []
     for i, st_0 in enumerate(sorted_states):
@@ -519,21 +518,21 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
 
     # Settle merging chains
     for pair in best_merge:
-        for j, _ in enumerate(best_merge):
-            if best_merge[j][1] == pair[0]:
+        for j, elem in enumerate(best_merge):
+            if elem[1] == pair[0]:
                 best_merge[j][1] = pair[1]
 
     # Relabel the labels in all_the_labels
     relabel_dic = {}
     for pair in best_merge:
         relabel_dic[pair[0]] = pair[1]
+    relabel_map = np.zeros(max(np.unique(all_the_labels) + 1), dtype=int)
+    for i, _ in enumerate(relabel_map):
+        relabel_map[i] = i
+    for key, value in relabel_dic.items():
+        relabel_map[key + 1] = value + 1
 
-    for i, labels_i in enumerate(all_the_labels):
-        for j, label_ij in enumerate(labels_i):
-            try:
-                all_the_labels[i][j] = relabel_dic[int(label_ij) - 1] + 1
-            except KeyError:
-                continue
+    all_the_labels = relabel_map[all_the_labels.flatten()].reshape(all_the_labels.shape)
 
     # Remove merged states from the state list
     states_to_remove = set(s0 for s0, s1 in best_merge)
