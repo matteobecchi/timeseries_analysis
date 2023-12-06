@@ -411,7 +411,7 @@ def iterative_search(m_clean: np.ndarray, par: Parameters, name: str):
 
     # Initialize an array to store labels for each window.
     num_windows = int(m_clean.shape[1] / par.tau_w)
-    all_the_labels = np.zeros((m_clean.shape[0], num_windows))
+    all_the_labels = np.zeros((m_clean.shape[0], num_windows)).astype(int)
 
     states_list = []
     m_copy = m_clean

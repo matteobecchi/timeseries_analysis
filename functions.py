@@ -392,73 +392,132 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     - m_range (list[float]): Range of values in the data.
 
     Returns:
-    - tuple: A tuple containing the final list of states (list[State]) and
-             the newly labeled data (np.ndarray).
+    - tuple: A tuple containing the final list of states
+    (list[State]) and the newly labeled data (np.ndarray).
     """
 
+    ### Step 1: Merge together the states which are strongly overlapping
+    # Find all the possible merges: i could be merged into j --> [i, j]
+    proposed_merge = []
+    for i, st_0 in enumerate(list_of_states):
+        if i < len(list_of_states) - 1:
+            st_1 = list_of_states[i + 1]
+            if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
+                proposed_merge.append([i + 1, i])
+        if i > 0:
+            st_1 = list_of_states[i - 1]
+            if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
+                proposed_merge.append([i - 1, i])
+
+    # Find the best merges (merge into the closest candidate)
+    best_merge = []
+    states_to_be_merged = np.unique([ pair[0] for pair in proposed_merge ])
+    for j in states_to_be_merged:
+        candidate_merge = []
+        for pair in proposed_merge:
+            if pair[0] == j:
+                candidate_merge.append(pair)
+        if len(candidate_merge) == 1:
+            best_merge.append(candidate_merge[0])
+        else:
+            list_of_distances = [np.linalg.norm(list_of_states[pair[1]].mean -
+                list_of_states[pair[0]].mean) for pair in candidate_merge]
+            best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+
+    # Settle merging chains
+    # if [i, j], all the [k, i] become [k, j]
+    for pair in best_merge:
+        for j, elem in enumerate(best_merge):
+            if elem[1] == pair[0]:
+                best_merge[j][1] = pair[1]
+
+    # Relabel the labels in all_the_labels
+    relabel_dic = {}
+    for pair in best_merge:
+        relabel_dic[pair[0]] = pair[1]
+    relabel_map = np.zeros(max(np.unique(all_the_labels) + 1), dtype=int)
+    for i, _ in enumerate(relabel_map):
+        relabel_map[i] = i
+    for key, value in relabel_dic.items():
+        relabel_map[key + 1] = value + 1
+
+    all_the_labels = relabel_map[all_the_labels.flatten()].reshape(all_the_labels.shape)
+
+    # Remove merged states from the state list
+    states_to_remove = set(s0 for s0, s1 in best_merge)
+    updated_states = [state for i, state in enumerate(list_of_states) if i not in states_to_remove]
+
+    # Compute the fraction of data points in each state
+    for st_id, state in enumerate(updated_states):
+        num_of_points = np.sum(all_the_labels == st_id + 1)
+        state.perc = num_of_points / all_the_labels.size
+
+    #####################################################################################
+    ### Old code, can delete oit when we're sure that everything works ###
     # Step 1: Define a criterion to determine which states are considered "final."
     # Iterate over pairs of states to compare their properties.
-    old_to_new_map = []
-    tmp_list = []
+    # old_to_new_map = []
+    # tmp_list = []
 
-    for id_s0, st_0 in enumerate(list_of_states):
-        for id_s1, st_1 in enumerate(list_of_states[id_s0 + 1:]):
-            # Check whether the criteria for considering a state as "final" is met.
-            if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
-                tmp_list.append(id_s1 + id_s0 + 1)
-                old_to_new_map.append([id_s1 + id_s0 + 1, id_s0])
-            elif st_0.peak < st_1.peak and abs(st_1.mean - st_0.mean) < st_1.sigma:
-                tmp_list.append(id_s0)
-                old_to_new_map.append([id_s0, id_s1 + id_s0 + 1])
+    # for id_s0, st_0 in enumerate(list_of_states):
+    #     for id_s1, st_1 in enumerate(list_of_states[id_s0 + 1:]):
+    #         # Check whether the criteria for considering a state as "final" is met.
+    #         if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
+    #             tmp_list.append(id_s1 + id_s0 + 1)
+    #             old_to_new_map.append([id_s1 + id_s0 + 1, id_s0])
+    #         elif st_0.peak < st_1.peak and abs(st_1.mean - st_0.mean) < st_1.sigma:
+    #             tmp_list.append(id_s0)
+    #             old_to_new_map.append([id_s0, id_s1 + id_s0 + 1])
 
-    # Step 2: Remove states that don't meet the "final" criterion from the 'list_of_states'.
-    # Note: The loop iterates in reverse to avoid index errors when removing elements.
-    tmp_list = np.unique(tmp_list)[::-1]
-    for state_id in tmp_list:
-        list_of_states.pop(state_id)
+    # # Step 2: Remove states that don't meet the "final" criterion from the 'list_of_states'.
+    # # Note: The loop iterates in reverse to avoid index errors when removing elements.
+    # tmp_list = np.unique(tmp_list)[::-1]
+    # for state_id in tmp_list:
+    #     list_of_states.pop(state_id)
 
-    list_of_states = sorted(list_of_states, key=lambda x: x.mean)
+    # list_of_states = sorted(list_of_states, key=lambda x: x.mean)
 
-    # Relabel according to the new states
-    for mol_id in range(all_the_labels.shape[0]):
-        for window_id in range(all_the_labels.shape[1]):
-            for pair_id in range(len(old_to_new_map[::-1])):
-                if all_the_labels[mol_id][window_id] == old_to_new_map[pair_id][0] + 1:
-                    all_the_labels[mol_id][window_id] = old_to_new_map[pair_id][1] + 1
+    # # Relabel according to the new states
+    # for mol_id in range(all_the_labels.shape[0]):
+    #     for window_id in range(all_the_labels.shape[1]):
+    #         for pair_id in range(len(old_to_new_map[::-1])):
+    #             if all_the_labels[mol_id][window_id] == old_to_new_map[pair_id][0] + 1:
+    #                 all_the_labels[mol_id][window_id] = old_to_new_map[pair_id][1] + 1
 
-    list_unique = np.unique(all_the_labels)
-    label_to_index = {label: index for index, label in enumerate(list_unique)}
-    new_labels = np.vectorize(label_to_index.get)(all_the_labels)
+    # list_unique = np.unique(all_the_labels)
+    # label_to_index = {label: index for index, label in enumerate(list_unique)}
+    # new_labels = np.vectorize(label_to_index.get)(all_the_labels)
+    #####################################################################################
 
-    # Step 3: Calculate the final threshold values
+    # Step 2: Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
 
-    list_of_states[0].th_inf[0] = m_range[0]
-    list_of_states[0].th_inf[1] = 0
+    updated_states[0].th_inf[0] = m_range[0]
+    updated_states[0].th_inf[1] = 0
 
-    for i in range(len(list_of_states) - 1):
-        th_val, th_type = find_intersection(list_of_states[i], list_of_states[i + 1])
-        list_of_states[i].th_sup[0] = th_val
-        list_of_states[i].th_sup[1] = th_type
-        list_of_states[i + 1].th_inf[0] = th_val
-        list_of_states[i + 1].th_inf[1] = th_type
+    for i in range(len(updated_states) - 1):
+        th_val, th_type = find_intersection(updated_states[i], updated_states[i + 1])
+        updated_states[i].th_sup[0] = th_val
+        updated_states[i].th_sup[1] = th_type
+        updated_states[i + 1].th_inf[0] = th_val
+        updated_states[i + 1].th_inf[1] = th_type
 
-    list_of_states[-1].th_sup[0] = m_range[1]
-    list_of_states[-1].th_sup[1] = 0
+    updated_states[-1].th_sup[0] = m_range[1]
+    updated_states[-1].th_sup[1] = 0
 
-    # Step 4: Write the final states and final thresholds to text files.
+    # Step 3: Write the final states and final thresholds to text files.
     # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
     with open('final_states.txt', 'w', encoding="utf-8") as file:
         print('# Mu \t Sigma \t A \t state_fraction', file=file)
-        for state in list_of_states:
+        for state in updated_states:
             print(state.mean, state.sigma, state.area, state.perc, file=file)
     with open('final_thresholds.txt', 'w', encoding="utf-8") as file:
-        for state in list_of_states:
+        for state in updated_states:
             print(state.th_inf[0], state.th_inf[1], file=file)
-        print(list_of_states[-1].th_sup[0], list_of_states[-1].th_sup[1], file=file)
+        print(updated_states[-1].th_sup[0], updated_states[-1].th_sup[1], file=file)
 
-    # Step 5: Return the 'list_of_states' as the output of the function.
-    return list_of_states, new_labels
+    # Step 5: Return the 'updated_states' as the output of the function.
+    return updated_states, all_the_labels
 
 def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti]):
     """
