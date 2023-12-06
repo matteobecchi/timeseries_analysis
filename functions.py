@@ -533,7 +533,6 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
         - Updated ndarray of labels reflecting the changes in state indices.
         - Modified list of StateMulti objects after merging and relabeling states.
     """
-    all_the_labels = all_the_labels.astype(int)
 
     ### Step 1: Remove states with zero relevance
     sorted_states = [state for state in states_list if state.perc != 0.0]
