@@ -334,13 +334,19 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
     state_mapping = {state_index: index + 1 for index, state_index
         in enumerate([states_list.index(state) for state in relevant_states])}
 
+    relabel_map = np.zeros(len(states_list) + 1, dtype=int)
+    for key, value in state_mapping.items():
+        relabel_map[key + 1] = value  # Increment key by 1 to account for zero-indexed relabeling
+
     # Step 4: Relabel the data in all_the_labels according to the new states_list
-    for i, labels_i in enumerate(all_the_labels):
-        for j, label_ij in enumerate(labels_i):
-            old_label = label_ij
-            if old_label != 0:
-                new_label = state_mapping[old_label - 1] if old_label - 1 in state_mapping else 0
-                all_the_labels[i][j] = new_label
+    mask = all_the_labels != 0  # Create a mask for non-zero elements
+    all_the_labels[mask] = relabel_map[all_the_labels[mask]]
+    # for i, labels_i in enumerate(all_the_labels):
+    #     for j, label_ij in enumerate(labels_i):
+    #         old_label = label_ij
+    #         if old_label != 0:
+    #             new_label = state_mapping[old_label - 1] if old_label - 1 in state_mapping else 0
+    #             all_the_labels[i][j] = new_label
 
     return all_the_labels, relevant_states
 
@@ -396,18 +402,14 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     (list[State]) and the newly labeled data (np.ndarray).
     """
 
-    ### Step 1: Merge together the states which are strongly overlapping
-    # Find all the possible merges: i could be merged into j --> [i, j]
+    ### Step 1: Merge together the strongly overlapping states
+    # Find all the possible merges: j could be merged into i --> [j, i]
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
-        if i < len(list_of_states) - 1:
-            st_1 = list_of_states[i + 1]
-            if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
-                proposed_merge.append([i + 1, i])
-        if i > 0:
-            st_1 = list_of_states[i - 1]
-            if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
-                proposed_merge.append([i - 1, i])
+        for j, st_1 in enumerate(list_of_states):
+            if j != i:
+                if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
+                    proposed_merge.append([j, i])
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
@@ -454,8 +456,8 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
 
     #####################################################################################
     ### Old code, can delete oit when we're sure that everything works ###
-    # Step 1: Define a criterion to determine which states are considered "final."
-    # Iterate over pairs of states to compare their properties.
+    # # Step 1: Define a criterion to determine which states are considered "final."
+    # # Iterate over pairs of states to compare their properties.
     # old_to_new_map = []
     # tmp_list = []
 
@@ -475,7 +477,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     # for state_id in tmp_list:
     #     list_of_states.pop(state_id)
 
-    # list_of_states = sorted(list_of_states, key=lambda x: x.mean)
+    # updated_states = sorted(list_of_states, key=lambda x: x.mean)
 
     # # Relabel according to the new states
     # for mol_id in range(all_the_labels.shape[0]):
@@ -486,7 +488,7 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
 
     # list_unique = np.unique(all_the_labels)
     # label_to_index = {label: index for index, label in enumerate(list_unique)}
-    # new_labels = np.vectorize(label_to_index.get)(all_the_labels)
+    # all_the_labels = np.vectorize(label_to_index.get)(all_the_labels)
     #####################################################################################
 
     # Step 2: Calculate the final threshold values
@@ -750,7 +752,7 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
 
         # Iterate through the current time window and increment the transition counts in trans_mat.
         for label in all_the_labels:
-            trans_mat[int(label[t_0])][int(label[t_0 + t_jump])] += 1
+            trans_mat[label[t_0]][label[t_0 + t_jump]] += 1
 
         # Store the source, target, and value for the Sankey diagram based on trans_mat.
         for j, row in enumerate(trans_mat):
@@ -819,28 +821,27 @@ def plot_state_populations(all_the_labels: np.ndarray,
     """
     print('* Printing populations vs time...')
     num_part = all_the_labels.shape[0]
-    t_steps = all_the_labels.shape[1]
-    time = par.print_time(t_steps)
+    unique_labels = np.unique(all_the_labels)
     list_of_populations = []
-    for label in np.unique(all_the_labels):
-        population = []
-        for i in range(t_steps):
-            population.append(sum(all_the_labels[:, i] == label))
-        list_of_populations.append(np.array(population)/num_part)
+    for label in unique_labels:
+        population = np.sum(all_the_labels == label, axis=0)
+        list_of_populations.append(population / num_part)
 
     # Generate the color palette.
     palette = []
-    n_states = np.unique(all_the_labels).size
+    n_states = unique_labels.size
     cmap = plt.get_cmap('viridis', n_states)
     for i in range(cmap.N):
         rgba = cmap(i)
         palette.append(rgb2hex(rgba))
 
     fig, ax = plt.subplots()
+    t_steps = all_the_labels.shape[1]
+    time = par.print_time(t_steps)
     for label, pop in enumerate(list_of_populations):
         ax.plot(time, pop, label='ENV' + str(label), color=palette[label])
     ax.set_xlabel(r'Time ' + par.t_units)
-    ax.set_ylabel(r'ENV population')
+    ax.set_ylabel(r'Population')
     ax.legend()
 
     if show_plot:
@@ -887,10 +888,10 @@ def print_signal_with_labels(m_clean: np.ndarray, all_the_labels: np.ndarray):
             for i in range(all_the_labels.shape[0]):
                 if m_clean.shape[2] == 2:
                     print(m_clean[i][j][0], m_clean[i][j][1],
-                        int(all_the_labels[i][j]), j + 1, file=file)
+                        all_the_labels[i][j], j + 1, file=file)
                 else:
                     print(m_clean[i][j][0], m_clean[i][j][1], m_clean[i][j][2],
-                        int(all_the_labels[i][j]), j + 1, file=file)
+                        all_the_labels[i][j], j + 1, file=file)
 
 def print_mol_labels_fbf_xyz(all_the_labels: np.ndarray):
     """
@@ -969,7 +970,7 @@ def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: P
             i = 0
             for j in range(total_time):
                 print(tmp[i][0], file=out_file)
-                print(tmp[i + 1][0], file=out_file)
+                print('Properties=species:S:1:pos:R:3', file=out_file)
                 for k in range(num_of_particles):
                     print(all_the_labels[k][j],
                         tmp[i + 2 + k][1], tmp[i + 2 + k][2], tmp[i + 2 + k][3], file=out_file)

@@ -643,16 +643,16 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
         step = 5 if m_resized.size > 1000000 else 1
         for i, mol in enumerate(m_resized[::step]):
             ax.plot(mol.T[0], mol.T[1], mol.T[2], c='black', lw=lw, rasterized=True, zorder=0)
-            color_list = [ int(l) for l in all_the_labels[i*step] ]
+            color_list = all_the_labels[i*step]
             ax.scatter(mol.T[0], mol.T[1], mol.T[2],
                 c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
 
-        color_list = [ int(l) for l in all_the_labels[id_min] ]
+        color_list = all_the_labels[id_min]
         ax.plot(m_resized[id_min].T[0], m_resized[id_min].T[1],
             m_resized[id_min].T[2], c='black', lw=lw, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1], m_resized[id_min].T[2],
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
-        color_list = [ int(l) for l in all_the_labels[id_max] ]
+        color_list = all_the_labels[id_max]
         ax.plot(m_resized[id_max].T[0], m_resized[id_max].T[1],
             m_resized[id_max].T[2], c='black', lw=lw, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1], m_resized[id_max].T[2],
@@ -689,16 +689,16 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
 
         for i, mol in enumerate(m_resized[::step]):
             ax.plot(mol.T[0], mol.T[1], c='black', lw=lw, rasterized=True, zorder=0)
-            color_list = [ int(l) for l in all_the_labels[i*step] ]
+            color_list = all_the_labels[i*step]
             ax.scatter(mol.T[0], mol.T[1], c=color_list, cmap=colormap, vmin=0, vmax=n_states-1,
                 s=0.5, rasterized=True)
 
-        color_list = [ int(l) for l in all_the_labels[id_min] ]
+        color_list = all_the_labels[id_min]
         ax.plot(m_resized[id_min].T[0], m_resized[id_min].T[1],
             c='black', lw=lw, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1],
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
-        color_list = [ int(l) for l in all_the_labels[id_max] ]
+        color_list = all_the_labels[id_max]
         ax.plot(m_resized[id_max].T[0], m_resized[id_max].T[1],
             c='black', lw=lw, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1],
