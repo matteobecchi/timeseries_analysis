@@ -732,7 +732,7 @@ def full_output_analysis(m_raw: np.ndarray, par: Parameters):
     # sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', SHOW_PLOT)
     plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
 
-    print_mol_labels_fbf_xyz(all_the_labels)
+    # print_mol_labels_fbf_xyz(all_the_labels)
     print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
 
 def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
