@@ -885,16 +885,19 @@ def full_output_analysis(m_raw: np.ndarray, par: Parameters):
         return
 
     compute_cluster_mean_seq(m_clean, all_the_labels, tau_w)
+    plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
+    # sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig6', SHOW_PLOT)
+
     all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
     plot_cumulative_figure(m_clean, all_the_labels, list_of_states, 'Fig2')
     plot_one_trajectory(m_clean, par, all_the_labels, 'Fig3')
-    # sankey(all_the_labels, [0, 1000, 2000, 3000], par, 'Fig5', SHOW_PLOT)
-    plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
 
-    print_mol_labels_fbf_xyz(all_the_labels)
     print_signal_with_labels(m_clean, all_the_labels)
-    print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
+    if os.path.exists('trajectory.xyz'):
+        print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
+    else:
+        print_mol_labels_fbf_xyz(all_the_labels)
 
 def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
     """

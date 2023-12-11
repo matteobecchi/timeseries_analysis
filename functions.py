@@ -951,6 +951,7 @@ def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: P
     - Creates a new XYZ file 'colored_trj.xyz' by adding cluster labels to the particle entries.
     """
     if os.path.exists(trj_file):
+        print('* Printing colored_trj.xyz...')
         with open(trj_file, "r", encoding="utf-8") as in_file:
             tmp = [ line.split() for line in in_file.readlines() ]
 

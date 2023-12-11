@@ -461,12 +461,10 @@ def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
     """
 
     print('* Printing cumulative figure...')
-    t_units, bins = par.t_units, par.bins
-    n_states = len(list_of_states)
 
     # Compute histogram of flattened m_clean
     flat_m = m_clean.flatten()
-    counts, bins = np.histogram(flat_m, bins=bins, density=True)
+    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     counts *= flat_m.size
 
     # Create a 1x2 subplots with shared y-axis
@@ -478,6 +476,7 @@ def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
 
     # Create a color palette for plotting states
     palette = []
+    n_states = len(list_of_states)
     cmap = plt.get_cmap('viridis', n_states + 1)
     for i in range(1, cmap.N):
         rgba = cmap(i)
@@ -519,7 +518,7 @@ def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
 
     # Set plot titles and axis labels
     ax[0].set_ylabel('Signal')
-    ax[0].set_xlabel(r'Time $t$ ' + t_units)
+    ax[0].set_xlabel(r'Time $t$ ' + par.t_units)
     ax[0].set_xlim([time2[0], time2[-1]])
     ax[0].set_ylim(y_lim)
     ax[1].set_xticklabels([])
@@ -725,15 +724,17 @@ def full_output_analysis(m_raw: np.ndarray, par: Parameters):
 
     compute_cluster_mean_seq(m_clean, all_the_labels, tau_w)
     plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
+    # sankey(all_the_labels, [0, 10, 20, 30, 40], par, 'Fig6', SHOW_PLOT)
 
     all_the_labels = assign_single_frames(all_the_labels, tau_w)
 
     plot_cumulative_figure(m_clean, par, list_of_states, 'Fig2')
     plot_one_trajectory(m_clean, par, all_the_labels, 'Fig3')
-    # sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig5', SHOW_PLOT)
 
-    print_mol_labels_fbf_xyz(all_the_labels)
-    print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
+    if os.path.exists('trajectory.xyz'):
+        print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
+    else:
+        print_mol_labels_fbf_xyz(all_the_labels)
 
 def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
     """
