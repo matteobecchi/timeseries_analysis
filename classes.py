@@ -47,6 +47,82 @@ class StateMulti:
         """
         self.axis = number_of_sigmas*self.sigma     # Axes of the state
 
+class UniData:
+    """
+    The input signals of the analysis.
+    """
+    def __init__(self, data_path: str):
+        if data_path.endswith(('.npz', '.npy', '.txt')):
+            try:
+                if data_path.endswith('.npz'):
+                    with np.load(data_path) as data:
+                        # Load the first variable (assumed to be the data) into a NumPy array.
+                        data_name = data.files[0]
+                        self.matrix = np.array(data[data_name])
+                elif data_path.endswith('.npy'):
+                    self.matrix = np.load(data_path)
+                else: # .txt file
+                    self.matrix = np.loadtxt(data_path)
+                print('\tOriginal data shape:', self.matrix.shape)
+            except Exception as exc_msg:
+                print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
+                self.matrix = None
+        else:
+            print('\tERROR: unsupported format for input file.')
+            self.matrix = None
+
+        self.num_of_particles = self.matrix.shape[0]
+        self.num_of_steps = self.matrix.shape[1]
+        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
+        self.labels = None
+
+    def print_info(self):
+        """
+        Prints information about the input data.
+        """
+        print('Number of particles:', self.num_of_particles)
+        print('Number of steps:', self.num_of_steps)
+        print('Data range:', self.range)
+
+    def remove_delay(self, t_delay):
+        """
+        Removes a specified time delay from the data.
+
+        Args:
+        - t_delay (int): Number of steps to remove from the beginning of the data.
+        """
+        self.matrix = self.matrix[:, t_delay:]
+        self.num_of_steps = self.matrix.shape[1]
+
+    def smooth(self, window):
+        """
+        Smooths the data using a moving average with a specified window size.
+
+        Args:
+        - window (int): Size of the moving average window.
+        """
+        weights = np.ones(window) / window
+        self.matrix = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
+            axis=1, arr=self.matrix)
+        self.num_of_steps = self.matrix.shape[1]
+        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
+
+    def normalize(self):
+        """
+        Normalizes the data between 0 and 1 based on its minimum and maximum values.
+        """
+        data_min, data_max = self.range[0], self.range[1]
+        self.matrix = (self.matrix - data_min)/(data_max - data_min)
+        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
+
+    def create_copy(self):
+        """
+        Returns an independent copy of the UniData object.
+        Changes to the copy will not affect the original object.
+        """
+        copy_data = copy.deepcopy(self)
+        return copy_data
+
 class Parameters:
     """
     Contains the set of parameters for the specific analysis.

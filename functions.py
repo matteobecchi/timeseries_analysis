@@ -401,7 +401,6 @@ def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_
     - tuple: A tuple containing the final list of states
     (list[State]) and the newly labeled data (np.ndarray).
     """
-
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
     proposed_merge = []
@@ -839,7 +838,7 @@ def plot_state_populations(all_the_labels: np.ndarray,
     t_steps = all_the_labels.shape[1]
     time = par.print_time(t_steps)
     for label, pop in enumerate(list_of_populations):
-        pop_full = np.repeat(pop, par.tau_w)
+        # pop_full = np.repeat(pop, par.tau_w)
         ax.plot(time, pop, label='ENV' + str(label), color=palette[label])
     ax.set_xlabel(r'Time ' + par.t_units)
     ax.set_ylabel(r'Population')
