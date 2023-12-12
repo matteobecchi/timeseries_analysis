@@ -626,8 +626,7 @@ def compute_cluster_mean_seq(data: UniData, tau_window: int):
     Computes and plots the average time sequence inside each identified environment.
 
     Args:
-    - m_clean (np.ndarray): Input data containing signal trajectories.
-    - all_the_labels (np.ndarray): Labels indicating data points' cluster assignments.
+    - data (UniData): Input data containing signal trajectories and labels.
     - tau_window (int): Size of the time window.
 
     Notes:
@@ -636,7 +635,6 @@ def compute_cluster_mean_seq(data: UniData, tau_window: int):
     - Saves the figure as a PNG file in the 'output_figures' directory.
     - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
-    m_clean = data.matrix
     all_the_labels = data.labels
     # Initialize lists to store cluster means and standard deviations
     center_list = []
@@ -653,7 +651,7 @@ def compute_cluster_mean_seq(data: UniData, tau_window: int):
                 time_1 = (window + 1)*tau_window
                 # If the label matches the current cluster, append the corresponding data to tmp
                 if label == ref_label:
-                    tmp.append(m_clean[i][time_0:time_1])
+                    tmp.append(data.matrix[i][time_0:time_1])
 
         # Calculate mean and standard deviation for the current cluster
         center_list.append(np.mean(tmp, axis=0))
