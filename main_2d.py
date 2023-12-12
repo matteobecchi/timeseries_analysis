@@ -67,15 +67,11 @@ def preparing_the_data(data: MultiData, par: Parameters):
     - par (Parameters): Instance of Parameters class containing required parameters.
 
     Returns:
-    - tuple: A tuple containing:
-        - np.ndarray: Processed array of cleaned data for analysis.
-        - list: List containing minimum and maximum values
-        for each dimension of the processed data.
+    - data: Processed data structure of cleaned data for analysis.
 
     This function prepares the raw data for analysis by performing the following steps:
     - Applies a moving average filter on the raw data.
     - Normalizes the data to the range [0, 1] (commented out in the code).
-    - Transposes and rearranges the data for further processing.
     - Calculates the number of windows for analysis based on parameters.
     - Prints informative messages about trajectory details.
 
@@ -875,7 +871,7 @@ def time_resolution_analysis(data: MultiData, par: Parameters, perform_anew: boo
     Analyze time series data with varying time resolution parameters.
 
     Args:
-    - m_raw (np.ndarray): Raw time series data.
+    - data (MultiData): Raw time series data.
     - par (Parameters): Parameters for analysis.
     - perform_anew (bool): Flag to perform analysis anew or use saved results.
 
