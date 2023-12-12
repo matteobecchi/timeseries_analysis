@@ -84,7 +84,7 @@ class UniData:
         print('Number of steps:', self.num_of_steps)
         print('Data range:', self.range)
 
-    def remove_delay(self, t_delay):
+    def remove_delay(self, t_delay: int):
         """
         Removes a specified time delay from the data.
 
@@ -94,7 +94,7 @@ class UniData:
         self.matrix = self.matrix[:, t_delay:]
         self.num_of_steps = self.matrix.shape[1]
 
-    def smooth(self, window):
+    def smooth(self, window: int):
         """
         Smooths the data using a moving average with a specified window size.
 
@@ -175,7 +175,7 @@ class MultiData:
         print('Number of components:', self.dims)
         print('Data range:', self.range)
 
-    def remove_delay(self, t_delay):
+    def remove_delay(self, t_delay: int):
         """
         Removes a specified time delay from the data.
 
@@ -185,7 +185,7 @@ class MultiData:
         self.matrix = self.matrix[:, t_delay:, :]
         self.num_of_steps = self.matrix.shape[1]
 
-    def smooth(self, window):
+    def smooth(self, window: int):
         """
         Smooths the data using a moving average with a specified window size.
 
@@ -200,15 +200,18 @@ class MultiData:
         self.num_of_steps = self.matrix.shape[1]
         self.range = np.array([ [np.min(comp), np.max(comp)] for comp in tmp_matrix ])
 
-    def normalize(self):
+    def normalize(self, dim_to_avoid: list[int]):
         """
         Normalizes the data between 0 and 1 based on its minimum and maximum values.
         """
         tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
         new_matrix = []
-        for comp in tmp_matrix:
-            data_min, data_max = np.min(comp), np.max(comp)
-            new_matrix.append((comp - data_min)/(data_max - data_min))
+        for dim, comp in enumerate(tmp_matrix):
+            if dim not in dim_to_avoid:
+                data_min, data_max = np.min(comp), np.max(comp)
+                new_matrix.append((comp - data_min)/(data_max - data_min))
+            else:
+                new_matrix.append(comp)
         self.matrix = np.transpose(np.array(new_matrix), axes=(1, 2, 0))
         self.range = np.array([ [np.min(comp), np.max(comp)] for comp in new_matrix ])
 

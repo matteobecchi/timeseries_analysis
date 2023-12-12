@@ -548,7 +548,7 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
     # Relabel the data in all_the_labels according to the new states_list
     mask = all_the_labels != 0  # Create a mask for non-zero elements
     all_the_labels[mask] = np.vectorize(state_mapping.get,
-        otypes=[np.int])(all_the_labels[mask] - 1, 0)
+        otypes=[int])(all_the_labels[mask] - 1, 0)
 
     ### Step 3: Merge together the states which are strongly overlapping
     # Find all the possible merges
