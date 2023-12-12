@@ -123,6 +123,103 @@ class UniData:
         copy_data = copy.deepcopy(self)
         return copy_data
 
+class MultiData:
+    """
+    The input signals of the analysis.
+    """
+    def __init__(self, path_list: str):
+        data_list = []
+        for data_path in path_list:
+            if data_path.endswith(('.npz', '.npy', '.txt')):
+                try:
+                    if data_path.endswith('.npz'):
+                        with np.load(data_path) as data:
+                            # Load the first variable (assumed to be the data) into a NumPy array.
+                            data_name = data.files[0]
+                            data_list.append(np.array(data[data_name]))
+                    elif data_path.endswith('.npy'):
+                        data_list.append(np.load(data_path))
+                    else: # .txt file
+                        data_list.append(np.loadtxt(data_path))
+                    print('\tOriginal data shape:', data_list[-1].shape)
+                except Exception as exc_msg:
+                    print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
+                    self.matrix = None
+                    return
+            else:
+                print('\tERROR: unsupported format for input file.')
+                self.matrix = None
+                return
+
+        for dim, data in enumerate(data_list[:-1]):
+            if data_list[dim].shape != data_list[dim + 1].shape :
+                print('ERROR: The signals do not correspond. Abort.')
+                self.matrix = None
+                return
+
+        data_arr = np.array(data_list)
+        self.matrix = np.transpose(data_arr, axes=(1, 2, 0))
+
+        self.num_of_particles = self.matrix.shape[0]
+        self.num_of_steps = self.matrix.shape[1]
+        self.dims = self.matrix.shape[2]
+        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in data_list ])
+        self.labels = None
+
+    def print_info(self):
+        """
+        Prints information about the input data.
+        """
+        print('Number of particles:', self.num_of_particles)
+        print('Number of steps:', self.num_of_steps)
+        print('Number of components:', self.dims)
+        print('Data range:', self.range)
+
+    def remove_delay(self, t_delay):
+        """
+        Removes a specified time delay from the data.
+
+        Args:
+        - t_delay (int): Number of steps to remove from the beginning of the data.
+        """
+        self.matrix = self.matrix[:, t_delay:, :]
+        self.num_of_steps = self.matrix.shape[1]
+
+    def smooth(self, window):
+        """
+        Smooths the data using a moving average with a specified window size.
+
+        Args:
+        - window (int): Size of the moving average window.
+        """
+        weights = np.ones(window) / window
+        tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
+        tmp_matrix = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
+            axis=2, arr=tmp_matrix)
+        self.matrix = np.transpose(tmp_matrix, axes=(1, 2, 0))
+        self.num_of_steps = self.matrix.shape[1]
+        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in tmp_matrix ])
+
+    def normalize(self):
+        """
+        Normalizes the data between 0 and 1 based on its minimum and maximum values.
+        """
+        tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
+        new_matrix = []
+        for comp in tmp_matrix:
+            data_min, data_max = np.min(comp), np.max(comp)
+            new_matrix.append((comp - data_min)/(data_max - data_min))
+        self.matrix = np.transpose(np.array(new_matrix), axes=(1, 2, 0))
+        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in new_matrix ])
+
+    def create_copy(self):
+        """
+        Returns an independent copy of the UniData object.
+        Changes to the copy will not affect the original object.
+        """
+        copy_data = copy.deepcopy(self)
+        return copy_data
+
 class Parameters:
     """
     Contains the set of parameters for the specific analysis.

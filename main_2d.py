@@ -19,7 +19,7 @@ def all_the_input_stuff():
 
     Returns:
     - tuple or None: Tuple containing:
-        - list or None: Processed raw data from input directories, or None if an error occurs.
+        - MultiData or None: raw data from input directories, or None if an error occurs.
         - Parameters or None: Input parameters instance, or None if an error occurs.
 
     This function handles various input-related tasks:
@@ -36,20 +36,8 @@ def all_the_input_stuff():
     par = Parameters('input_parameters.txt')
     par.print_to_screen()
 
-    tmp_m_raw = []
-    for data_dir in data_directory:
-        # Read raw data from the specified directory/files.
-        m_raw = read_data(data_dir)
-
-        # Remove initial frames based on 'tau_delay'.
-        m_raw = m_raw[:, par.t_delay:]
-
-        tmp_m_raw.append(m_raw)
-
-    for dim in range(len(tmp_m_raw) - 1):
-        if tmp_m_raw[dim].shape != tmp_m_raw[dim + 1].shape :
-            print('ERROR: The signals do not correspond. Abort.')
-            return None, None
+    data = MultiData(data_directory)
+    data.remove_delay(par.t_delay)
 
     ### Create files for output
     with open(OUTPUT_FILE, 'w', encoding="utf-8") as file:
@@ -68,14 +56,14 @@ def all_the_input_stuff():
             print(f'Failed to delete {file_path}. Reason: {exc_msg}')
 
     # Return required data for further analysis.
-    return tmp_m_raw, par
+    return data, par
 
-def preparing_the_data(tmp_m_raw: np.ndarray, par: Parameters):
+def preparing_the_data(data: MultiData, par: Parameters):
     """
     Prepare the raw data for analysis by applying filtering and normalization.
 
     Parameters:
-    - tmp_m_raw (np.ndarray): Array containing raw data.
+    - data (MultiData): Raw data structure.
     - par (Parameters): Instance of Parameters class containing required parameters.
 
     Returns:
@@ -95,42 +83,27 @@ def preparing_the_data(tmp_m_raw: np.ndarray, par: Parameters):
     """
     tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
-    m_clean = []
-    for m_raw in tmp_m_raw:
-        # Apply filtering on the data
-        tmp_m = moving_average(m_raw, t_smooth)
+    data.smooth(t_smooth)
+    # data.normalize() ### Normalizes data in [0, 1]. Usually not necessary.
 
-        # Normalize the data to the range [0, 1].
-        # sig_max = np.max(tmp_m)
-        # sig_min = np.min(tmp_m)
-        # tmp_m = (tmp_m - sig_min)/(sig_max - sig_min)
-
-        m_clean.append(tmp_m)
-
-    m_arr = np.array(m_clean)
-    m_limits = [ [np.min(x), np.max(x) ] for x in m_arr ]
-    m_arr = np.transpose(m_arr, axes=(1, 2, 0))
-
-    total_particles = m_arr.shape[0]
-    total_time = m_arr.shape[1]
     # Calculate the number of windows for the analysis.
-    num_windows = int(total_time / tau_window)
+    num_windows = int(data.num_of_steps / tau_window)
 
     # Print informative messages about trajectory details.
-    print('\tTrajectory has ' + str(total_particles) + ' particles. ')
-    print('\tTrajectory of length ' + str(total_time) + ' frames (' +
-        str(total_time*t_conv) + ' ' + t_units + ').')
+    print('\tTrajectory has ' + str(data.num_of_particles) + ' particles. ')
+    print('\tTrajectory of length ' + str(data.num_of_steps) + ' frames (' +
+        str(data.num_of_steps*t_conv) + ' ' + t_units + ').')
     print('\tUsing ' + str(num_windows) + ' windows of length ' +
         str(tau_window) + ' frames (' + str(tau_window*t_conv) + ' ' + t_units + ').')
 
-    return m_arr, m_limits
+    return data
 
-def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
+def plot_input_data(data: MultiData, par: Parameters, filename: str):
     """
     Plot input data: histograms and trajectories.
 
     Parameters:
-    - m_clean (np.ndarray): Processed array of cleaned data for plotting.
+    - data (MultiData): Processed array of cleaned data for plotting.
     - par (Parameters): Instance of Parameters class containing required parameters.
     - filename (str): Name of the output file to save the plot.
 
@@ -143,7 +116,8 @@ def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
     """
     bin_selection = []
     counts_selection = []
-    for dim in range(m_clean.shape[2]):
+    m_clean = data.matrix
+    for dim in range(data.dims):
         # Flatten the m matrix and compute histogram counts and bins
         flat_m = m_clean[:,:,dim].flatten()
         counts0, bins0 = np.histogram(flat_m, bins=par.bins, density=True)
@@ -151,7 +125,7 @@ def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
         bin_selection.append(bins0)
         counts_selection.append(counts0)
 
-    if m_clean.shape[2] == 2:
+    if data.dims == 2:
         # Create a plot with two subplots (side-by-side)
         fig = plt.figure(figsize=(9, 9))
         grid = fig.add_gridspec(4, 4)
@@ -184,7 +158,7 @@ def plot_input_data(m_clean: np.ndarray, par: Parameters, filename: str):
         ax2.set_ylabel('Signal 1')
         ax2.set_xlabel('Signal 2')
 
-    elif m_clean.shape[2] == 3:
+    elif data.dims == 3:
         fig = plt.figure(figsize=(6, 6))
         ax = plt.axes(projection='3d')
 
@@ -548,13 +522,12 @@ def find_stable_trj(m_clean: np.ndarray, tau_window: int, state: StateMulti, all
     # and the updated list_of_states
     return m_new_arr, fraction_of_points, one_last_state
 
-def iterative_search(m_clean: np.ndarray, m_limits: list[list[int]], par: Parameters, name: str):
+def iterative_search(data: MultiData, par: Parameters, name: str):
     """
     Perform an iterative search to identify stable windows in trajectory data.
 
     Args:
-    - m_clean (np.ndarray): Cleaned trajectory data.
-    - m_limits (list[list[int]]): Limits of the trajectory data.
+    - data (MultiData): Cleaned trajectory data.
     - par (Parameters): Parameters object containing tau_w and bins.
     - name (str): Name for the output figures.
 
@@ -566,17 +539,17 @@ def iterative_search(m_clean: np.ndarray, m_limits: list[list[int]], par: Parame
     tau_w, bins = par.tau_w, par.bins
 
     # Initialize an array to store labels for each window.
-    num_windows = int(m_clean.shape[1] / tau_w)
-    all_the_labels = np.zeros((m_clean.shape[0], num_windows)).astype(int)
+    num_windows = int(data.num_of_steps / tau_w)
+    tmp_labels = np.zeros((data.num_of_particles, num_windows)).astype(int)
 
     states_list = []
-    m_copy = m_clean
+    m_copy = data.matrix
     iteration_id = 1
     states_counter = 0
     one_last_state = False
     while True:
         ### Locate and fit maximum in the signal distribution
-        state = gauss_fit_max(m_copy, m_limits, bins, 'output_figures/' +
+        state = gauss_fit_max(m_copy, data.range, bins, 'output_figures/' +
             name + 'Fig1_' + str(iteration_id))
         if state is None:
             print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
@@ -584,7 +557,7 @@ def iterative_search(m_clean: np.ndarray, m_limits: list[list[int]], par: Parame
 
         ### Find the windows in which the trajectories are stable in the maximum
         m_new, counter, one_last_state = find_stable_trj(
-            m_clean, tau_w, state, all_the_labels, states_counter)
+            data.matrix, tau_w, state, tmp_labels, states_counter)
         state.perc = counter
 
         if counter > 0.0:
@@ -601,7 +574,7 @@ def iterative_search(m_clean: np.ndarray, m_limits: list[list[int]], par: Parame
             break
         m_copy = m_new
 
-    all_the_labels, list_of_states = relabel_states_2d(all_the_labels, states_list)
+    all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
     return all_the_labels, list_of_states, one_last_state
 
 def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list_of_states: list[StateMulti], filename: str):
@@ -759,12 +732,12 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def timeseries_analysis(m_raw: np.ndarray, par: Parameters, tau_w: int, t_smooth: int):
+def timeseries_analysis(original_data: MultiData, par: Parameters, tau_w: int, t_smooth: int):
     """
     Perform time series analysis on the input data.
 
     Args:
-    - m_raw (np.ndarray): Raw input time series data.
+    - data (MultiData): Raw input time series data.
     - par (Parameters): Parameters object containing necessary parameters.
     - tau_w (int): the time window for the analysis
     - t_smooth (int): the width of the moving average for the analysis
@@ -779,22 +752,21 @@ def timeseries_analysis(m_raw: np.ndarray, par: Parameters, tau_w: int, t_smooth
     tmp_par = par.create_copy()
     tmp_par.tau_w = tau_w
     tmp_par.t_smooth = t_smooth
+    data = original_data.create_copy()
 
-    m_clean, m_limits = preparing_the_data(m_raw, tmp_par)
-    plot_input_data(m_clean, tmp_par, name + 'Fig0')
+    data = preparing_the_data(data, tmp_par)
+    plot_input_data(data, tmp_par, name + 'Fig0')
 
-    all_the_labels, list_of_states, one_last_state = iterative_search(m_clean, m_limits, tmp_par, name)
+    all_the_labels, list_of_states, one_last_state = iterative_search(data, tmp_par, name)
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
         # We need to free the memory otherwise it accumulates
-        del m_raw
-        del m_clean
+        del data
         del all_the_labels
         return 1, 1.0
 
     # We need to free the memory otherwise it accumulates
-    del m_raw
-    del m_clean
+    del data
     del all_the_labels
 
     fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
@@ -806,43 +778,42 @@ def timeseries_analysis(m_raw: np.ndarray, par: Parameters, tau_w: int, t_smooth
     print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
     return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(m_clean: np.ndarray, all_the_labels: np.ndarray, tau_window: int):
+def compute_cluster_mean_seq(data: UniData, tau_window: int):
     """
     Plot the mean time sequence for clusters in the data.
 
     Args:
-    - m_clean (np.ndarray): Cleaned input data.
-    - all_the_labels (np.ndarray): Labels for each data point.
+    - data (MultiData): Input data containing signal trajectories and labels.
     - tau_window (int): Window size for time sequence.
 
     Returns:
     - None: If the third dimension of input data is greater than 2.
     """
-    if m_clean.shape[2] > 2:
+    if data.dims > 2:
         return
 
     # Initialize lists to store cluster means and standard deviations
     center_list = []
 
     # Loop through unique labels (clusters)
-    for ref_label in np.unique(all_the_labels):
+    for ref_label in np.unique(data.labels):
         tmp = []
         # Iterate through molecules and their labels
-        for i, mol in enumerate(all_the_labels):
+        for i, mol in enumerate(data.labels):
             for j, label in enumerate(mol):
                 # Define time interval
                 t_0 = j*tau_window
                 t_1 = (j + 1)*tau_window
                 # If the label matches the current cluster, append the corresponding data to tmp
                 if label == ref_label:
-                    tmp.append(m_clean[i][t_0:t_1])
+                    tmp.append(data.matrix[i][t_0:t_1])
 
         # Calculate mean and standard deviation for the current cluster
         center_list.append(np.mean(tmp, axis=0))
 
     # Create a color palette
     palette = []
-    cmap = plt.get_cmap('viridis', np.unique(all_the_labels).size)
+    cmap = plt.get_cmap('viridis', np.unique(data.labels).size)
     palette.append(rgb2hex(cmap(0)))
     for i in range(1, cmap.N):
         rgba = cmap(i)
@@ -864,42 +835,42 @@ def compute_cluster_mean_seq(m_clean: np.ndarray, all_the_labels: np.ndarray, ta
         plt.show()
     fig.savefig('output_figures/Fig4.png', dpi=600)
 
-def full_output_analysis(m_raw: np.ndarray, par: Parameters):
+def full_output_analysis(data: MultiData, par: Parameters):
     """
     Perform a comprehensive analysis and visualization pipeline on the input data.
 
     Args:
-    - m_raw (np.ndarray): Raw input data.
+    - data (MultiData): Raw input data containing signal trajectories.
     - par (Parameters): Parameters for analysis.
 
     Returns:
     - None
     """
     tau_w = par.tau_w
-    m_clean, m_limits = preparing_the_data(m_raw, par)
-    plot_input_data(m_clean, par, 'Fig0')
+    data = preparing_the_data(data, par)
+    plot_input_data(data, par, 'Fig0')
 
-    all_the_labels, list_of_states, _ = iterative_search(m_clean, m_limits, par, '')
+    data.labels, list_of_states, _ = iterative_search(data, par, '')
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
         return
 
-    compute_cluster_mean_seq(m_clean, all_the_labels, tau_w)
-    plot_state_populations(all_the_labels, par, 'Fig5', SHOW_PLOT)
-    # sankey(all_the_labels, [0, 100, 200, 300], par, 'Fig6', SHOW_PLOT)
+    compute_cluster_mean_seq(data, tau_w)
+    plot_state_populations(data.labels, par, 'Fig5', SHOW_PLOT)
+    # sankey(data.labels, [0, 100, 200, 300], par, 'Fig6', SHOW_PLOT)
 
-    all_the_labels = assign_single_frames(all_the_labels, tau_w)
+    all_the_labels = assign_single_frames(data.labels, tau_w)
 
-    plot_cumulative_figure(m_clean, all_the_labels, list_of_states, 'Fig2')
-    plot_one_trajectory(m_clean, par, all_the_labels, 'Fig3')
+    plot_cumulative_figure(data.matrix, all_the_labels, list_of_states, 'Fig2')
+    plot_one_trajectory(data.matrix, par, all_the_labels, 'Fig3')
 
-    print_signal_with_labels(m_clean, all_the_labels)
+    print_signal_with_labels(data.matrix, all_the_labels)
     if os.path.exists('trajectory.xyz'):
         print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
     else:
         print_mol_labels_fbf_xyz(all_the_labels)
 
-def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: bool):
+def time_resolution_analysis(data: MultiData, par: Parameters, perform_anew: bool):
     """
     Analyze time series data with varying time resolution parameters.
 
@@ -911,7 +882,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
     Returns:
     - None
     """
-    tau_window_list, t_smooth_list = param_grid(par, m_raw[0].shape[1])
+    tau_window_list, t_smooth_list = param_grid(par, data.num_of_steps)
 
     if perform_anew:
         ### If the analysis hat to be performed anew ###
@@ -921,7 +892,7 @@ def time_resolution_analysis(m_raw: np.ndarray, par: Parameters, perform_anew: b
             tmp = [tau_w]
             tmp1 = [tau_w]
             for t_s in t_smooth_list:
-                n_s, f_0 = timeseries_analysis(m_raw, par, tau_w, t_s)
+                n_s, f_0 = timeseries_analysis(data, par, tau_w, t_s)
                 tmp.append(n_s)
                 tmp1.append(f_0)
             number_of_states.append(tmp)
@@ -947,9 +918,9 @@ def main():
         Use 'False' to skip it.
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
-    m_raw, par = all_the_input_stuff()
-    time_resolution_analysis(m_raw, par, True)
-    full_output_analysis(m_raw, par)
+    data, par = all_the_input_stuff()
+    time_resolution_analysis(data, par, True)
+    full_output_analysis(data, par)
 
 if __name__ == "__main__":
     main()
