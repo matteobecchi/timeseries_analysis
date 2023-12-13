@@ -608,65 +608,6 @@ def timeseries_analysis(original_data: UniData, par: Parameters, tau_w: int, t_s
     print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
     return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(data: UniData, tau_window: int):
-    """
-    Computes and plots the average time sequence inside each identified environment.
-
-    Args:
-    - data (UniData): Input data containing signal trajectories and labels.
-    - tau_window (int): Size of the time window.
-
-    Notes:
-    - Computes cluster means and standard deviations for each identified cluster.
-    - Plots the average time sequence and standard deviation for each cluster.
-    - Saves the figure as a PNG file in the 'output_figures' directory.
-    """
-    all_the_labels = data.labels
-    # Initialize lists to store cluster means and standard deviations
-    center_list = []
-    std_list = []
-
-    # Loop through unique labels (clusters)
-    for ref_label in np.unique(all_the_labels):
-        tmp = []
-        # Iterate through molecules and their labels
-        for i, mol in enumerate(all_the_labels):
-            for window, label in enumerate(mol):
-                 # Define time interval
-                time_0 = window*tau_window
-                time_1 = (window + 1)*tau_window
-                # If the label matches the current cluster, append the corresponding data to tmp
-                if label == ref_label:
-                    tmp.append(data.matrix[i][time_0:time_1])
-
-        # Calculate mean and standard deviation for the current cluster
-        center_list.append(np.mean(tmp, axis=0))
-        std_list.append(np.std(tmp, axis=0))
-
-    # Create a color palette
-    palette = []
-    cmap = plt.get_cmap('viridis', np.unique(all_the_labels).size)
-    palette.append(rgb2hex(cmap(0)))
-    for i in range(1, cmap.N):
-        rgba = cmap(i)
-        palette.append(rgb2hex(rgba))
-
-    # Plot
-    fig, ax = plt.subplots()
-    time_seq = range(tau_window)
-    for center_id, center in enumerate(center_list):
-        err_inf = center - std_list[center_id]
-        err_sup = center + std_list[center_id]
-        ax.fill_between(time_seq, err_inf, err_sup, alpha=0.25, color=palette[center_id])
-        ax.plot(time_seq, center, label='ENV'+str(center_id), marker='o', c=palette[center_id])
-    fig.suptitle('Average time sequence inside each environments')
-    ax.set_xlabel(r'Time $t$ [frames]')
-    ax.set_ylabel(r'Signal')
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.legend()
-
-    fig.savefig('output_figures/Fig4.png', dpi=600)
-
 def full_output_analysis(data: UniData, par: Parameters):
     """
     Conducts a comprehensive analysis pipeline on a dataset,
@@ -692,7 +633,7 @@ def full_output_analysis(data: UniData, par: Parameters):
         return
     list_of_states, data.labels = set_final_states(list_of_states, tmp_labels, data.range)
 
-    compute_cluster_mean_seq(data, tau_w)
+    data.plot_medoids('Fig4')
     plot_state_populations(data.labels, par, 'Fig5')
     # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
 

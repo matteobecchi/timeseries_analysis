@@ -3,9 +3,9 @@ Should contains all the functions in common between the 2 codes.
 """
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import rgb2hex
-from matplotlib.ticker import MaxNLocator
+# import matplotlib.pyplot as plt
+# from matplotlib.colors import rgb2hex
+# from matplotlib.ticker import MaxNLocator
 import plotly.graph_objects as go
 import scipy.optimize
 import scipy.signal
