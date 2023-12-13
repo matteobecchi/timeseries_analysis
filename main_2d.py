@@ -80,7 +80,7 @@ def preparing_the_data(data: MultiData, par: Parameters):
     tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
     data.smooth(t_smooth)
-    data.normalize([1]) ### Normalizes data in [0, 1]. Usually not necessary.
+    # data.normalize([]) ### Normalizes data in [0, 1]. Usually not necessary.
 
     # Calculate the number of windows for the analysis.
     num_windows = int(data.num_of_steps / tau_window)
@@ -774,7 +774,7 @@ def timeseries_analysis(original_data: MultiData, par: Parameters, tau_w: int, t
     print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
     return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(data: UniData, tau_window: int):
+def compute_cluster_mean_seq(data: MultiData, tau_window: int):
     """
     Plot the mean time sequence for clusters in the data.
 
