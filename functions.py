@@ -615,7 +615,7 @@ def assign_single_frames(all_the_labels: np.ndarray, tau_window: int):
     return new_labels
 
 def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
-    par: Parameters, show_plot: bool):
+    par: Parameters):
     """
     Plots time resolution analysis figures based on the number of states
     and fraction of a specific state.
@@ -624,7 +624,6 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     - number_of_states (np.ndarray): Array containing the number of states.
     - fraction_0 (np.ndarray): Array containing the fraction of a specific state.
     - par (Parameters): Instance of Parameters with time-related parameters.
-    - show_plot (bool): Flag to display the plot if True.
 
     Steps:
     - Extracts time conversion and units from the provided Parameters instance.
@@ -635,7 +634,6 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     Note:
     - Provides options for specific or averaged data views.
     - Offers control over plot settings like axes, labels, and visualization options.
-    - If 'show_plot' is True, the generated plot will be displayed.
     """
 
     t_conv, units = par.t_conv, par.t_units
@@ -678,12 +676,10 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     axr.plot(time, y_2, marker='o', c='#ff7f0e')
     axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
 
-    if show_plot:
-        plt.show()
     fig.savefig('output_figures/Time_resolution_analysis.png', dpi=600)
 
 def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
-    par: Parameters, filename: str, show_plot: bool):
+    par: Parameters, filename: str):
     """
     Computes and plots a Sankey diagram based on provided data and parameters.
 
@@ -692,7 +688,6 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
     - tmp_frame_list (list[int]): List of frame indices.
     - par (Parameters): Instance of Parameters containing time-related parameters.
     - filename (str): Name of the file for the output Sankey diagram.
-    - show_plot (bool): Flag to display the plot if True.
 
     Steps:
     - Computes transition matrices for each time window based on label data.
@@ -772,12 +767,10 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
     # Add the title with the time information.
     fig.update_layout(title='Frames: ' + str(frame_list * par.t_conv) + ' ' + par.t_units)
 
-    if show_plot:
-        fig.show()
     fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
 def plot_state_populations(all_the_labels: np.ndarray,
-    par: Parameters, filename: str, show_plot: bool):
+    par: Parameters, filename: str):
     """
     Plots the populations of states over time.
 
@@ -785,7 +778,6 @@ def plot_state_populations(all_the_labels: np.ndarray,
     - all_the_labels (np.ndarray): Array containing state labels for each time step.
     - par (Parameters): Instance of Parameters class containing time-related information.
     - filename (str): Name of the file to save the generated plot.
-    - show_plot (bool): Flag to display the plot if True.
 
     Steps:
     - Computes the populations of each state at different time steps.
@@ -823,8 +815,6 @@ def plot_state_populations(all_the_labels: np.ndarray,
     ax.set_ylabel(r'Population')
     ax.legend()
 
-    if show_plot:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
 
 def print_mol_labels_fbf_gro(all_the_labels: np.ndarray):

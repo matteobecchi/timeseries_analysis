@@ -11,7 +11,6 @@ from functions import *
 
 NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = 'states_output.txt'
-SHOW_PLOT = False
 
 def all_the_input_stuff():
     """
@@ -171,8 +170,6 @@ def plot_input_data(data: MultiData, par: Parameters, filename: str):
         ax.set_ylabel('Signal 2')
         ax.set_zlabel('Signal 3')
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -455,8 +452,6 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
         ax[1][0].set_xlim(m_limits[0][0], m_limits[0][1])
         ax[1][0].set_ylim(m_limits[2][0], m_limits[2][1])
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig(filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -685,8 +680,6 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -725,8 +718,6 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np
     ax.set_xlabel(r'$x$')
     ax.set_ylabel(r'$y$')
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -829,8 +820,6 @@ def compute_cluster_mean_seq(data: MultiData, tau_window: int):
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.legend()
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def full_output_analysis(data: MultiData, par: Parameters):
@@ -854,8 +843,8 @@ def full_output_analysis(data: MultiData, par: Parameters):
         return
 
     compute_cluster_mean_seq(data, tau_w)
-    plot_state_populations(data.labels, par, 'Fig5', SHOW_PLOT)
-    # sankey(data.labels, [0, 100, 200, 300], par, 'Fig6', SHOW_PLOT)
+    plot_state_populations(data.labels, par, 'Fig5')
+    # sankey(data.labels, [0, 100, 200, 300], par, 'Fig6')
 
     all_the_labels = assign_single_frames(data.labels, tau_w)
 
@@ -907,7 +896,7 @@ def time_resolution_analysis(data: MultiData, par: Parameters, perform_anew: boo
         number_of_states_arr = np.loadtxt('number_of_states.txt')
         fraction_0_arr = np.loadtxt('fraction_0.txt')
 
-    plot_tra_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
+    plot_tra_figure(number_of_states_arr, fraction_0_arr, par)
 
 def main():
     """

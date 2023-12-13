@@ -6,7 +6,6 @@ from functions import *
 
 NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = 'states_output.txt'
-SHOW_PLOT = False
 
 def all_the_input_stuff():
     """
@@ -109,7 +108,6 @@ def plot_input_data(data: UniData, par: Parameters, filename: str):
     - Plots histogram counts and bins of the flattened data.
     - Generates a plot with two subplots (signal trajectories and histogram).
     - Saves the plot as a PNG file in the 'output_figures' directory.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
     # Flatten the m_clean matrix and compute histogram counts and bins
@@ -137,8 +135,6 @@ def plot_input_data(data: UniData, par: Parameters, filename: str):
     ax[0].set_xlabel(r'Simulation time $t$ ' + par.t_units)
     ax[1].set_xticklabels([])
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -223,7 +219,6 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     - Chooses the best fit among the options or returns None if fitting fails.
     - Prints fit details and goodness of fit to an output file.
     - Generates a plot showing the distribution and the fitted Gaussian.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
     print('* Gaussian fit...')
@@ -304,8 +299,6 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     ax.plot(np.linspace(bins[0], bins[-1], 1000),
         gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig(filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -446,7 +439,6 @@ def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
     - Plots signal trajectories and Gaussian distributions of identified states.
     - Visualizes state thresholds and their corresponding signal ranges.
     - Saves the figure as a PNG file in the 'output_figures' directory.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
     print('* Printing cumulative figure...')
@@ -512,8 +504,6 @@ def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
     ax[0].set_ylim(y_lim)
     ax[1].set_xticklabels([])
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -532,7 +522,6 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     - Plots a single trajectory with labeled data points based on classifications.
     - Uses a colormap to differentiate and visualize different data point labels.
     - Saves the figure as a PNG file in the 'output_figures' directory.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
     example_id = par.example_id
@@ -560,8 +549,6 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     ax.set_xlabel('Time ' + par.t_units)
     ax.set_ylabel('Normalized signal')
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
@@ -633,7 +620,6 @@ def compute_cluster_mean_seq(data: UniData, tau_window: int):
     - Computes cluster means and standard deviations for each identified cluster.
     - Plots the average time sequence and standard deviation for each cluster.
     - Saves the figure as a PNG file in the 'output_figures' directory.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
     all_the_labels = data.labels
     # Initialize lists to store cluster means and standard deviations
@@ -679,8 +665,6 @@ def compute_cluster_mean_seq(data: UniData, tau_window: int):
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.legend()
 
-    if SHOW_PLOT:
-        plt.show()
     fig.savefig('output_figures/Fig4.png', dpi=600)
 
 def full_output_analysis(data: UniData, par: Parameters):
@@ -696,7 +680,6 @@ def full_output_analysis(data: UniData, par: Parameters):
     - Prepares the data, conducts iterative search for states, and sets final states.
     - Computes cluster mean sequences, assigns single frames, and generates various plots.
     - Prints molecular labels and colored trajectories based on analysis results.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
     tau_w = par.tau_w
@@ -710,8 +693,8 @@ def full_output_analysis(data: UniData, par: Parameters):
     list_of_states, data.labels = set_final_states(list_of_states, tmp_labels, data.range)
 
     compute_cluster_mean_seq(data, tau_w)
-    plot_state_populations(data.labels, par, 'Fig5', SHOW_PLOT)
-    # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6', SHOW_PLOT)
+    plot_state_populations(data.labels, par, 'Fig5')
+    # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
 
     all_the_labels = assign_single_frames(data.labels, tau_w)
 
@@ -737,7 +720,6 @@ def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool)
     - Conducts TRA for different combinations of parameters.
     - Analyzes the dataset with varying 'tau_window' and 't_smooth'.
     - Saves results to text files and plots t.r.a. figures based on analysis outcomes.
-    - Allows toggling plot display based on 'SHOW_PLOT' constant.
     """
 
     tau_window_list, t_smooth_list = param_grid(par, data.num_of_steps)
@@ -767,7 +749,7 @@ def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool)
         number_of_states_arr = np.loadtxt('number_of_states.txt')
         fraction_0_arr = np.loadtxt('fraction_0.txt')
 
-    plot_tra_figure(number_of_states_arr, fraction_0_arr, par, SHOW_PLOT)
+    plot_tra_figure(number_of_states_arr, fraction_0_arr, par)
 
 def main():
     """
