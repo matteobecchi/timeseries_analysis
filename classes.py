@@ -2,6 +2,7 @@
 Contains the classes used for storing parameters and system states.
 """
 import copy
+from typing import Union
 import numpy as np
 
 class State:
@@ -66,10 +67,12 @@ class UniData:
                 print('\tOriginal data shape:', self.matrix.shape)
             except Exception as exc_msg:
                 print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
-                self.matrix = None
+                # self.matrix = None
+                return
         else:
             print('\tERROR: unsupported format for input file.')
-            self.matrix = None
+            # self.matrix = None
+            return
 
         self.num_of_particles = self.matrix.shape[0]
         self.num_of_steps = self.matrix.shape[1]
@@ -144,17 +147,17 @@ class MultiData:
                     print('\tOriginal data shape:', data_list[-1].shape)
                 except Exception as exc_msg:
                     print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
-                    self.matrix = None
+                    # self.matrix = None
                     return
             else:
                 print('\tERROR: unsupported format for input file.')
-                self.matrix = None
+                # self.matrix = None
                 return
 
         for dim, data in enumerate(data_list[:-1]):
             if data_list[dim].shape != data_list[dim + 1].shape :
                 print('ERROR: The signals do not correspond. Abort.')
-                self.matrix = None
+                # self.matrix = None
                 return
 
         data_arr = np.array(data_list)
@@ -239,7 +242,7 @@ class Parameters:
         self.t_conv = 1.
         self.t_units = '[frames]'
         self.example_id = 0
-        self.bins = 'auto'
+        self.bins: Union[str, int] = 'auto'
         self.num_tau_w = 20
         self.min_tau_w = 2
         self.max_tau_w = -1
