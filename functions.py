@@ -192,37 +192,8 @@ def gaussian(x_points: np.ndarray, x_mean: float, sigma: float, area: float):
 
     return np.exp(-((x_points - x_mean)/sigma)**2)*area/(np.sqrt(np.pi)*sigma)
 
-def gaussian_2d(r_points: np.ndarray, x_mean: float, y_mean: float,
-    sigmax: float, sigmay: float, area: float):
-    """Compute the 2D Gaussian function values at given radial points 'r_points'.
-
-    Args:
-    - r_points (np.ndarray): Array of radial points in a 2D space.
-    - x_mean (float): Mean value along the x-axis of the Gaussian function.
-    - y_mean (float): Mean value along the y-axis of the Gaussian function.
-    - sigmax (float): Standard deviation along the x-axis of the Gaussian function.
-    - sigmay (float): Standard deviation along the y-axis of the Gaussian function.
-    - area (float): Total area under the 2D Gaussian curve.
-
-    Returns:
-    - np.ndarray: 2D Gaussian function values computed at the radial points.
-
-    This function calculates the values of a 2D Gaussian function at given radial points 'r_points'
-    centered around the provided means ('x_mean' and 'y_mean') and standard deviations
-    ('sigmax' and 'sigmay'). The 'area' parameter represents the total area
-    under the 2D Gaussian curve. It returns an array of 2D Gaussian function values
-    computed at the input radial points 'r_points'.
-    """
-
-    r_points[0] -= x_mean
-    r_points[1] -= y_mean
-    arg = (r_points[0]/sigmax)**2 + (r_points[1]/sigmay)**2
-    normalization = np.pi*sigmax*sigmay
-    gauss = np.exp(-arg)*area/normalization
-    return gauss.ravel()
-
 def custom_fit(dim: int, max_ind: int, minima: list[int],
-    edges: np.ndarray, counts: np.ndarray, gap: int, m_limits: list[list[int]]):
+    edges: np.ndarray, counts: np.ndarray, gap: int, m_limits: np.ndarray):
     """Fit a Gaussian curve to selected data based on provided parameters.
 
     Args:

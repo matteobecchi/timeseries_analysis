@@ -77,7 +77,7 @@ class UniData:
         self.num_of_particles = self.matrix.shape[0]
         self.num_of_steps = self.matrix.shape[1]
         self.range = [ np.min(self.matrix), np.max(self.matrix) ]
-        self.labels = None
+        self.labels = np.array([])
 
     def print_info(self):
         """
@@ -167,7 +167,7 @@ class MultiData:
         self.num_of_steps = self.matrix.shape[1]
         self.dims = self.matrix.shape[2]
         self.range = np.array([ [np.min(comp), np.max(comp)] for comp in data_list ])
-        self.labels = None
+        self.labels = np.array([])
 
     def print_info(self):
         """

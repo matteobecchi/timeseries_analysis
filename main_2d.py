@@ -2,9 +2,9 @@
 Code for clustering of multivariate (2- or 3-dimensional) time-series data.
 See the documentation for all the details.
 """
-import copy as copy_name
 import shutil
-from typing import Union
+from typing import Union, List, Tuple
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.image import NonUniformImage
 from matplotlib.patches import Ellipse
 from functions import *
@@ -156,7 +156,7 @@ def plot_input_data(data: MultiData, par: Parameters, filename: str):
 
     elif data.dims == 3:
         fig = plt.figure(figsize=(6, 6))
-        ax = plt.axes(projection='3d')
+        ax: Axes3D = fig.add_subplot(111, projection='3d')
 
         # Plot the individual trajectories
         step = 1 if m_clean.size > 1000000 else 1
@@ -174,7 +174,7 @@ def plot_input_data(data: MultiData, par: Parameters, filename: str):
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[int, str], filename: str):
+def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, str], filename: str):
     """
     Perform Gaussian fit and generate plots based on the provided data.
 
@@ -225,7 +225,7 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
     max_ind = find_max_index(counts)
 
     ### 4. Find the minima surrounding it ###
-    def find_minima_around_max(data: np.ndarray, max_ind: tuple, gap: int):
+    def find_minima_around_max(data: np.ndarray, max_ind: Tuple[int, ...], gap: int):
         """
         Find minima surrounding the maximum value in the given data array.
 
@@ -241,14 +241,14 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
         for each dimension.
         The function returns a list containing the indices of minima in each dimension.
         """
-        minima = []
+        minima: List[int] = []
 
         for dim in range(data.ndim):
             min_id0 = max(max_ind[dim] - gap, 0)
             min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-            tmp_max1 = copy_name.deepcopy(max_ind)
-            tmp_max2 = copy_name.deepcopy(max_ind)
+            tmp_max1: List[int] = list(max_ind)
+            tmp_max2: List[int] = list(max_ind)
 
             tmp_max1[dim] = min_id0
             tmp_max2[dim] = min_id0 - 1
@@ -257,8 +257,8 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
                 tmp_max2[dim] -= 1
                 min_id0 -= 1
 
-            tmp_max1 = copy_name.deepcopy(max_ind)
-            tmp_max2 = copy_name.deepcopy(max_ind)
+            tmp_max1 = list(max_ind)
+            tmp_max2 = list(max_ind)
 
             tmp_max1[dim] = min_id1
             tmp_max2[dim] = min_id1 + 1
@@ -289,7 +289,7 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
             goodness_min -= 5
 
     ### 6. Find the interval of half height ###
-    def find_half_height_around_max(data, max_ind, gap):
+    def find_half_height_around_max(data: np.ndarray, max_ind: Tuple[int, ...], gap: int):
         """
         Find indices around the maximum value where the data reaches half of its maximum value.
 
@@ -308,20 +308,20 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: list[list[int]], bins: Union[in
         maximum value in each dimension.
         """
         max_val = data.max()
-        minima = []
+        minima: List[int] = []
 
         for dim in range(data.ndim):
             half_id0 = max(max_ind[dim] - gap, 0)
             half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
 
-            tmp_max = copy_name.deepcopy(max_ind)
+            tmp_max: List[int] = list(max_ind)
 
             tmp_max[dim] = half_id0
             while half_id0 > 0 and data[tuple(tmp_max)] > max_val/2:
                 tmp_max[dim] -= 1
                 half_id0 -= 1
 
-            tmp_max = copy_name.deepcopy(max_ind)
+            tmp_max = list(max_ind)
 
             tmp_max[dim] = half_id1
             while half_id1 < data.shape[dim] - 1 and data[tuple(tmp_max)] > max_val/2:
@@ -595,7 +595,7 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
 
     fig = plt.figure(figsize=(6, 6))
     if m_clean.shape[2] == 3:
-        ax = plt.axes(projection='3d')
+        ax: Axes3D = fig.add_subplot(111, projection='3d')
 
         # Plot the individual trajectories
         id_max, id_min = 0, 0
@@ -915,7 +915,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     data, par = all_the_input_stuff()
-    time_resolution_analysis(data, par, True)
+    time_resolution_analysis(data, par, False)
     full_output_analysis(data, par)
 
 if __name__ == "__main__":
