@@ -510,11 +510,11 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
     sorted_states = [state for state in states_list if state.perc != 0.0]
 
     ### Step 2: Sort states according to their relevance
-    sorted_states.sort(key=lambda x: x.perc, reverse=True)
-
     # Create a dictionary to map old state labels to new ones
     state_mapping = {index: i + 1 for i, index
         in enumerate(np.argsort([-state.perc for state in sorted_states]))}
+
+    sorted_states.sort(key=lambda x: x.perc, reverse=True)
 
     # Relabel the data in all_the_labels according to the new states_list
     mask = all_the_labels != 0  # Create a mask for non-zero elements
@@ -561,6 +561,14 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
         relabel_map[i] = i
     for key, value in relabel_dic.items():
         relabel_map[key + 1] = value + 1
+
+    # Remove the gaps in the labeling
+    tmp_labels = np.unique(relabel_map)
+    map2 = np.zeros(max(tmp_labels + 1), dtype=int)
+    for i, elem in enumerate(tmp_labels):
+        map2[elem] = i
+    for i, elem in enumerate(relabel_map):
+        relabel_map[i] = map2[elem]
 
     all_the_labels = relabel_map[all_the_labels.flatten()].reshape(all_the_labels.shape)
 

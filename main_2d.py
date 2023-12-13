@@ -80,7 +80,9 @@ def preparing_the_data(data: MultiData, par: Parameters):
     tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
     data.smooth(t_smooth)
-    # data.normalize([]) ### Normalizes data in [0, 1]. Usually not necessary.
+    ### Normalizes data in [0, 1]. Usually not necessary.
+    ### The arg is the list of components to NOT normalize
+    # data.normalize([])
 
     # Calculate the number of windows for the analysis.
     num_windows = int(data.num_of_steps / tau_window)
@@ -383,7 +385,7 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
     if m_clean.shape[2] == 2:
         with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
             print('\n', file=file)
-            print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}')
+            print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}]')
             print(f'\tmu = [{popt[0]:.4f}, {popt[3]:.4f}], sigma = [{popt[1]:.4f}, {popt[4]:.4f}], area = {popt[2]:.4f}, {popt[5]:.4f}', file=file)
             print('\tFit goodness = ' + str(goodness), file=file)
 
@@ -915,7 +917,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     data, par = all_the_input_stuff()
-    time_resolution_analysis(data, par, False)
+    time_resolution_analysis(data, par, True)
     full_output_analysis(data, par)
 
 if __name__ == "__main__":
