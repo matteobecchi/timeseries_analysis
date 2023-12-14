@@ -593,7 +593,6 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
 
     for t_smooth in range(min_t_smooth, max_t_smooth + 1):
         fig, ax = plt.subplots()
-        fig.suptitle(r'Smoothing window = ' + str(t_smooth))
         i = t_smooth - min_t_smooth
         y_signal = number_of_states[i]
         y_2 = fraction_0[i]
