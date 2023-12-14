@@ -133,9 +133,6 @@ class UniData:
         """
         Computes and plots the average time sequence inside each identified environment.
 
-        Args:
-        - tau_window (int): Size of the time window.
-
         Notes:
         - Computes cluster means and standard deviations for each identified cluster.
         - Plots the average time sequence and standard deviation for each cluster.
@@ -287,6 +284,59 @@ class MultiData:
         """
         copy_data = copy.deepcopy(self)
         return copy_data
+
+    def plot_medoids(self, output_file: str):
+        """
+        Plot the mean time sequence for clusters in the data.
+
+        Returns:
+        - None: If the third dimension of input data is greater than 2.
+        """
+        if self.dims > 2:
+            print('plot_medoids() does not work with 3D data.')
+            return
+
+        # Initialize lists to store cluster means and standard deviations
+        tau_window = int(self.num_of_steps / self.labels.shape[1])
+        center_list = []
+
+        # Loop through unique labels (clusters)
+        for ref_label in np.unique(self.labels):
+            tmp = []
+            # Iterate through molecules and their labels
+            for i, mol in enumerate(self.labels):
+                for j, label in enumerate(mol):
+                    # Define time interval
+                    t_0 = j*tau_window
+                    t_1 = (j + 1)*tau_window
+                    # If the label matches the current cluster, append the corresponding data to tmp
+                    if label == ref_label:
+                        tmp.append(self.matrix[i][t_0:t_1])
+
+            # Calculate mean and standard deviation for the current cluster
+            center_list.append(np.mean(tmp, axis=0))
+
+        # Create a color palette
+        palette = []
+        cmap = plt.get_cmap('viridis', np.unique(self.labels).size)
+        palette.append(rgb2hex(cmap(0)))
+        for i in range(1, cmap.N):
+            rgba = cmap(i)
+            palette.append(rgb2hex(rgba))
+
+        # Plot
+        fig, ax = plt.subplots()
+        for id_c, center in enumerate(center_list):
+            sig_x = center[:, 0]
+            sig_y = center[:, 1]
+            ax.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o', c=palette[id_c])
+        fig.suptitle('Average time sequence inside each environments')
+        ax.set_xlabel(r'Signal 1')
+        ax.set_ylabel(r'Signal 2')
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.legend()
+
+        fig.savefig('output_figures/' + output_file + '.png', dpi=600)
 
 class Parameters:
     """

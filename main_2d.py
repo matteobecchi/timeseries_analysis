@@ -767,61 +767,6 @@ def timeseries_analysis(original_data: MultiData, par: Parameters, tau_w: int, t
     print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
     return len(list_of_states), fraction_0
 
-def compute_cluster_mean_seq(data: MultiData, tau_window: int):
-    """
-    Plot the mean time sequence for clusters in the data.
-
-    Args:
-    - data (MultiData): Input data containing signal trajectories and labels.
-    - tau_window (int): Window size for time sequence.
-
-    Returns:
-    - None: If the third dimension of input data is greater than 2.
-    """
-    if data.dims > 2:
-        return
-
-    # Initialize lists to store cluster means and standard deviations
-    center_list = []
-
-    # Loop through unique labels (clusters)
-    for ref_label in np.unique(data.labels):
-        tmp = []
-        # Iterate through molecules and their labels
-        for i, mol in enumerate(data.labels):
-            for j, label in enumerate(mol):
-                # Define time interval
-                t_0 = j*tau_window
-                t_1 = (j + 1)*tau_window
-                # If the label matches the current cluster, append the corresponding data to tmp
-                if label == ref_label:
-                    tmp.append(data.matrix[i][t_0:t_1])
-
-        # Calculate mean and standard deviation for the current cluster
-        center_list.append(np.mean(tmp, axis=0))
-
-    # Create a color palette
-    palette = []
-    cmap = plt.get_cmap('viridis', np.unique(data.labels).size)
-    palette.append(rgb2hex(cmap(0)))
-    for i in range(1, cmap.N):
-        rgba = cmap(i)
-        palette.append(rgb2hex(rgba))
-
-    # Plot
-    fig, ax = plt.subplots()
-    for id_c, center in enumerate(center_list):
-        sig_x = center[:, 0]
-        sig_y = center[:, 1]
-        ax.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o', c=palette[id_c])
-    fig.suptitle('Average time sequence inside each environments')
-    ax.set_xlabel(r'Signal 1')
-    ax.set_ylabel(r'Signal 2')
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.legend()
-
-    fig.savefig('output_figures/Fig4.png', dpi=600)
-
 def full_output_analysis(data: MultiData, par: Parameters):
     """
     Perform a comprehensive analysis and visualization pipeline on the input data.
@@ -842,7 +787,7 @@ def full_output_analysis(data: MultiData, par: Parameters):
         print('* No possible classification was found. ')
         return
 
-    compute_cluster_mean_seq(data, tau_w)
+    data.plot_medoids('Fig4')
     plot_state_populations(data.labels, par, 'Fig5')
     # sankey(data.labels, [0, 100, 200, 300], par, 'Fig6')
 
@@ -906,7 +851,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     data, par = all_the_input_stuff()
-    time_resolution_analysis(data, par, True)
+    time_resolution_analysis(data, par, False)
     full_output_analysis(data, par)
 
 if __name__ == "__main__":
