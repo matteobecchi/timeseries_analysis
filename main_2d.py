@@ -721,7 +721,7 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def timeseries_analysis(original_data: MultiData, par: Parameters, tau_w: int, t_smooth: int):
+def timeseries_analysis(original_data: MultiData, original_par: Parameters, tau_w: int, t_smooth: int):
     """
     Perform time series analysis on the input data.
 
@@ -738,15 +738,15 @@ def timeseries_analysis(original_data: MultiData, par: Parameters, tau_w: int, t
     print('* New analysis: ', tau_w, t_smooth)
     name = str(t_smooth) + '_' + str(tau_w) + '_'
 
-    tmp_par = par.create_copy()
-    tmp_par.tau_w = tau_w
-    tmp_par.t_smooth = t_smooth
+    par = original_par.create_copy()
+    par.tau_w = tau_w
+    par.t_smooth = t_smooth
     data = original_data.create_copy()
 
-    data = preparing_the_data(data, tmp_par)
-    plot_input_data(data, tmp_par, name + 'Fig0')
+    data = preparing_the_data(data, par)
+    plot_input_data(data, par, name + 'Fig0')
 
-    all_the_labels, list_of_states, one_last_state = iterative_search(data, tmp_par, name)
+    all_the_labels, list_of_states, one_last_state = iterative_search(data, par, name)
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
         # We need to free the memory otherwise it accumulates
