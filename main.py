@@ -220,7 +220,6 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     - Prints fit details and goodness of fit to an output file.
     - Generates a plot showing the distribution and the fitted Gaussian.
     """
-
     print('* Gaussian fit...')
     flat_m = m_clean.flatten()
 
@@ -329,7 +328,6 @@ def find_stable_trj(
     - Calculates the fraction of stable windows found and prints the value.
     - Returns the array of non-stable windows and related information.
     """
-
     print('* Finding stable windows...')
 
     # Calculate the number of windows in the trajectory
@@ -552,7 +550,7 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def timeseries_analysis(original_data: UniData, par: Parameters, tau_w: int, t_smooth: int):
+def timeseries_analysis(original_data: UniData, original_par: Parameters, tau_w: int, t_smooth: int):
     """
     Performs an analysis pipeline on time series data.
 
@@ -576,15 +574,15 @@ def timeseries_analysis(original_data: UniData, par: Parameters, tau_w: int, t_s
     print('* New analysis: ', tau_w, t_smooth)
     name = str(t_smooth) + '_' + str(tau_w) + '_'
 
-    tmp_par = par.create_copy()
-    tmp_par.tau_w = tau_w
-    tmp_par.t_smooth = t_smooth
+    par = original_par.create_copy()
+    par.tau_w = tau_w
+    par.t_smooth = t_smooth
     data = original_data.create_copy()
 
     data = preparing_the_data(data, par)
-    plot_input_data(data, tmp_par, name + 'Fig0')
+    plot_input_data(data, par, name + 'Fig0')
 
-    tmp_labels, list_of_states, one_last_state = iterative_search(data, tmp_par, name)
+    tmp_labels, list_of_states, one_last_state = iterative_search(data, par, name)
 
     if len(list_of_states) == 0:
         print('* No possible classification was found. ')
@@ -682,9 +680,9 @@ def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool)
         fraction_0_arr = np.array(fraction_0)
 
         np.savetxt('number_of_states.txt', number_of_states, fmt='%i',
-            delimiter='\t', header='tau_window\n number_of_states for different t_smooth')
+            delimiter='\t', header='tau_window\t number_of_states for different t_smooth')
         np.savetxt('fraction_0.txt', fraction_0, delimiter=' ',
-            header='tau_window\n fraction in ENV0 for different t_smooth')
+            header='tau_window\t fraction in ENV0 for different t_smooth')
     else:
         ### Otherwise, just do this ###
         number_of_states_arr = np.loadtxt('number_of_states.txt')

@@ -421,43 +421,6 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
         num_of_points = np.sum(all_the_labels == st_id + 1)
         state.perc = num_of_points / all_the_labels.size
 
-    #####################################################################################
-    ### Old code, can delete oit when we're sure that everything works ###
-    # # Step 1: Define a criterion to determine which states are considered "final."
-    # # Iterate over pairs of states to compare their properties.
-    # old_to_new_map = []
-    # tmp_list = []
-
-    # for id_s0, st_0 in enumerate(list_of_states):
-    #     for id_s1, st_1 in enumerate(list_of_states[id_s0 + 1:]):
-    #         # Check whether the criteria for considering a state as "final" is met.
-    #         if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
-    #             tmp_list.append(id_s1 + id_s0 + 1)
-    #             old_to_new_map.append([id_s1 + id_s0 + 1, id_s0])
-    #         elif st_0.peak < st_1.peak and abs(st_1.mean - st_0.mean) < st_1.sigma:
-    #             tmp_list.append(id_s0)
-    #             old_to_new_map.append([id_s0, id_s1 + id_s0 + 1])
-
-    # # Step 2: Remove states that don't meet the "final" criterion from the 'list_of_states'.
-    # # Note: The loop iterates in reverse to avoid index errors when removing elements.
-    # tmp_list = np.unique(tmp_list)[::-1]
-    # for state_id in tmp_list:
-    #     list_of_states.pop(state_id)
-
-    # updated_states = sorted(list_of_states, key=lambda x: x.mean)
-
-    # # Relabel according to the new states
-    # for mol_id in range(all_the_labels.shape[0]):
-    #     for window_id in range(all_the_labels.shape[1]):
-    #         for pair_id in range(len(old_to_new_map[::-1])):
-    #             if all_the_labels[mol_id][window_id] == old_to_new_map[pair_id][0] + 1:
-    #                 all_the_labels[mol_id][window_id] = old_to_new_map[pair_id][1] + 1
-
-    # list_unique = np.unique(all_the_labels)
-    # label_to_index = {label: index for index, label in enumerate(list_unique)}
-    # all_the_labels = np.vectorize(label_to_index.get)(all_the_labels)
-    #####################################################################################
-
     # Step 2: Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
 
@@ -606,7 +569,6 @@ def assign_single_frames(all_the_labels: np.ndarray, tau_window: int):
     - np.ndarray: An updated ndarray with labels assigned to individual frames
         by repeating the existing labels.
     """
-
     print('* Assigning labels to the single frames...')
     new_labels = np.repeat(all_the_labels, tau_window, axis=1)
     return new_labels
@@ -621,59 +583,40 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     - number_of_states (np.ndarray): Array containing the number of states.
     - fraction_0 (np.ndarray): Array containing the fraction of a specific state.
     - par (Parameters): Instance of Parameters with time-related parameters.
-
-    Steps:
-    - Extracts time conversion and units from the provided Parameters instance.
-    - Performs necessary data manipulations on the number of states and fractions.
-    - Plots the analysis figure with customizable options for specific or averaged data views.
-    - Saves the figure as 'Time_resolution_analysis.png' at high resolution.
-
-    Note:
-    - Provides options for specific or averaged data views.
-    - Offers control over plot settings like axes, labels, and visualization options.
     """
-
     t_conv, units = par.t_conv, par.t_units
-    number_of_states = np.array(number_of_states)
-    time = np.array(number_of_states.T[0])*t_conv
-    number_of_states = number_of_states[:, 1:]
-    fraction_0 = np.array(fraction_0)[:, 1:]
+    min_t_smooth, max_t_smooth = par.min_t_smooth, par.max_t_smooth
 
-    fig, ax = plt.subplots()
-    ### If I want to chose one particular value of the smoothing: #########
-    t_smooth_idx = 0
-    y_signal = number_of_states.T[t_smooth_idx]
-    y_2 = fraction_0.T[t_smooth_idx]
-    #######################################################################
+    time = number_of_states.T[0]*t_conv
+    number_of_states = number_of_states[:, 1:].T
+    fraction_0 = fraction_0[:, 1:].T
 
-    # ### If I want to average over the different smoothings: ###############
-    # y_signal = np.mean(number_of_states, axis=1)
-    # y_err = np.std(number_of_states, axis=1)
-    # y_inf = y_signal - y_err
-    # y_sup = y_signal + y_err
-    # ax.fill_between(time, y_inf, y_sup, zorder=0, alpha=0.4, color='gray')
-    # y_2 = np.mean(fraction_0, axis=1)
-    # #######################################################################
+    for t_smooth in range(min_t_smooth, max_t_smooth + 1):
+        fig, ax = plt.subplots()
+        fig.suptitle(r'Smoothing window = ' + str(t_smooth))
+        i = t_smooth - min_t_smooth
+        y_signal = number_of_states[i]
+        y_2 = fraction_0[i]
 
-    ### General plot settings ###
-    ax.plot(time, y_signal, marker='o')
-    ax.set_xlabel(r'Time resolution $\Delta t$ ' + units)#, weight='bold')
-    ax.set_ylabel(r'# environments', weight='bold', c='#1f77b4')
-    ax.set_xscale('log')
-    ax.set_xlim(time[0]*0.75, time[-1]*1.5)
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ### General plot settings ###
+        ax.plot(time, y_signal, marker='o')
+        ax.set_xlabel(r'Time resolution $\Delta t$ ' + units)#, weight='bold')
+        ax.set_ylabel(r'# environments', weight='bold', c='#1f77b4')
+        ax.set_xscale('log')
+        ax.set_xlim(time[0]*0.75, time[-1]*1.5)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-    ### Top x-axes settings ###
-    ax2 = ax.twiny()
-    ax2.set_xlabel(r'Time resolution $\Delta t$ [frames]')
-    ax2.set_xscale('log')
-    ax2.set_xlim(time[0]*0.75/t_conv, time[-1]*1.5/t_conv)
+        ### Top x-axes settings ###
+        ax2 = ax.twiny()
+        ax2.set_xlabel(r'Time resolution $\Delta t$ [frames]')
+        ax2.set_xscale('log')
+        ax2.set_xlim(time[0]*0.75/t_conv, time[-1]*1.5/t_conv)
 
-    axr = ax.twinx()
-    axr.plot(time, y_2, marker='o', c='#ff7f0e')
-    axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
+        axr = ax.twinx()
+        axr.plot(time, y_2, marker='o', c='#ff7f0e')
+        axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
 
-    fig.savefig('output_figures/Time_resolution_analysis.png', dpi=600)
+        fig.savefig('output_figures/Time_resolution_analysis_' + str(t_smooth) + '.png', dpi=600)
 
 def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
     par: Parameters, filename: str):
@@ -693,7 +636,6 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
     - Creates Sankey diagram using Plotly library and custom node/link data.
     - Saves the generated Sankey diagram as an image file.
     """
-
     print('* Computing and plotting the Sankey diagram...')
 
     # Determine the number of unique states in the data.
