@@ -210,7 +210,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     - filename (str): Name of the output plot file.
 
     Returns:
-    - state (State): Object containing Gaussian fit parameters (mu, sigma, area).
+    - state (StateUni): Object containing Gaussian fit parameters (mu, sigma, area).
 
     Notes:
     - Requires 'bins' parameter in the 'par' object.
@@ -279,7 +279,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         print('\tWARNING: this fit is not converging.')
         return None
 
-    state = State(popt[0], popt[1], popt[2])
+    state = StateUni(popt[0], popt[1], popt[2])
     state.build_boundaries(NUMBER_OF_SIGMAS)
 
     with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
@@ -305,7 +305,7 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     return state
 
 def find_stable_trj(
-        m_clean: np.ndarray, tau_window: int, state: State,
+        m_clean: np.ndarray, tau_window: int, state: StateUni,
         all_the_labels: np.ndarray, offset: int
     ):
     """
@@ -314,7 +314,7 @@ def find_stable_trj(
     Args:
     - m_clean (np.ndarray): Input trajectory data.
     - tau_window (int): Size of the window for analysis.
-    - state (State): Object containing stable state parameters.
+    - state (StateUni): Object containing stable state parameters.
     - all_the_labels (np.ndarray): Labels indicating window classifications.
     - offset (int): Offset value for classifying stable windows.
 
@@ -425,14 +425,14 @@ def iterative_search(data: UniData, par: Parameters, name: str):
     return atl, lis, one_last_state
 
 def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
-    list_of_states: list[State], filename: str):
+    list_of_states: list[StateUni], filename: str):
     """
     Generates a cumulative figure with signal trajectories and state Gaussian distributions.
 
     Args:
     - m_clean (np.ndarray): Input trajectory data.
     - par (Parameters): Object containing parameters for plotting.
-    - list_of_states (list[State]): List of identified states.
+    - list_of_states (list[StateUni]): List of identified states.
     - filename (str): Name for the output figure file.
 
     Notes:

@@ -275,18 +275,18 @@ def custom_fit(dim: int, max_ind: int, minima: list[int],
         popt = []
     return flag, goodness, popt
 
-def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
+def relabel_states(all_the_labels: np.ndarray, states_list: list[StateUni]):
     """Relabel states and update the state list based on occurrence in 'all_the_labels'.
 
     Args:
     - all_the_labels (np.ndarray): Array containing labels assigned
         to each window in the trajectory.
-    - states_list (list[State]): List of State objects representing different states.
+    - states_list (list[StateUni]): List of StateUni objects representing different states.
 
     Returns:
-    - tuple[np.ndarray, list[State]]: A tuple containing:
+    - tuple[np.ndarray, list[StateUni]]: A tuple containing:
         - all_the_labels (np.ndarray): Updated labels array with relabeled states.
-        - relevant_states (list[State]): Updated list of non-empty states, ordered by mean values.
+        - relevant_states (list[StateUni]): Updated list of non-empty states, ordered by mean values.
 
     This function performs several operations to relabel the states and update the state list.
     It removes empty states, reorders them based on the mean values and relabels the labels in
@@ -318,12 +318,12 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[State]):
 
     return all_the_labels, relevant_states
 
-def find_intersection(st_0: State, st_1: State):
+def find_intersection(st_0: StateUni, st_1: StateUni):
     """
     Finds the intersection between two Gaussians.
 
     Args:
-    - st_0, st_1 (State): the two states we are computing the threshold between
+    - st_0, st_1 (StateUni): the two states we are computing the threshold between
 
     Returns:
     - th_val (float): the value of the threshold
@@ -356,18 +356,18 @@ def find_intersection(st_0: State, st_1: State):
     th_aver = (st_0.mean/st_0.sigma + st_1.mean/st_1.sigma)/(1/st_0.sigma + 1/st_1.sigma)
     return th_aver, 2
 
-def set_final_states(list_of_states: list[State], all_the_labels: np.ndarray, m_range: list[float]):
+def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray, m_range: list[float]):
     """
     Assigns final states and relabels labels based on specific criteria.
 
     Args:
-    - list_of_states (list[State]): List of State objects representing potential states.
+    - list_of_states (list[StateUni]): List of StateUni objects representing potential states.
     - all_the_labels (np.ndarray): 2D NumPy array containing labels for each data point.
     - m_range (list[float]): Range of values in the data.
 
     Returns:
     - tuple: A tuple containing the final list of states
-    (list[State]) and the newly labeled data (np.ndarray).
+    (list[StateUni]) and the newly labeled data (np.ndarray).
     """
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]

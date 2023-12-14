@@ -8,7 +8,7 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 import matplotlib.pyplot as plt
 
-class State:
+class StateUni:
     """
     Represents a state as a Gaussian.
     """
