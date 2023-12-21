@@ -3,6 +3,7 @@ Contains the classes used for storing parameters and system states.
 """
 import copy
 from typing import Union
+import scipy.signal
 from matplotlib.colors import rgb2hex
 from matplotlib.ticker import MaxNLocator
 import numpy as np
@@ -100,7 +101,28 @@ class UniData:
         self.matrix = self.matrix[:, t_delay:]
         self.num_of_steps = self.matrix.shape[1]
 
-    def smooth(self, window: int):
+    def smooth_lpf(self, sampling_freq: int, window: int):
+        """
+        Smooths the data using a digital low-passing, forward-backward filter.
+
+        Args:
+        - sampling_freq (int): the sampling frequency, in t_units
+        - window (int): inverse of the maximum frequency (in frames).
+        """
+        if window == 1:
+            return
+        if window == 2:
+            max_freq = sampling_freq/(window + 0.0000001)
+        else:
+            max_freq = sampling_freq/window
+        coeff_1, coeff_0 =scipy.signal.iirfilter(4, Wn=max_freq, fs=sampling_freq,
+            btype="low", ftype="butter")
+        self.matrix = np.apply_along_axis(lambda x: scipy.signal.filtfilt(coeff_1, coeff_0, x),
+            axis=1, arr=self.matrix)
+        self.num_of_steps = self.matrix.shape[1]
+        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
+
+    def smooth_mov_av(self, window: int):
         """
         Smooths the data using a moving average with a specified window size.
 

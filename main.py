@@ -65,19 +65,12 @@ def preparing_the_data(data: UniData, par: Parameters):
 
     Returns:
     - data (UniData): Cleaned and updated input data.
-
-    Notes:
-    - Requires 'tau_w', 't_smooth', 't_conv', 't_units' parameters in the 'par' object.
-    - Utilizes moving average filtering on the raw data.
-    - Calculates statistics like maximum and minimum values of the processed data.
-    - Prints informative messages about trajectory details.
-    - Returns processed data and its signal range.
     """
-
     tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
     # Apply filtering on the data
-    data.smooth(t_smooth)
+    data.smooth_mov_av(t_smooth)  # Smoothing using moving average
+    # data.smooth_lpf(1/t_conv, t_smooth) # Smoothing using low-passing filter
 
     # Normalize the data to the range [0, 1]. Usually not needed. ###
     # data.normalize()
@@ -550,7 +543,8 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def timeseries_analysis(original_data: UniData, original_par: Parameters, tau_w: int, t_smooth: int):
+def timeseries_analysis(original_data: UniData, original_par: Parameters,
+    tau_w: int, t_smooth: int):
     """
     Performs an analysis pipeline on time series data.
 
