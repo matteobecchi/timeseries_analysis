@@ -24,41 +24,6 @@ def read_input_data():
         return str(data_dir)
     return data_dir
 
-def read_data(filename: str):
-    """Reads data from supported file formats: .npz, .npy, or .txt.
-
-    Args:
-    - filename (str): The path to the file containing the data.
-
-    Returns:
-    - Optional[np.ndarray]: A NumPy array containing the loaded data if successful,
-      otherwise returns None.
-
-    Raises:
-    - IOError: If the file format is unsupported or if there's an issue reading the file.
-    """
-
-    # Check if the filename ends with a supported format.
-    if filename.endswith(('.npz', '.npy', '.txt')):
-        try:
-            if filename.endswith('.npz'):
-                with np.load(filename) as data:
-                    # Load the first variable (assumed to be the data) into a NumPy array.
-                    data_name = data.files[0]
-                    m_raw = np.array(data[data_name])
-            elif filename.endswith('.npy'):
-                m_raw = np.load(filename)
-            else: # .txt file
-                m_raw = np.loadtxt(filename)
-            print('\tOriginal data shape:', m_raw.shape)
-            return m_raw
-        except Exception as exc_msg:
-            print(f'\tERROR: Failed to read data from {filename}. Reason: {exc_msg}')
-            return None
-    else:
-        print('\tERROR: unsupported format for input file.')
-        return None
-
 def moving_average(data: np.ndarray, window: int):
     """Applies a moving average filter to a 1D or 2D NumPy array.
 

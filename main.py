@@ -95,14 +95,7 @@ def plot_input_data(data: UniData, par: Parameters, filename: str):
     - data (UniData): Processed data for plotting.
     - par (Parameters): Object containing parameters for plotting.
     - filename (str): Name of the output plot file.
-
-    Notes:
-    - Requires 'tau_w', 'tau_delay', 't_conv', 't_units', 'bins' parameters in the 'par' object.
-    - Plots histogram counts and bins of the flattened data.
-    - Generates a plot with two subplots (signal trajectories and histogram).
-    - Saves the plot as a PNG file in the 'output_figures' directory.
     """
-
     # Flatten the m_clean matrix and compute histogram counts and bins
     m_clean = data.matrix
     flat_m = m_clean.flatten()
