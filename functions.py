@@ -274,12 +274,6 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[StateUni]):
     # Step 4: Relabel the data in all_the_labels according to the new states_list
     mask = all_the_labels != 0  # Create a mask for non-zero elements
     all_the_labels[mask] = relabel_map[all_the_labels[mask]]
-    # for i, labels_i in enumerate(all_the_labels):
-    #     for j, label_ij in enumerate(labels_i):
-    #         old_label = label_ij
-    #         if old_label != 0:
-    #             new_label = state_mapping[old_label - 1] if old_label - 1 in state_mapping else 0
-    #             all_the_labels[i][j] = new_label
 
     return all_the_labels, relevant_states
 
@@ -604,7 +598,15 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
 
     # Determine the number of unique states in the data.
     frame_list = np.array(tmp_frame_list)
-    n_states = np.unique(all_the_labels).size
+
+    unique_labels = np.unique(all_the_labels)
+    # If there are no assigned window, we still need the "0" state
+    # for consistency:
+    missing_zero = 0
+    if 0 not in unique_labels:
+        unique_labels = np.insert(unique_labels, 0, 0)
+        missing_zero = 1
+    n_states = unique_labels.size
 
     # Create arrays to store the source, target, and value data for the Sankey diagram.
     source = np.empty((frame_list.size - 1) * n_states**2)
@@ -694,7 +696,15 @@ def plot_state_populations(all_the_labels: np.ndarray,
     """
     print('* Printing populations vs time...')
     num_part = all_the_labels.shape[0]
+
     unique_labels = np.unique(all_the_labels)
+    # If there are no assigned window, we still need the "0" state
+    # for consistency:
+    missing_zero = 0
+    if 0 not in unique_labels:
+        unique_labels = np.insert(unique_labels, 0, 0)
+        missing_zero = 1
+
     list_of_populations = []
     for label in unique_labels:
         population = np.sum(all_the_labels == label, axis=0)

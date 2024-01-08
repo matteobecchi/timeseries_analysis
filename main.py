@@ -519,14 +519,22 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     fig, ax = plt.subplots()
 
     # Create a colormap to map colors to the labels of the example particle
+    unique_labels = np.unique(all_the_labels)
+    # If there are no assigned window, we still need the "0" state
+    # for consistency:
+    missing_zero = 0
+    if 0 not in unique_labels:
+        unique_labels = np.insert(unique_labels, 0, 0)
+        missing_zero = 1
+
     cmap = plt.get_cmap('viridis',
-        np.max(np.unique(all_the_labels)) - np.min(np.unique(all_the_labels)) + 1)
+        np.max(unique_labels) - np.min(unique_labels) + 1)
     color = all_the_labels[example_id]
     ax.plot(time, signal, c='black', lw=0.1)
 
     # Plot the signal as a line and scatter plot with colors based on the labels
     ax.scatter(time, signal, c=color, cmap=cmap,
-        vmin=np.min(np.unique(all_the_labels)), vmax=np.max(np.unique(all_the_labels)), s=1.0)
+        vmin=np.min(unique_labels), vmax=np.max(unique_labels), s=1.0)
 
     # Add title and labels to the axes
     fig.suptitle('Example particle: ID = ' + str(example_id))
@@ -647,7 +655,6 @@ def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool)
     - Analyzes the dataset with varying 'tau_window' and 't_smooth'.
     - Saves results to text files and plots t.r.a. figures based on analysis outcomes.
     """
-
     tau_window_list, t_smooth_list = param_grid(par, data.num_of_steps)
 
     if perform_anew:
@@ -685,7 +692,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     data, par = all_the_input_stuff()
-    time_resolution_analysis(data, par, True)
+    time_resolution_analysis(data, par, False)
     full_output_analysis(data, par)
 
 if __name__ == "__main__":

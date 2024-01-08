@@ -166,8 +166,16 @@ class UniData:
         center_list = []
         std_list = []
 
+        # If there are no assigned window, we still need the "0" state
+        # for consistency:
+        missing_zero = 0
+        list_of_labels = np.unique(all_the_labels)
+        if 0 not in list_of_labels:
+            list_of_labels = np.insert(list_of_labels, 0, 0)
+            missing_zero = 1
+
         # Loop through unique labels (clusters)
-        for ref_label in np.unique(all_the_labels):
+        for ref_label in list_of_labels:
             tmp = []
             # Iterate through molecules and their labels
             for i, mol in enumerate(all_the_labels):
@@ -180,12 +188,13 @@ class UniData:
                         tmp.append(self.matrix[i][time_0:time_1])
 
             # Calculate mean and standard deviation for the current cluster
-            center_list.append(np.mean(tmp, axis=0))
-            std_list.append(np.std(tmp, axis=0))
+            if len(tmp) > 0:
+                center_list.append(np.mean(tmp, axis=0))
+                std_list.append(np.std(tmp, axis=0))
 
         # Create a color palette
         palette = []
-        cmap = plt.get_cmap('viridis', np.unique(all_the_labels).size)
+        cmap = plt.get_cmap('viridis', list_of_labels.size)
         palette.append(rgb2hex(cmap(0)))
         for i in range(1, cmap.N):
             rgba = cmap(i)
@@ -197,8 +206,10 @@ class UniData:
         for center_id, center in enumerate(center_list):
             err_inf = center - std_list[center_id]
             err_sup = center + std_list[center_id]
-            ax.fill_between(time_seq, err_inf, err_sup, alpha=0.25, color=palette[center_id])
-            ax.plot(time_seq, center, label='ENV'+str(center_id), marker='o', c=palette[center_id])
+            ax.fill_between(time_seq, err_inf, err_sup, alpha=0.25,
+                color=palette[center_id + missing_zero])
+            ax.plot(time_seq, center, label='ENV'+str(center_id + missing_zero), marker='o',
+                c=palette[center_id + missing_zero])
         fig.suptitle('Average time sequence inside each environments')
         ax.set_xlabel(r'Time $t$ [frames]')
         ax.set_ylabel(r'Signal')
