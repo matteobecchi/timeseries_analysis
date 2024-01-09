@@ -207,6 +207,11 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     - Generates a plot showing the distribution and the fitted Gaussian.
     """
     print('* Gaussian fit...')
+    ######################################################
+    # This is under development. Do not use it.
+    # tmp_m = dense_interpolation(m_clean, dense_factor=2)
+    # flat_m = tmp_m.flatten()
+    ######################################################
     flat_m = m_clean.flatten()
 
     ### 1. Histogram ###

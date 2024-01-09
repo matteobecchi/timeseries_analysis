@@ -83,6 +83,18 @@ def moving_average_2d(data: np.ndarray, side: int):
 
     return result
 
+def dense_interpolation(m_clean: np.ndarray, dense_factor: int):
+    m_dense = []
+    for i, data_i in enumerate(m_clean):
+        tmp = []
+        for j, _ in enumerate(data_i[1:]):
+            for k in range(dense_factor):
+                new_point = data_i[j] + (data_i[j + 1] - data_i[j])/dense_factor*k
+                tmp.append(new_point)
+        m_dense.append(tmp)
+    m_dense_arr = np.array(m_dense)
+    return m_dense_arr
+
 def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     """Plots a histogram on the specified axes.
 
