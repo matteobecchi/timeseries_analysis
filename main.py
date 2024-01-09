@@ -527,10 +527,8 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     unique_labels = np.unique(all_the_labels)
     # If there are no assigned window, we still need the "0" state
     # for consistency:
-    missing_zero = 0
     if 0 not in unique_labels:
         unique_labels = np.insert(unique_labels, 0, 0)
-        missing_zero = 1
 
     cmap = plt.get_cmap('viridis',
         np.max(unique_labels) - np.min(unique_labels) + 1)

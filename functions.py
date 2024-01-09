@@ -84,8 +84,13 @@ def moving_average_2d(data: np.ndarray, side: int):
     return result
 
 def dense_interpolation(m_clean: np.ndarray, dense_factor: int):
+    """
+    This is work in progress. Function for dense interpolation:
+    dense_factor points are added, via linear interpolation, between
+    consecutive data points.
+    """
     m_dense = []
-    for i, data_i in enumerate(m_clean):
+    for _, data_i in enumerate(m_clean):
         tmp = []
         for j, _ in enumerate(data_i[1:]):
             for k in range(dense_factor):
@@ -263,7 +268,8 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[StateUni]):
     Returns:
     - tuple[np.ndarray, list[StateUni]]: A tuple containing:
         - all_the_labels (np.ndarray): Updated labels array with relabeled states.
-        - relevant_states (list[StateUni]): Updated list of non-empty states, ordered by mean values.
+        - relevant_states (list[StateUni]): Updated list of non-empty states,
+        ordered by mean values.
 
     This function performs several operations to relabel the states and update the state list.
     It removes empty states, reorders them based on the mean values and relabels the labels in
@@ -327,7 +333,8 @@ def find_intersection(st_0: StateUni, st_1: StateUni):
     th_aver = (st_0.mean/st_0.sigma + st_1.mean/st_1.sigma)/(1/st_0.sigma + 1/st_1.sigma)
     return th_aver, 2
 
-def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray, m_range: list[float]):
+def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
+    m_range: list[float]):
     """
     Assigns final states and relabels labels based on specific criteria.
 
@@ -626,10 +633,8 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
     unique_labels = np.unique(all_the_labels)
     # If there are no assigned window, we still need the "0" state
     # for consistency:
-    missing_zero = 0
     if 0 not in unique_labels:
         unique_labels = np.insert(unique_labels, 0, 0)
-        missing_zero = 1
     n_states = unique_labels.size
 
     # Create arrays to store the source, target, and value data for the Sankey diagram.
@@ -724,10 +729,8 @@ def plot_state_populations(all_the_labels: np.ndarray,
     unique_labels = np.unique(all_the_labels)
     # If there are no assigned window, we still need the "0" state
     # for consistency:
-    missing_zero = 0
     if 0 not in unique_labels:
         unique_labels = np.insert(unique_labels, 0, 0)
-        missing_zero = 1
 
     list_of_populations = []
     for label in unique_labels:
