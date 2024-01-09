@@ -387,11 +387,11 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
             print('\tFit goodness = ' + str(goodness), file=file)
 
         fig, ax = plt.subplots(figsize=(6, 6))
-        im = NonUniformImage(ax, interpolation='nearest')
+        img = NonUniformImage(ax, interpolation='nearest')
         xcenters = (edges[0][:-1] + edges[0][1:]) / 2
         ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-        im.set_data(xcenters, ycenters, counts.T)
-        ax.add_image(im)
+        img.set_data(xcenters, ycenters, counts.T)
+        ax.add_image(img)
         ax.scatter(mean[0], mean[1], s=8.0, c='red')
         circle1 = Ellipse(tuple(mean), sigma[0], sigma[1], color='r', fill=False)
         circle2 = Ellipse(tuple(mean), state.axis[0], state.axis[1], color='r', fill=False)
@@ -415,9 +415,9 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
         ycenters = (edges[1][:-1] + edges[1][1:]) / 2
         zcenters = (edges[2][:-1] + edges[2][1:]) / 2
 
-        im = NonUniformImage(ax[0][0], interpolation='nearest')
-        im.set_data(xcenters, ycenters, np.sum(counts, axis=0))
-        ax[0][0].add_image(im)
+        img = NonUniformImage(ax[0][0], interpolation='nearest')
+        img.set_data(xcenters, ycenters, np.sum(counts, axis=0))
+        ax[0][0].add_image(img)
         ax[0][0].scatter(mean[0], mean[1], s=8.0, c='red')
         circle1 = Ellipse(tuple([mean[0], mean[1]]), sigma[0], sigma[1], color='r', fill=False)
         circle2 = Ellipse(tuple([mean[0], mean[1]]), state.axis[0], state.axis[1],
@@ -425,9 +425,9 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
         ax[0][0].add_patch(circle1)
         ax[0][0].add_patch(circle2)
 
-        im = NonUniformImage(ax[0][1], interpolation='nearest')
-        im.set_data(zcenters, ycenters, np.sum(counts, axis=1))
-        ax[0][1].add_image(im)
+        img = NonUniformImage(ax[0][1], interpolation='nearest')
+        img.set_data(zcenters, ycenters, np.sum(counts, axis=1))
+        ax[0][1].add_image(img)
         ax[0][1].scatter(mean[2], mean[1], s=8.0, c='red')
         circle1 = Ellipse(tuple([mean[2], mean[1]]), sigma[2], sigma[1], color='r', fill=False)
         circle2 = Ellipse(tuple([mean[2], mean[1]]), state.axis[2], state.axis[1],
@@ -435,9 +435,9 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
         ax[0][1].add_patch(circle1)
         ax[0][1].add_patch(circle2)
 
-        im = NonUniformImage(ax[1][0], interpolation='nearest')
-        im.set_data(xcenters, zcenters, np.sum(counts, axis=2))
-        ax[1][0].add_image(im)
+        img = NonUniformImage(ax[1][0], interpolation='nearest')
+        img.set_data(xcenters, zcenters, np.sum(counts, axis=2))
+        ax[1][0].add_image(img)
         ax[1][0].scatter(mean[0], mean[2], s=8.0, c='red')
         circle1 = Ellipse(tuple([mean[0], mean[2]]), sigma[0], sigma[2], color='r', fill=False)
         circle2 = Ellipse(tuple([mean[0], mean[2]]), state.axis[0], state.axis[2],
@@ -457,7 +457,8 @@ def gauss_fit_max(m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, st
 
     return state
 
-def find_stable_trj(m_clean: np.ndarray, tau_window: int, state: StateMulti, all_the_labels: np.ndarray, offset: int):
+def find_stable_trj(m_clean: np.ndarray, tau_window: int, state: StateMulti,
+    all_the_labels: np.ndarray, offset: int):
     """
     Find stable windows in the trajectory based on provided data and state info.
 
@@ -570,7 +571,8 @@ def iterative_search(data: MultiData, par: Parameters, name: str):
     all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
     return all_the_labels, list_of_states, one_last_state
 
-def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list_of_states: list[StateMulti], filename: str):
+def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray,
+    list_of_states: list[StateMulti], filename: str):
     """
     Plot a cumulative figure displaying trajectories and identified states.
 
@@ -602,25 +604,25 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
             if np.min(mol) == np.min(m_clean):
                 id_min = idx
 
-        lw = 0.05
+        line_w = 0.05
         max_t = all_the_labels.shape[1]
         m_resized = m_clean[:, :max_t:, :]
 
         step = 5 if m_resized.size > 1000000 else 1
         for i, mol in enumerate(m_resized[::step]):
-            ax.plot(mol.T[0], mol.T[1], mol.T[2], c='black', lw=lw, rasterized=True, zorder=0)
+            ax.plot(mol.T[0], mol.T[1], mol.T[2], c='black', lw=line_w, rasterized=True, zorder=0)
             color_list = all_the_labels[i*step]
             ax.scatter(mol.T[0], mol.T[1], mol.T[2],
                 c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
 
         color_list = all_the_labels[id_min]
         ax.plot(m_resized[id_min].T[0], m_resized[id_min].T[1],
-            m_resized[id_min].T[2], c='black', lw=lw, rasterized=True, zorder=0)
+            m_resized[id_min].T[2], c='black', lw=line_w, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1], m_resized[id_min].T[2],
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
         color_list = all_the_labels[id_max]
         ax.plot(m_resized[id_max].T[0], m_resized[id_max].T[1],
-            m_resized[id_max].T[2], c='black', lw=lw, rasterized=True, zorder=0)
+            m_resized[id_max].T[2], c='black', lw=line_w, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1], m_resized[id_max].T[2],
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
 
@@ -648,25 +650,25 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
             if np.min(mol) == np.min(m_clean):
                 id_min = idx
 
-        lw = 0.05
+        line_w = 0.05
         max_t = all_the_labels.shape[1]
         m_resized = m_clean[:, :max_t:, :]
         step = 5 if m_resized.size > 1000000 else 1
 
         for i, mol in enumerate(m_resized[::step]):
-            ax.plot(mol.T[0], mol.T[1], c='black', lw=lw, rasterized=True, zorder=0)
+            ax.plot(mol.T[0], mol.T[1], c='black', lw=line_w, rasterized=True, zorder=0)
             color_list = all_the_labels[i*step]
             ax.scatter(mol.T[0], mol.T[1], c=color_list, cmap=colormap, vmin=0, vmax=n_states-1,
                 s=0.5, rasterized=True)
 
         color_list = all_the_labels[id_min]
         ax.plot(m_resized[id_min].T[0], m_resized[id_min].T[1],
-            c='black', lw=lw, rasterized=True, zorder=0)
+            c='black', lw=line_w, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1],
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
         color_list = all_the_labels[id_max]
         ax.plot(m_resized[id_max].T[0], m_resized[id_max].T[1],
-            c='black', lw=lw, rasterized=True, zorder=0)
+            c='black', lw=line_w, rasterized=True, zorder=0)
         ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1],
             c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
@@ -683,7 +685,8 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray, list
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np.ndarray, filename: str):
+def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np.ndarray,
+    filename: str):
     """
     Plot a single trajectory of an example particle with associated labels.
 
@@ -721,7 +724,8 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
 
-def timeseries_analysis(original_data: MultiData, original_par: Parameters, tau_w: int, t_smooth: int):
+def timeseries_analysis(original_data: MultiData, original_par: Parameters,
+    tau_w: int, t_smooth: int):
     """
     Perform time series analysis on the input data.
 
