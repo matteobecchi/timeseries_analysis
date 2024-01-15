@@ -145,8 +145,7 @@ def param_grid(par: Parameters, trj_len: int):
             tau_window.append(tau_w)
     print('* Tau_w used:', tau_window)
 
-    t_smooth = list(range(par.min_t_smooth, par.max_t_smooth + 1))
-    # t_smooth = [ ts for ts in range(par.min_t_smooth, par.max_t_smooth + 1) ]
+    t_smooth = list(range(par.min_t_smooth, par.max_t_smooth + 1, par.step_t_smooth))
     print('* t_smooth used:', t_smooth)
 
     return tau_window, t_smooth

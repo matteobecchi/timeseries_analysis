@@ -393,6 +393,7 @@ class Parameters:
         self.max_tau_w = -1
         self.min_t_smooth = 1
         self.max_t_smooth = 5
+        self.step_t_smooth = 1
 
         for line in lines:
             key, value = [ s for s in line.strip().split('\t') if s != '']
@@ -420,6 +421,8 @@ class Parameters:
                 self.min_t_smooth = int(value)
             elif key == 'max_t_smooth':
                 self.max_t_smooth = int(value)
+            elif key == 'step_t_smooth':
+                self.step_t_smooth = int(value)
 
     def print_time(self, num_of_steps: int):
         """

@@ -27,9 +27,10 @@ The keyword and the value must be separated by one tab.
 * `max_tau_w` (int, optional): the larger tau_window value tested. It has to be larger that 2. Default is the largest possible window. 
 * `min_t_smooth` (int, optional): the smaller t_smooth value tested. It has to be larger that 0. Default is 1. 
 * `max_t_smooth` (int, optional): the larger t_smooth value tested. It has to be larger that 0. Default is 5. 
+* `step_t_smooth` (int, optional): the step in the t_smooth values tested. It has to be larger that 0. Default is 1. 
 
 ## Output
-The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 5 frames) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length). 
+The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 5 frames, unless differently specified in the impot parameters) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the impot parameters). 
 
 * `number_of_states.txt` contains the number of clusters for each combination of `tau_window` and `t_smooth` tested. 
 * `fraction_0.txt` contains the fraction of unclassified data points for each combination of `tau_window` and `t_smooth` tested. 
