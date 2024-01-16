@@ -581,9 +581,9 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     number_of_states = number_of_states[:, 1:].T
     fraction_0 = fraction_0[:, 1:].T
 
-    for t_smooth in range(min_t_smooth, max_t_smooth + 1, step_t_smooth):
+    for i, t_smooth in enumerate(range(min_t_smooth, max_t_smooth + 1, step_t_smooth)):
         fig, ax = plt.subplots()
-        i = t_smooth - min_t_smooth
+        # i = t_smooth - min_t_smooth
         y_signal = number_of_states[i]
         y_2 = fraction_0[i]
 
