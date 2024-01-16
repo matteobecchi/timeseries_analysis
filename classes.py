@@ -71,11 +71,9 @@ class UniData:
                 print('\tOriginal data shape:', self.matrix.shape)
             except Exception as exc_msg:
                 print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
-                # self.matrix = None
                 return
         else:
             print('\tERROR: unsupported format for input file.')
-            # self.matrix = None
             return
 
         self.num_of_particles = self.matrix.shape[0]
@@ -239,11 +237,9 @@ class MultiData:
                     print('\tOriginal data shape:', data_list[-1].shape)
                 except Exception as exc_msg:
                     print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
-                    # self.matrix = None
                     return
             else:
                 print('\tERROR: unsupported format for input file.')
-                # self.matrix = None
                 return
 
         for dim, data in enumerate(data_list[:-1]):

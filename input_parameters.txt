@@ -8,3 +8,4 @@ num_tau_w	20
 min_tau_w	2
 min_t_smooth	1
 max_t_smooth	5
+step_t_smooth	1
