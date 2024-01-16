@@ -574,13 +574,14 @@ def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     - par (Parameters): Instance of Parameters with time-related parameters.
     """
     t_conv, units = par.t_conv, par.t_units
-    min_t_smooth, max_t_smooth = par.min_t_smooth, par.max_t_smooth
+    min_t_smooth, max_t_smooth, step_t_smooth =
+        par.min_t_smooth, par.max_t_smooth, par.step_t_smooth
 
     time = number_of_states.T[0]*t_conv
     number_of_states = number_of_states[:, 1:].T
     fraction_0 = fraction_0[:, 1:].T
 
-    for t_smooth in range(min_t_smooth, max_t_smooth + 1):
+    for t_smooth in range(min_t_smooth, max_t_smooth + 1, step_t_smooth):
         fig, ax = plt.subplots()
         i = t_smooth - min_t_smooth
         y_signal = number_of_states[i]
