@@ -859,20 +859,19 @@ def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: P
     if os.path.exists(trj_file):
         print('* Printing colored_trj.xyz...')
         with open(trj_file, "r", encoding="utf-8") as in_file:
-            tmp = [ line.split() for line in in_file.readlines() ]
+            tmp = [line.split() for line in in_file]
 
         num_of_particles = all_the_labels.shape[0]
         total_time = all_the_labels.shape[1]
-        nlines = (num_of_particles + 2)*total_time
+        nlines = (num_of_particles + 2) * total_time
 
-        print('\t Removing the first', int(par.t_smooth/2) + par.t_delay, 'frames...')
-        for _ in range(int(par.t_smooth/2) + par.t_delay):
-            for _ in range(num_of_particles + 2):
-                tmp.pop(0)
+        frames_to_remove = int(par.t_smooth/2) + par.t_delay
+        print('\t Removing the first', frames_to_remove, 'frames...')
+        tmp = tmp[frames_to_remove * (num_of_particles + 2):]
 
-        print('\t Removing the last', int((len(tmp) - nlines)/(num_of_particles + 2)), 'frames...')
-        while len(tmp) > nlines:
-            tmp.pop(-1)
+        frames_to_remove = int((len(tmp) - nlines)/(num_of_particles + 2))
+        print('\t Removing the last', frames_to_remove, 'frames...')
+        tmp = tmp[:nlines]
 
         with open('colored_trj.xyz', "w+", encoding="utf-8") as out_file:
             i = 0
