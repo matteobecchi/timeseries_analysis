@@ -8,19 +8,17 @@ maintainers = [
   { name = "Matteo Becchi", email = "bechmath@gmail.com" },
 ]
 dependencies = [
-  "copy",
   "matplotlib",
-  "mpl_toolkits",
   "numpy",
-  "os",
   "plotly",
   "scipy",
-  "shutil",
-  "typing",
 ]
-requires-python = "3.11,>=3.9"
+requires-python = "<3.11,>=3.9"
 dynamic = ["version"]
 readme = "README.md"
+
+[tool.setuptools.dynamic]
+version = {attr = "onion_clustering.0.0.1"}
 
 [project.urls]
 github = "https://github.com/matteobecchi/timeseries_analysis/"

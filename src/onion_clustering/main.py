@@ -632,7 +632,7 @@ def full_output_analysis(data: UniData, par: Parameters):
     data.plot_medoids('Fig4')
     plot_state_populations(data.labels, par, 'Fig5')
     # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
-    sankey(data.labels, [1, 53, 193], par, 'Fig6')
+    # sankey(data.labels, [1, 53, 193], par, 'Fig6')
 
     all_the_labels = assign_single_frames(data.labels, tau_w)
 
@@ -696,7 +696,7 @@ def main():
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     data, par = all_the_input_stuff()
-    time_resolution_analysis(data, par, False)
+    time_resolution_analysis(data, par, True)
     full_output_analysis(data, par)
 
 if __name__ == "__main__":
