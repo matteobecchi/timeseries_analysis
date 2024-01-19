@@ -348,6 +348,7 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
     """
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
+
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
@@ -388,6 +389,13 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
         relabel_map[key + 1] = value + 1
 
     all_the_labels = relabel_map[all_the_labels.flatten()].reshape(all_the_labels.shape)
+
+    final_map = np.zeros(max(np.unique(all_the_labels)) + 1, dtype=int)
+    for i, el in enumerate(np.unique(all_the_labels)):
+        final_map[el] = i
+    for i, particle in enumerate(all_the_labels):
+        for j, el in enumerate(particle):
+            all_the_labels[i][j] = final_map[el]
 
     # Remove merged states from the state list
     states_to_remove = set(s0 for s0, s1 in best_merge)

@@ -632,16 +632,17 @@ def full_output_analysis(data: UniData, par: Parameters):
     data.plot_medoids('Fig4')
     plot_state_populations(data.labels, par, 'Fig5')
     # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
+    sankey(data.labels, [1, 53, 193], par, 'Fig6')
 
     all_the_labels = assign_single_frames(data.labels, tau_w)
 
     plot_cumulative_figure(data.matrix, par, list_of_states, 'Fig2')
     plot_one_trajectory(data.matrix, par, all_the_labels, 'Fig3')
 
-    if os.path.exists('trajectory.xyz'):
-        print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
-    else:
-        print_mol_labels_fbf_xyz(all_the_labels)
+    # if os.path.exists('trajectory.xyz'):
+    #     print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
+    # else:
+    #     print_mol_labels_fbf_xyz(all_the_labels)
 
 def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool):
     """
