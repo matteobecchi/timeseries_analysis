@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onion_clustering"
+maintainers = [
+  { name = "Matteo Becchi", email = "bechmath@gmail.com" },
+]
+dependencies = [
+  "copy",
+  "matplotlib",
+  "numpy",
+  "os",
+  "plotly",
+  "scipy",
+  "shutil",
+  "typing",
+]
+requires-python = ">=3.9"
+dynamic = ["version"]
+readme = "README.md"
+
+[project.urls]
+github = "https://github.com/matteobecchi/timeseries_analysis/"
+
+[tool.setuptools_scm]
+write_to = "src/onion_clustering/_version.py"
+
+[tool.setuptools.packages.find]
+where = [
+  # list of folders that contain the packages (["."] by default)
+  "src",
+]
+
+[tool.black]
+line-length = 79
+
+[tool.ruff]
+line-length = 79
+extend-select = ["I"]
+
+[tool.mypy]
+show_error_codes = true
+implicit_optional = false
+warn_no_return = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    # HERE WE WILL ADD THINGS ONCE WE HAVE THE JUST FILE I GUESS?
+]
+ignore_missing_imports = true

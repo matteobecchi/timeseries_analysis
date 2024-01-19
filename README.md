@@ -30,7 +30,7 @@ The keyword and the value must be separated by one tab.
 * `step_t_smooth` (int, optional): the step in the t_smooth values tested. It has to be larger that 0. Default is 1. 
 
 ## Output
-The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 5 frames, unless differently specified in the impot parameters) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the impot parameters). 
+The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 5 frames, unless differently specified in the input parameters) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). 
 
 * `number_of_states.txt` contains the number of clusters for each combination of `tau_window` and `t_smooth` tested. 
 * `fraction_0.txt` contains the fraction of unclassified data points for each combination of `tau_window` and `t_smooth` tested. 
