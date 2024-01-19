@@ -17,7 +17,7 @@ dependencies = [
   "shutil",
   "typing",
 ]
-requires-python = ">=3.9"
+requires-python = "3.11,>=3.9"
 dynamic = ["version"]
 readme = "README.md"
 
