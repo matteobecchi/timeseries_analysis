@@ -1,0 +1,11 @@
+tau_window	5
+t_smooth	1
+t_delay		0
+t_conv		1.0
+t_units		ns
+example_ID	123
+num_tau_w	20
+min_tau_w	2
+min_t_smooth	1
+max_t_smooth	5
+step_t_smooth	1
