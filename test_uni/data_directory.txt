@@ -1,2 +1,0 @@
-/Users/mattebecchi/00_signal_analysis/data/water_coex_100ps_1nm_LENS.npy
-
