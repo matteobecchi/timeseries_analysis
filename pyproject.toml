@@ -24,13 +24,11 @@ version = {attr = "onion_clustering.0.0.1"}
 github = "https://github.com/matteobecchi/timeseries_analysis/"
 
 [tool.setuptools_scm]
-write_to = "src/onion_clustering/_version.py"
+write_to = "src/onion_clustering/__version__.py"
 
 [tool.setuptools.packages.find]
-where = [
-  # list of folders that contain the packages (["."] by default)
-  "src",
-]
+# list of folders that contain the packages (["."] by default)
+where = ["src"]
 
 [tool.black]
 line-length = 79
