@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "onion_clustering"
+version = "0.0.1"
 maintainers = [
   { name = "Matteo Becchi", email = "bechmath@gmail.com" },
 ]
@@ -14,21 +15,30 @@ dependencies = [
   "scipy",
 ]
 requires-python = "<3.11,>=3.9"
-dynamic = ["version"]
+#dynamic = ["version"]
 readme = "README.md"
 
-[tool.setuptools.dynamic]
-version = {attr = "onion_clustering.0.0.1"}
+#[tool.setuptools.dynamic]
+#version = {attr = "onion_clustering.0.0.1"}
 
 [project.urls]
 github = "https://github.com/matteobecchi/timeseries_analysis/"
 
 [tool.setuptools_scm]
-write_to = "src/onion_clustering/__version__.py"
+#write_to = "src/onion_clustering/__version__.py"
 
-[tool.setuptools.packages.find]
-# list of folders that contain the packages (["."] by default)
-where = ["src"]
+#[tool.setuptools]
+#packages = ["onion_clustering"]
+#package-dir = {"" = "src"}
+
+#[tool.setuptools.packages.find]
+#where = ["src"]
+#include = ["onion_clustering*"]
+#namespaces = false
+
+#[tool.setuptools.packages.find]
+#list of folders that contain the packages (["."] by default)
+#where = ["src"]
 
 [tool.black]
 line-length = 79
