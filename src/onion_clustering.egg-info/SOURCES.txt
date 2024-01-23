@@ -3,6 +3,8 @@ README.md
 pyproject.toml
 dist/onion_clustering-0.0.1-py3-none-any.whl
 dist/onion_clustering-0.0.1.tar.gz
+dist/onion_clustering-0.0.2-py3-none-any.whl
+dist/onion_clustering-0.0.2.tar.gz
 examples/data_directory.txt
 examples/input_parameters.txt
 src/onion_clustering/__init__.py
@@ -17,6 +19,7 @@ src/onion_clustering.egg-info/SOURCES.txt
 src/onion_clustering.egg-info/dependency_links.txt
 src/onion_clustering.egg-info/requires.txt
 src/onion_clustering.egg-info/top_level.txt
+src/onion_clustering/__pycache__/__init__.cpython-39.pyc
 src/onion_clustering/__pycache__/classes.cpython-39.pyc
 src/onion_clustering/__pycache__/functions.cpython-39.pyc
 test/run_test.sh
