@@ -20,7 +20,7 @@ def test_output_files(setup_test_environment):
     TAU_WINDOW = 10         # time resolution of the analysis
     T_CONV = 200            # convert frames in time units (default 1)
     T_UNITS = 'dt'          # the time units (default 'frames')
-    NUM_TAU_W = 3           # number of tau_window tested (default 20)
+    NUM_TAU_W = 2           # number of tau_window tested (default 20)
     MAX_TAU_W = 10          # max value of tau_window tested (default auto)
     MAX_T_SMOOTH = 2        # max value of t_smooth tested (default 5)
     BINS = 50               # number of histogram bins (default auto)

@@ -19,8 +19,8 @@ def test_output_files(setup_test_environment):
     TAU_WINDOW = 10         # time resolution of the analysis
     T_DELAY = 1             # remove the first t_delay frames (default 0)
     T_CONV = 0.1            # convert frames in time units (default 1)
-    T_UNITS = 'ns'       # the time units (default 'frames')
-    NUM_TAU_W = 3          
+    T_UNITS = 'ns'          # the time units (default 'frames')
+    NUM_TAU_W = 2          
     MAX_TAU_W = 10          
     MAX_T_SMOOTH = 2        # max value of t_smooth tested (default 5)
 

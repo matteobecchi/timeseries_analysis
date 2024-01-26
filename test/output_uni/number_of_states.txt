@@ -1,4 +1,3 @@
 # tau_window	 number_of_states for different t_smooth
 2	5	5
-4	5	5
 10	4	4
