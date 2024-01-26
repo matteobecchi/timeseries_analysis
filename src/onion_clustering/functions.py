@@ -6,7 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 import scipy.optimize
 import scipy.signal
-from classes import *
+from onion_clustering.classes import *
 
 def read_input_data():
     """

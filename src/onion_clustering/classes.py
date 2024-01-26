@@ -378,8 +378,9 @@ class Parameters:
         except:
             print('\tinput_parameters.txt file missing or wrongly formatted.')
 
+        ### Ste the default values ###
         self.t_smooth = 1
-        self.t_delay = 1
+        self.t_delay = 0
         self.t_conv = 1.
         self.t_units = '[frames]'
         self.example_id = 0

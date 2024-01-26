@@ -2,7 +2,7 @@
 Code for clustering of univariate time-series data. See the documentation for all the details.
 """
 import shutil
-from functions import *
+from onion_clustering.functions import *
 
 NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = 'states_output.txt'
