@@ -837,9 +837,9 @@ def time_resolution_analysis(data: MultiData, par: Parameters, perform_anew: boo
         fraction_0_arr = np.array(fraction_0)
 
         np.savetxt('number_of_states.txt', number_of_states, fmt='%i',
-            delimiter='\t', header='tau_window\n number_of_states for different t_smooth')
+            delimiter='\t', header='tau_window\t number_of_states for different t_smooth')
         np.savetxt('fraction_0.txt', fraction_0, delimiter=' ',
-            header='tau_window\n fraction in ENV0 for different t_smooth')
+            header='tau_window\t fraction in ENV0 for different t_smooth')
     else:
         ### Otherwise, just do this ###
         number_of_states_arr = np.loadtxt('number_of_states.txt')
