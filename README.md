@@ -5,13 +5,12 @@ Code for unsupervised clustering of time-correlated data. Reference to INSERT PA
 A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt.
 
 ## Usage
-The working directory must contain:
+Install the package using `pip install onion_clustering`. 
+
+The `examples/` folder contains an example of usage. Run `python3 example_script.py`, this will create the following files:
 * A text file called `input_parameters.txt` , whose format is explained below;
 * A text file called `data_directory.txt` containing one line with the path to the input data file (including the input data file name). 
-
-Examples of this two files are contained in this repository. 
-
-From this directory, the code is run with `python3 ${PATH_TO_CODE}/main.py`. 
+and run the code. 
 
 ## input_parameters.txt
 The keyword and the value must be separated by one tab. 
@@ -51,7 +50,7 @@ Then, the analysis with the values of `tau_window` and `t_smooth`  specified in 
 * If the trajectory from which the signal was computed is present in the working directory, and called `trajectory.xyz`, a new file, `colored_trj.xyz` will be printed, with the correct typing according to the clustering. But a bit of fine-tuning will be necessary inside the function `print_colored_trj_from_xyz()` in `function.py`. 
 
 ## Multivariate time-series version
-The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. 
+The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. You can find an example of usage in `examples/example_script_2d.py`
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `plotly`, `scipy`. 
