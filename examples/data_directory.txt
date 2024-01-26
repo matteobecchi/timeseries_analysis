@@ -1,1 +1,1 @@
-${PATH_TO_DATA}/dataset.npy
+your/data/directory/here/dataset.npy
