@@ -475,6 +475,7 @@ class Parameters:
             print('# max_tau_w = ', self.max_tau_w)
         print('# min_t_smooth = ', self.min_t_smooth)
         print('# max_t_smooth = ', self.max_t_smooth)
+        print('# step_t_smooth = ', self.step_t_smooth)
         print('########################\n')
 
     def create_copy(self):
