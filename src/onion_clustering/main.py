@@ -639,10 +639,10 @@ def full_output_analysis(data: UniData, par: Parameters):
     plot_cumulative_figure(data.matrix, par, list_of_states, 'Fig2')
     plot_one_trajectory(data.matrix, par, all_the_labels, 'Fig3')
 
-    # if os.path.exists('trajectory.xyz'):
-    #     print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
-    # else:
-    #     print_mol_labels_fbf_xyz(all_the_labels)
+    if os.path.exists('trajectory.xyz'):
+        print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
+    else:
+        print_mol_labels_fbf_xyz(all_the_labels)
 
 def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool):
     """
