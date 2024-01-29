@@ -9,6 +9,25 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 import matplotlib.pyplot as plt
 
+def read_from_xyz(data_file: str, col: int=4):
+    with open(data_file, "r", encoding="utf-8") as file:
+        tmp_list = [line.strip().split() for line in file]
+
+    number_of_particles = int(tmp_list[0][0])
+    number_of_frames = int(len(tmp_list) / (number_of_particles + 2))
+
+    out_list = []
+    line = 2
+    for _ in range(number_of_frames):
+        tmp = []
+        for i in range(number_of_particles):
+            tmp.append(tmp_list[line + i][col])
+        out_list.append(tmp)
+        line += number_of_particles + 2
+
+    out_array = np.array(out_list, dtype=float).T
+    return out_array
+
 class StateUni:
     """
     Represents a state as a Gaussian.
@@ -37,11 +56,11 @@ class StateMulti:
     Represents a state as a factorized Gaussian.
     """
     def __init__(self, mean: np.ndarray, sigma: np.ndarray, area: np.ndarray):
-        self.mean = mean                        # Mean of the Gaussians
-        self.sigma = sigma                  # Variance of the Gaussians
-        self.area = area                    # Area below the Gaussians
-        self.perc = 0                       # Fraction of data points classified in this state
-        self.axis = 2.0*sigma     # Axes of the state
+        self.mean = mean         # Mean of the Gaussians
+        self.sigma = sigma       # Variance of the Gaussians
+        self.area = area         # Area below the Gaussians
+        self.perc = 0            # Fraction of data points classified in this state
+        self.axis = 2.0*sigma    # Axes of the state
 
     def build_boundaries(self, number_of_sigmas: float):
         """
@@ -57,7 +76,7 @@ class UniData:
     The input signals of the analysis.
     """
     def __init__(self, data_path: str):
-        if data_path.endswith(('.npz', '.npy', '.txt')):
+        if data_path.endswith(('.npz', '.npy', '.txt', '.xyz')):
             try:
                 if data_path.endswith('.npz'):
                     with np.load(data_path) as data:
@@ -66,6 +85,8 @@ class UniData:
                         self.matrix = np.array(data[data_name])
                 elif data_path.endswith('.npy'):
                     self.matrix = np.load(data_path)
+                elif data_path.endswith(data_path):
+                    self.matrix = read_from_xyz(data_path)
                 else: # .txt file
                     self.matrix = np.loadtxt(data_path)
                 print('\tOriginal data shape:', self.matrix.shape)
