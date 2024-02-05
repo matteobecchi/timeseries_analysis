@@ -592,55 +592,69 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray,
     colors_from_cmap = tmp(np.arange(0, 1, 1/n_states))
     colors_from_cmap[-1] = tmp(1.0)
 
-    fig = plt.figure(figsize=(6, 6))
     if m_clean.shape[2] == 3:
-        ax: Axes3D = fig.add_subplot(111, projection='3d')
+        fig, ax = plt.subplots(2, 2, figsize=(6, 6))
+        dir0 = [0, 0, 1]
+        dir1 = [1, 2, 2]
+        ax0 = [0, 0, 1]
+        ax1 = [0, 1, 0]
 
-        # Plot the individual trajectories
-        id_max, id_min = 0, 0
-        for idx, mol in enumerate(m_clean):
-            if np.max(mol) == np.max(m_clean):
-                id_max = idx
-            if np.min(mol) == np.min(m_clean):
-                id_min = idx
+        for k in range(3):
+            d_0 = dir0[k]
+            d_1 = dir1[k]
+            a_0 = ax0[k]
+            a_1 = ax1[k]
+            # Plot the individual trajectories
+            id_max, id_min = 0, 0
+            for idx, mol in enumerate(m_clean):
+                if np.max(mol) == np.max(m_clean):
+                    id_max = idx
+                if np.min(mol) == np.min(m_clean):
+                    id_min = idx
 
-        line_w = 0.05
-        max_t = all_the_labels.shape[1]
-        m_resized = m_clean[:, :max_t:, :]
+            line_w = 0.05
+            max_t = all_the_labels.shape[1]
+            m_resized = m_clean[:, :max_t:, :]
+            step = 5 if m_resized.size > 1000000 else 1
 
-        step = 5 if m_resized.size > 1000000 else 1
-        for i, mol in enumerate(m_resized[::step]):
-            ax.plot(mol.T[0], mol.T[1], mol.T[2], c='black', lw=line_w, rasterized=True, zorder=0)
-            color_list = all_the_labels[i*step]
-            ax.scatter(mol.T[0], mol.T[1], mol.T[2],
-                c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
+            for i, mol in enumerate(m_resized[::step]):
+                ax[a_0][a_1].plot(mol.T[d_0], mol.T[d_1],
+                    c='black', lw=line_w, rasterized=True, zorder=0)
+                color_list = all_the_labels[i*step]
+                ax[a_0][a_1].scatter(mol.T[d_0], mol.T[d_1], c=color_list,
+                    cmap=colormap, vmin=0, vmax=n_states-1, s=0.5, rasterized=True)
 
-        color_list = all_the_labels[id_min]
-        ax.plot(m_resized[id_min].T[0], m_resized[id_min].T[1],
-            m_resized[id_min].T[2], c='black', lw=line_w, rasterized=True, zorder=0)
-        ax.scatter(m_resized[id_min].T[0], m_resized[id_min].T[1], m_resized[id_min].T[2],
-            c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
-        color_list = all_the_labels[id_max]
-        ax.plot(m_resized[id_max].T[0], m_resized[id_max].T[1],
-            m_resized[id_max].T[2], c='black', lw=line_w, rasterized=True, zorder=0)
-        ax.scatter(m_resized[id_max].T[0], m_resized[id_max].T[1], m_resized[id_max].T[2],
-            c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, rasterized=True)
+                color_list = all_the_labels[id_min]
+                ax[a_0][a_1].plot(m_resized[id_min].T[d_0], m_resized[id_min].T[d_1],
+                    c='black', lw=line_w, rasterized=True, zorder=0)
+                ax[a_0][a_1].scatter(m_resized[id_min].T[d_0], m_resized[id_min].T[d_1],
+                    c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5,
+                    rasterized=True)
+                color_list = all_the_labels[id_max]
+                ax[a_0][a_1].plot(m_resized[id_max].T[d_0], m_resized[id_max].T[d_1],
+                    c='black', lw=line_w, rasterized=True, zorder=0)
+                ax[a_0][a_1].scatter(m_resized[id_max].T[d_0], m_resized[id_max].T[d_1],
+                    c=color_list, cmap=colormap, vmin=0, vmax=n_states-1, s=0.5,
+                    rasterized=True)
 
-        # Plot the Gaussian distributions of states
-        for s_id, state in enumerate(list_of_states):
-            ang_u = np.linspace(0, 2*np.pi, 100)
-            ang_v = np.linspace(0, np.pi, 100)
-            point_x = state.axis[0]*np.outer(np.cos(ang_u), np.sin(ang_v)) + state.mean[0]
-            point_y = state.axis[1]*np.outer(np.sin(ang_u), np.sin(ang_v)) + state.mean[1]
-            point_z = state.axis[2]*np.outer(np.ones_like(ang_u), np.cos(ang_v)) + state.mean[2]
-            ax.plot_surface(point_x, point_y, point_z, alpha=0.25, color=colors_from_cmap[s_id + 1])
+                # Plot the Gaussian distributions of states
+                if k == 0:
+                    for state in list_of_states:
+                        ellipse = Ellipse(tuple(state.mean),
+                            state.axis[d_0], state.axis[d_1], color='black', fill=False)
+                        ax[a_0][a_1].add_patch(ellipse)
 
-        # Set plot titles and axis labels
-        ax.set_xlabel(r'$x$')
-        ax.set_ylabel(r'$y$')
-        ax.set_zlabel(r'$z$')
+            # Set plot titles and axis labels
+            ax[a_0][a_1].set_xlabel(r'Signal ' + str(d_0))
+            ax[a_0][a_1].set_ylabel(r'Signal ' + str(d_1))
+
+        ax[1][1].axis('off')
+        fig.savefig('output_figures/' + filename + '.png', dpi=600)
+        plt.close(fig)
+
     elif m_clean.shape[2] == 2:
-        ax = plt.axes()
+        fig, ax = plt.subplots(figsize=(6, 6))
+        # ax = plt.axes()
 
         # Plot the individual trajectories
         id_max, id_min = 0, 0
@@ -682,8 +696,8 @@ def plot_cumulative_figure(m_clean: np.ndarray, all_the_labels: np.ndarray,
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
 
-    fig.savefig('output_figures/' + filename + '.png', dpi=600)
-    plt.close(fig)
+        fig.savefig('output_figures/' + filename + '.png', dpi=600)
+        plt.close(fig)
 
 def plot_one_trajectory(m_clean: np.ndarray, par: Parameters, all_the_labels: np.ndarray,
     filename: str):
@@ -806,6 +820,8 @@ def full_output_analysis(data: MultiData, par: Parameters):
     else:
         print_mol_labels_fbf_xyz(all_the_labels)
 
+    return all_the_labels
+
 def time_resolution_analysis(data: MultiData, par: Parameters, perform_anew: bool):
     """
     Analyze time series data with varying time resolution parameters.
@@ -856,7 +872,7 @@ def main():
     """
     data, par = all_the_input_stuff()
     time_resolution_analysis(data, par, True)
-    full_output_analysis(data, par)
+    all_the_labels = full_output_analysis(data, par)
 
 if __name__ == "__main__":
     main()

@@ -85,10 +85,10 @@ class UniData:
                         self.matrix = np.array(data[data_name])
                 elif data_path.endswith('.npy'):
                     self.matrix = np.load(data_path)
-                elif data_path.endswith(data_path):
+                elif data_path.endswith('.xyz'):
                     self.matrix = read_from_xyz(data_path)
                 else: # .txt file
-                    self.matrix = np.loadtxt(data_path)
+                    self.matrix = np.loadtxt(data_path, dtype=float)
                 print('\tOriginal data shape:', self.matrix.shape)
             except Exception as exc_msg:
                 print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')

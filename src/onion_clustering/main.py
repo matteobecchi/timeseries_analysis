@@ -644,6 +644,8 @@ def full_output_analysis(data: UniData, par: Parameters):
     else:
         print_mol_labels_fbf_xyz(all_the_labels)
 
+    return all_the_labels
+
 def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool):
     """
     Performs Temporal Resolution Analysis (TRA) to explore parameter space and analyze the dataset.
@@ -697,7 +699,8 @@ def main():
     """
     data, par = all_the_input_stuff()
     time_resolution_analysis(data, par, True)
-    full_output_analysis(data, par)
+    all_the_labels = full_output_analysis(data, par)
+    return all_the_labels
 
 if __name__ == "__main__":
     main()
