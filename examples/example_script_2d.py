@@ -3,7 +3,7 @@ Example script for running onion_clustering
 """
 from onion_clustering import main_2d
 
-###############################################################################################
+#################################################################################
 ### Set all the analysis parameters ###
 PATH_TO_INPUT_DATA = [
     'your/data/directory/here/dataset_x.npy',
@@ -24,7 +24,7 @@ MAX_T_SMOOTH = 5        # max value of t_smooth tested (default 5)
 STEP_T_SMOOTH = 1       # increment in value of t_smooth tested (default 1)
 MAX_TAU_W = 'auto'      # max number of tau_window tested (default is automatic)
 BINS = 'auto'           # number of histogram bins (default is automatic)
-###############################################################################################
+#################################################################################
 
 ### Create the 'data_directory.txt' file ###
 with open('data_directory.txt', "w+", encoding="utf-8") as file:
