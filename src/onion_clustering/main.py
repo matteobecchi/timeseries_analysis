@@ -69,8 +69,8 @@ def preparing_the_data(data: UniData, par: Parameters):
     tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
 
     # Apply filtering on the data
-    # data.smooth_mov_av(t_smooth)  # Smoothing using moving average
-    data.smooth_lpf(1/t_conv, t_smooth) # Smoothing using low-passing filter
+    data.smooth_mov_av(t_smooth)  # Smoothing using moving average
+    # data.smooth_lpf(1/t_conv, t_smooth) # Smoothing using low-passing filter
 
     # Normalize the data to the range [0, 1]. Usually not needed. ###
     # data.normalize()
