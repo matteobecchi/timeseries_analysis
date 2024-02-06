@@ -2,7 +2,7 @@
 Code for unsupervised clustering of time-correlated data. Reference to INSERT PAPER for further details. 
 
 ## Input data
-A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt.
+A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported. 
 
 ## Usage
 Install the package using `pip install onion_clustering`. 
