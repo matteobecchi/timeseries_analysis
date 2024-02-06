@@ -40,6 +40,6 @@ strict_optional = true
 
 [[tool.mypy.overrides]]
 module = [
-    # HERE WE WILL ADD THINGS ONCE WE HAVE THE JUST FILE I GUESS?
+    'onion_clustering.*'
 ]
 ignore_missing_imports = true

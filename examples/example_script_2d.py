@@ -5,7 +5,10 @@ from onion_clustering import main_2d
 
 ###############################################################################################
 ### Set all the analysis parameters ###
-PATH_TO_INPUT_DATA = 'your/data/directory/here/dataset.npy'
+PATH_TO_INPUT_DATA = [
+    'your/data/directory/here/dataset_x.npy',
+    'your/data/directory/here/dataset_y.npy'
+    ]
 TAU_WINDOW = 10         # time resolution of the analysis
 
 ### Optional parametrers ###
@@ -25,7 +28,8 @@ BINS = 'auto'           # number of histogram bins (default is automatic)
 
 ### Create the 'data_directory.txt' file ###
 with open('data_directory.txt', "w+", encoding="utf-8") as file:
-    print(PATH_TO_INPUT_DATA, file=file)
+    for path_to_input in PATH_TO_INPUT_DATA:
+        print(path_to_input, file=file)
 
 ### Create the 'input_parameter.txt' file ###
 with open('input_parameters.txt', "w+", encoding="utf-8") as file:
