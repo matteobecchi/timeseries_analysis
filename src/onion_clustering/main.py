@@ -542,7 +542,7 @@ def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
     # Add title and labels to the axes
     fig.suptitle('Example particle: ID = ' + str(example_id))
     ax.set_xlabel('Time ' + par.t_units)
-    ax.set_ylabel('Normalized signal')
+    ax.set_ylabel('Signal')
 
     fig.savefig('output_figures/' + filename + '.png', dpi=600)
     plt.close(fig)
