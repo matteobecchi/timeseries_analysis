@@ -422,7 +422,6 @@ def full_output_analysis(cl_ob: ClusteringObject):
 
     tau_w = cl_ob.par.tau_w
     cl_ob.preparing_the_data()
-    cl_ob.plot_input_data()
 
     cl_ob, tmp_labels, _ = iterative_search(cl_ob, '')
     if len(cl_ob.states) == 0:
@@ -430,18 +429,8 @@ def full_output_analysis(cl_ob: ClusteringObject):
         return
     cl_ob.states, cl_ob.data.labels = set_final_states(cl_ob.states, tmp_labels, cl_ob.data.range)
 
-    cl_ob.data.plot_medoids()
-    cl_ob.plot_state_populations()
     # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
     # sankey(data.labels, [1, 53, 193], par, 'Fig6')
-
-    cl_ob.plot_cumulative_figure()
-    cl_ob.plot_one_trajectory()
-
-    if os.path.exists('trajectory.xyz'):
-        cl_ob.print_colored_trj_from_xyz('trajectory.xyz')
-    # else:
-    #     cl_ob.print_mol_labels_fbf_xyz()
 
     return cl_ob
 

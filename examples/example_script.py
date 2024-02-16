@@ -1,16 +1,17 @@
 """
 Example script for running onion_clustering
 """
+import os
 from onion_clustering import main
 
 ###############################################################################################
 ### Set all the analysis parameters ###
-PATH_TO_INPUT_DATA = 'your/data/directory/here/dataset.npy'
+PATH_TO_INPUT_DATA = 'onion_example_files/data/univariate_time-series.npy'
 TAU_WINDOW = 10         # time resolution of the analysis
 
 ### Optional parametrers ###
 T_SMOOTH = 1            # window for moving average (default 1)
-T_DELAY = 0             # remove the first t_delay frames (default 0)
+T_DELAY = 1             # remove the first t_delay frames (default 0)
 T_CONV = 1.             # convert frames in time units (default 1)
 TIME_UNITS = 'frames'   # the time units (default 'frames')
 EXAMPLE_ID = 0          # particle plotted as example (default 0)
@@ -47,3 +48,14 @@ with open('input_parameters.txt', "w+", encoding="utf-8") as file:
 
 ### Run the code ###
 clustering_object = main.main()
+
+### Print the output ###
+clustering_object.plot_input_data()
+clustering_object.data.plot_medoids()
+clustering_object.plot_state_populations()
+clustering_object.plot_cumulative_figure()
+clustering_object.plot_one_trajectory()
+if os.path.exists('trajectory.xyz'):
+    clustering_object.print_colored_trj_from_xyz('trajectory.xyz')
+# else: # for some reason this does not work
+#     clustering_object.print_mol_labels_fbf_xyz()
