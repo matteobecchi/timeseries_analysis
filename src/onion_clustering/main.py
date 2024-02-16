@@ -1,7 +1,9 @@
 """
-Code for clustering of univariate time-series data. See the documentation for all the details.
+Code for clustering of univariate time-series data. 
+See the documentation for all the details.
 """
 import shutil
+from onion_clustering.classes import *
 from onion_clustering.functions import *
 
 NUMBER_OF_SIGMAS = 2.0
@@ -53,76 +55,9 @@ def all_the_input_stuff():
         except Exception as ex_msg:
             print(f'Failed to delete {file_path}. Reason: {ex_msg}')
 
-    return data, par
+    clustering_object = ClusteringObject(par, data)
 
-def preparing_the_data(data: UniData, par: Parameters):
-    """
-    Processes raw data for analysis.
-
-    Args:
-    - data (UniData): Raw input data.
-    - par (Parameters): Object containing parameters for data processing.
-
-    Returns:
-    - data (UniData): Cleaned and updated input data.
-    """
-    tau_window, t_smooth, t_conv, t_units = par.tau_w, par.t_smooth, par.t_conv, par.t_units
-
-    # Apply filtering on the data
-    data.smooth_mov_av(t_smooth)  # Smoothing using moving average
-    # data.smooth_lpf(1/t_conv, t_smooth) # Smoothing using low-passing filter
-
-    # Normalize the data to the range [0, 1]. Usually not needed. ###
-    # data.normalize()
-
-    # Calculate the number of windows for the analysis.
-    num_windows = int(data.num_of_steps / tau_window)
-
-    # Print informative messages about trajectory details.
-    print('\tTrajectory has ' + str(data.num_of_particles) + ' particles. ')
-    print('\tTrajectory of length ' + str(data.num_of_steps) +
-        ' frames (' + str(data.num_of_steps*t_conv), t_units + ')')
-    print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) +
-        ' frames (' + str(tau_window*t_conv), t_units + ')')
-
-    return data
-
-def plot_input_data(data: UniData, par: Parameters, filename: str):
-    """
-    Plots input data for visualization.
-
-    Args:
-    - data (UniData): Processed data for plotting.
-    - par (Parameters): Object containing parameters for plotting.
-    - filename (str): Name of the output plot file.
-    """
-    # Flatten the m_clean matrix and compute histogram counts and bins
-    m_clean = data.matrix
-    flat_m = m_clean.flatten()
-    bins = par.bins
-    counts, bins = np.histogram(flat_m, bins=bins, density=True)
-    counts *= flat_m.size
-
-    # Create a plot with two subplots (side-by-side)
-    fig, ax = plt.subplots(1, 2, sharey=True,
-        gridspec_kw={'width_ratios': [3, 1]},figsize=(9, 4.8))
-
-    # Plot histogram in the second subplot (right side)
-    ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
-
-    # Plot the individual trajectories in the first subplot (left side)
-    time = par.print_time(m_clean.shape[1])
-    step = 10 if m_clean.size > 1000000 else 1
-    for mol in m_clean[::step]:
-        ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
-
-    # Set labels and titles for the plots
-    ax[0].set_ylabel('Signal')
-    ax[0].set_xlabel(r'Simulation time $t$ ' + par.t_units)
-    ax[1].set_xticklabels([])
-
-    fig.savefig('output_figures/' + filename + '.png', dpi=600)
-    plt.close(fig)
+    return clustering_object
 
 def perform_gaussian_fit(
         id0: int, id1: int, max_ind: int, bins: np.ndarray,
@@ -359,18 +294,17 @@ def find_stable_trj(
     # and the updated list_of_states
     return m2_array, window_fraction, one_last_state
 
-def iterative_search(data: UniData, par: Parameters, name: str):
+def iterative_search(cl_ob: ClusteringObject, name: str):
     """
     Performs an iterative search for stable states in a trajectory.
 
     Args:
-    - data (UniData): Input trajectory data.
-    - par (Parameters): Object containing parameters for the search.
+    - cl_ob (ClusteringObject).
     - name (str): Name for identifying output figures.
 
     Returns:
-    - atl (np.ndarray): Updated labels for each window.
-    - lis (list): List of identified states.
+    - cl_ob (ClusteringObject): updated with the clustering results.
+    - atl (np.ndarray): temporary array of labels
     - one_last_state (bool): Indicates if there's one last state remaining.
 
     Notes:
@@ -381,23 +315,23 @@ def iterative_search(data: UniData, par: Parameters, name: str):
     """
 
     # Initialize an array to store labels for each window.
-    num_windows = int(data.num_of_steps / par.tau_w)
-    tmp_labels = np.zeros((data.num_of_particles, num_windows)).astype(int)
+    num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
+    tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(int)
 
     states_list = []
-    m_copy = data.matrix
+    m_copy = cl_ob.data.matrix
     iteration_id = 1
     states_counter = 0
     one_last_state = False
     while True:
         ### Locate and fit maximum in the signal distribution
-        state = gauss_fit_max(m_copy, par, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+        state = gauss_fit_max(m_copy, cl_ob.par, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
         if state is None:
             print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
             break
 
         ### Find the windows in which the trajectories are stable in the maximum
-        m_next, counter, one_last_state = find_stable_trj(data.matrix, par.tau_w, state,
+        m_next, counter, one_last_state = find_stable_trj(cl_ob.data.matrix, cl_ob.par.tau_w, state,
             tmp_labels, states_counter)
         state.perc = counter
 
@@ -411,141 +345,8 @@ def iterative_search(data: UniData, par: Parameters, name: str):
         m_copy = m_next
 
     atl, lis = relabel_states(tmp_labels, states_list)
-    return atl, lis, one_last_state
-
-def plot_cumulative_figure(m_clean: np.ndarray, par: Parameters,
-    list_of_states: list[StateUni], filename: str):
-    """
-    Generates a cumulative figure with signal trajectories and state Gaussian distributions.
-
-    Args:
-    - m_clean (np.ndarray): Input trajectory data.
-    - par (Parameters): Object containing parameters for plotting.
-    - list_of_states (list[StateUni]): List of identified states.
-    - filename (str): Name for the output figure file.
-
-    Notes:
-    - Plots signal trajectories and Gaussian distributions of identified states.
-    - Visualizes state thresholds and their corresponding signal ranges.
-    - Saves the figure as a PNG file in the 'output_figures' directory.
-    """
-
-    print('* Printing cumulative figure...')
-
-    # Compute histogram of flattened m_clean
-    flat_m = m_clean.flatten()
-    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
-    counts *= flat_m.size
-
-    # Create a 1x2 subplots with shared y-axis
-    fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]},
-        figsize=(9, 4.8))
-
-    # Plot the histogram on the right subplot (ax[1])
-    ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
-
-    # Create a color palette for plotting states
-    palette = []
-    n_states = len(list_of_states)
-    cmap = plt.get_cmap('viridis', n_states + 1)
-    for i in range(1, cmap.N):
-        rgba = cmap(i)
-        palette.append(rgb2hex(rgba))
-
-    # Define time and y-axis limits for the left subplot (ax[0])
-    y_spread = np.max(m_clean) - np.min(m_clean)
-    y_lim = [np.min(m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
-    time = par.print_time(m_clean.shape[1])
-
-    # Plot the individual trajectories on the left subplot (ax[0])
-    step = 10 if m_clean.size > 1000000 else 1
-    for mol in m_clean[::step]:
-        ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
-
-    # Plot the Gaussian distributions of states on the right subplot (ax[1])
-    for state_id, state in enumerate(list_of_states):
-        popt = [state.mean, state.sigma, state.area]
-        ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt),
-            np.linspace(bins[0], bins[-1], 1000), color=palette[state_id])
-
-    # Plot the horizontal lines and shaded regions to mark states' thresholds
-    style_color_map = {
-        0: ('--', 'xkcd:black'),
-        1: ('--', 'xkcd:blue'),
-        2: ('--', 'xkcd:red'),
-    }
-
-    time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]),
-        time[-1] + 0.05*(time[-1] - time[0]), 100)
-    for state_id, state in enumerate(list_of_states):
-        linestyle, color = style_color_map.get(state.th_inf[1], ('-', 'xkcd:black'))
-        ax[1].hlines(state.th_inf[0], xmin=0.0, xmax=np.amax(counts),
-            linestyle=linestyle, color=color)
-        ax[0].fill_between(time2, state.th_inf[0], state.th_sup[0],
-            color=palette[state_id], alpha=0.25)
-    ax[1].hlines(list_of_states[-1].th_sup[0], xmin=0.0, xmax=np.amax(counts),
-        linestyle=linestyle, color='black')
-
-    # Set plot titles and axis labels
-    ax[0].set_ylabel('Signal')
-    ax[0].set_xlabel(r'Time $t$ ' + par.t_units)
-    ax[0].set_xlim([time2[0], time2[-1]])
-    ax[0].set_ylim(y_lim)
-    ax[1].set_xticklabels([])
-
-    fig.savefig('output_figures/' + filename + '.png', dpi=600)
-    plt.close(fig)
-
-def plot_one_trajectory(m_clean: np.ndarray, par: Parameters,
-    all_the_labels: np.ndarray, filename: str):
-    """
-    Plots a single trajectory of an example particle with labeled data points.
-
-    Args:
-    - m (np.ndarray): Input trajectory data.
-    - par (Parameters): Object containing parameters for plotting.
-    - all_the_labels (np.ndarray): Labels indicating data points' classifications.
-    - filename (str): Name for the output figure file.
-
-    Notes:
-    - Plots a single trajectory with labeled data points based on classifications.
-    - Uses a colormap to differentiate and visualize different data point labels.
-    - Saves the figure as a PNG file in the 'output_figures' directory.
-    """
-
-    example_id = par.example_id
-    # Get the signal of the example particle
-    signal = m_clean[example_id][:all_the_labels.shape[1]]
-
-    # Create time values for the x-axis
-    time = par.print_time(all_the_labels.shape[1])
-
-    # Create a figure and axes for the plot
-    fig, ax = plt.subplots()
-
-    # Create a colormap to map colors to the labels of the example particle
-    unique_labels = np.unique(all_the_labels)
-    # If there are no assigned window, we still need the "0" state
-    # for consistency:
-    if 0 not in unique_labels:
-        unique_labels = np.insert(unique_labels, 0, 0)
-
-    cmap = plt.get_cmap('viridis',
-        np.max(unique_labels) - np.min(unique_labels) + 1)
-    color = all_the_labels[example_id]
-    ax.plot(time, signal, c='black', lw=0.1)
-
-    # Plot the signal as a line and scatter plot with colors based on the labels
-    ax.scatter(time, signal, c=color, cmap=cmap,
-        vmin=np.min(unique_labels), vmax=np.max(unique_labels), s=1.0)
-
-    # Add title and labels to the axes
-    fig.suptitle('Example particle: ID = ' + str(example_id))
-    ax.set_xlabel('Time ' + par.t_units)
-    ax.set_ylabel('Signal')
-
-    fig.savefig('output_figures/' + filename + '.png', dpi=600)
-    plt.close(fig)
+    cl_ob.states = lis
+    return cl_ob, atl, one_last_state
 
 def timeseries_analysis(original_data: UniData, original_par: Parameters,
     tau_w: int, t_smooth: int):
@@ -604,7 +405,7 @@ def timeseries_analysis(original_data: UniData, original_par: Parameters,
     print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
     return len(list_of_states), fraction_0
 
-def full_output_analysis(data: UniData, par: Parameters):
+def full_output_analysis(cl_ob: ClusteringObject):
     """
     Conducts a comprehensive analysis pipeline on a dataset,
     generating multiple figures and outputs.
@@ -619,32 +420,30 @@ def full_output_analysis(data: UniData, par: Parameters):
     - Prints molecular labels and colored trajectories based on analysis results.
     """
 
-    tau_w = par.tau_w
-    data = preparing_the_data(data, par)
-    plot_input_data(data, par, 'Fig0')
+    tau_w = cl_ob.par.tau_w
+    cl_ob.preparing_the_data()
+    cl_ob.plot_input_data()
 
-    tmp_labels, list_of_states, _ = iterative_search(data, par, '')
-    if len(list_of_states) == 0:
+    cl_ob, tmp_labels, _ = iterative_search(cl_ob, '')
+    if len(cl_ob.states) == 0:
         print('* No possible classification was found. ')
         return
-    list_of_states, data.labels = set_final_states(list_of_states, tmp_labels, data.range)
+    cl_ob.states, cl_ob.data.labels = set_final_states(cl_ob.states, tmp_labels, cl_ob.data.range)
 
-    data.plot_medoids('Fig4')
-    plot_state_populations(data.labels, par, 'Fig5')
+    cl_ob.data.plot_medoids()
+    cl_ob.plot_state_populations()
     # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
     # sankey(data.labels, [1, 53, 193], par, 'Fig6')
 
-    all_the_labels = assign_single_frames(data.labels, tau_w)
-
-    plot_cumulative_figure(data.matrix, par, list_of_states, 'Fig2')
-    plot_one_trajectory(data.matrix, par, all_the_labels, 'Fig3')
+    cl_ob.plot_cumulative_figure()
+    cl_ob.plot_one_trajectory()
 
     if os.path.exists('trajectory.xyz'):
-        print_colored_trj_from_xyz('trajectory.xyz', all_the_labels, par)
-    else:
-        print_mol_labels_fbf_xyz(all_the_labels)
+        cl_ob.print_colored_trj_from_xyz('trajectory.xyz')
+    # else:
+    #     cl_ob.print_mol_labels_fbf_xyz()
 
-    return all_the_labels
+    return cl_ob
 
 def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool):
     """
@@ -697,10 +496,10 @@ def main():
         Use 'False' to skip it.
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
-    data, par = all_the_input_stuff()
-    time_resolution_analysis(data, par, True)
-    all_the_labels = full_output_analysis(data, par)
-    return all_the_labels
+    clustering_object = all_the_input_stuff()
+    # time_resolution_analysis(data, par, True)
+    clustering_object = full_output_analysis(clustering_object)
+    return clustering_object
 
 if __name__ == "__main__":
     main()

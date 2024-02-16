@@ -6,7 +6,9 @@ import numpy as np
 import plotly.graph_objects as go
 import scipy.optimize
 import scipy.signal
-from onion_clustering.classes import *
+import copy
+from onion_clustering.first_classes import *
+
 
 def read_input_data():
     """
@@ -554,22 +556,6 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
 
     return all_the_labels, updated_states
 
-def assign_single_frames(all_the_labels: np.ndarray, tau_window: int):
-    """
-    Assigns labels to individual frames by repeating the existing labels.
-
-    Args:
-    - all_the_labels (np.ndarray): An ndarray containing labels associated with each state.
-    - tau_window (int): The number of frames for which the labels are to be assigned.
-
-    Returns:
-    - np.ndarray: An updated ndarray with labels assigned to individual frames
-        by repeating the existing labels.
-    """
-    print('* Assigning labels to the single frames...')
-    new_labels = np.repeat(all_the_labels, tau_window, axis=1)
-    return new_labels
-
 def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
     par: Parameters):
     """
@@ -709,60 +695,6 @@ def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
 
     fig.write_image('output_figures/' + filename + '.png', scale=5.0)
 
-def plot_state_populations(all_the_labels: np.ndarray,
-    par: Parameters, filename: str):
-    """
-    Plots the populations of states over time.
-
-    Args:
-    - all_the_labels (np.ndarray): Array containing state labels for each time step.
-    - par (Parameters): Instance of Parameters class containing time-related information.
-    - filename (str): Name of the file to save the generated plot.
-
-    Steps:
-    - Computes the populations of each state at different time steps.
-    - Creates a plot illustrating state populations against time.
-    - Utilizes Matplotlib to generate the plot based on provided data.
-    - Saves the resulting plot as an image file.
-
-    Note:
-    - Uses Matplotlib for creating the state population vs. time visualization.
-    - Provides options for file naming and displaying the plot based on the parameters.
-    """
-    print('* Printing populations vs time...')
-    num_part = all_the_labels.shape[0]
-
-    unique_labels = np.unique(all_the_labels)
-    # If there are no assigned window, we still need the "0" state
-    # for consistency:
-    if 0 not in unique_labels:
-        unique_labels = np.insert(unique_labels, 0, 0)
-
-    list_of_populations = []
-    for label in unique_labels:
-        population = np.sum(all_the_labels == label, axis=0)
-        list_of_populations.append(population / num_part)
-
-    # Generate the color palette.
-    palette = []
-    n_states = unique_labels.size
-    cmap = plt.get_cmap('viridis', n_states)
-    for i in range(cmap.N):
-        rgba = cmap(i)
-        palette.append(rgb2hex(rgba))
-
-    fig, ax = plt.subplots()
-    t_steps = all_the_labels.shape[1]
-    time = par.print_time(t_steps)
-    for label, pop in enumerate(list_of_populations):
-        # pop_full = np.repeat(pop, par.tau_w)
-        ax.plot(time, pop, label='ENV' + str(label), color=palette[label])
-    ax.set_xlabel(r'Time ' + par.t_units)
-    ax.set_ylabel(r'Population')
-    ax.legend()
-
-    fig.savefig('output_figures/' + filename + '.png', dpi=600)
-
 def print_mol_labels_fbf_gro(all_the_labels: np.ndarray):
     """
     Prints color IDs for Ovito visualization in GRO format.
@@ -808,26 +740,6 @@ def print_signal_with_labels(m_clean: np.ndarray, all_the_labels: np.ndarray):
                     print(m_clean[i][j][0], m_clean[i][j][1], m_clean[i][j][2],
                         all_the_labels[i][j], j + 1, file=file)
 
-def print_mol_labels_fbf_xyz(all_the_labels: np.ndarray):
-    """
-    Prints color IDs for Ovito visualization in XYZ format.
-
-    Args:
-    - all_the_labels (np.ndarray): Array containing molecular labels for each frame.
-
-    Steps:
-    - Creates a file ('all_cluster_IDs_xyz.dat') to store color IDs for Ovito visualization.
-    - Iterates through each frame's molecular labels and writes them to the file in XYZ format.
-    """
-    print('* Print color IDs for Ovito...')
-    with open('all_cluster_IDs_xyz.dat', 'w+', encoding="utf-8") as file:
-        for j in range(all_the_labels.shape[1]):
-            # Print two lines containing '#' to separate time steps.
-            print('#', file=file)
-            print('#', file=file)
-            # Use np.savetxt to write the labels for each time step efficiently.
-            np.savetxt(file, all_the_labels[:, j], fmt='%d', comments='')
-
 def print_mol_labels_fbf_lam(all_the_labels: np.ndarray):
     """
     Prints color IDs for Ovito visualization in .lammps format.
@@ -847,48 +759,3 @@ def print_mol_labels_fbf_lam(all_the_labels: np.ndarray):
                 print('#', file=file)
             # Use np.savetxt to write the labels for each time step efficiently.
             np.savetxt(file, all_the_labels[:, j], fmt='%d', comments='')
-
-def print_colored_trj_from_xyz(trj_file: str, all_the_labels: np.ndarray, par: Parameters):
-    """
-    Creates a new XYZ file ('colored_trj.xyz') by coloring the original trajectory
-    based on cluster labels.
-
-    Args:
-    - trj_file (str): Path to the original XYZ trajectory file.
-    - all_the_labels (np.ndarray): Array containing cluster labels for each frame.
-    - par (Parameters): Object storing parameters for processing.
-
-    Steps:
-    - Reads the original trajectory file 'trj_file'.
-    - Removes the initial and final frames based on 'par.t_smooth',
-        'par.t_delay', and available frames.
-    - Creates a new XYZ file 'colored_trj.xyz' by adding cluster labels to the particle entries.
-    """
-    if os.path.exists(trj_file):
-        print('* Loading trajectory.xyz...')
-        with open(trj_file, "r", encoding="utf-8") as in_file:
-            tmp = [line.strip().split() for line in in_file]
-
-        num_of_particles = all_the_labels.shape[0]
-        total_time = all_the_labels.shape[1]
-        nlines = (num_of_particles + 2) * total_time
-
-        frames_to_remove = int(par.t_smooth/2) #+ par.t_delay
-        print('\t Removing the first', frames_to_remove, 'frames...')
-        tmp = tmp[frames_to_remove * (num_of_particles + 2):]
-
-        frames_to_remove = int((len(tmp) - nlines)/(num_of_particles + 2))
-        print('\t Removing the last', frames_to_remove, 'frames...')
-        tmp = tmp[:nlines]
-
-        with open('colored_trj.xyz', "w+", encoding="utf-8") as out_file:
-            i = 0
-            for j in range(total_time):
-                print(tmp[i][0], file=out_file)
-                print('Properties=species:S:1:pos:R:3', file=out_file)
-                for k in range(num_of_particles):
-                    print(all_the_labels[k][j],
-                        tmp[i + 2 + k][1], tmp[i + 2 + k][2], tmp[i + 2 + k][3], file=out_file)
-                i += num_of_particles + 2
-    else:
-        print('No ' + trj_file + ' found for coloring the trajectory.')

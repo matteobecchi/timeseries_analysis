@@ -46,4 +46,4 @@ with open('input_parameters.txt', "w+", encoding="utf-8") as file:
         print('bins\t' + str(BINS), file=file)
 
 ### Run the code ###
-main.main()
+clustering_object = main.main()

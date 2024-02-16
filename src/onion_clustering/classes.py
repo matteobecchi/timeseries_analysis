@@ -1,487 +1,317 @@
 """
 Contains the classes used for storing parameters and system states.
 """
-import copy
-from typing import Union
-import scipy.signal
-from matplotlib.colors import rgb2hex
-from matplotlib.ticker import MaxNLocator
-import numpy as np
-import matplotlib.pyplot as plt
 
-def read_from_xyz(data_file: str, col: int=4):
-    with open(data_file, "r", encoding="utf-8") as file:
-        tmp_list = [line.strip().split() for line in file]
+from onion_clustering.functions import *
+from onion_clustering.first_classes import *
 
-    number_of_particles = int(tmp_list[0][0])
-    number_of_frames = int(len(tmp_list) / (number_of_particles + 2))
+class ClusteringObject:
+    def __init__(self, par: Parameters, data: UniData):
+        self.par = par
+        self.data = data
+        self.states: List[StateUni] = []
 
-    out_list = []
-    line = 2
-    for _ in range(number_of_frames):
-        tmp = []
-        for i in range(number_of_particles):
-            tmp.append(tmp_list[line + i][col])
-        out_list.append(tmp)
-        line += number_of_particles + 2
-
-    out_array = np.array(out_list, dtype=float).T
-    return out_array
-
-class StateUni:
-    """
-    Represents a state as a Gaussian.
-    """
-    def __init__(self, mean: float, sigma: float, area: float):
-        self.mean = mean                                # Mean of the Gaussian
-        self.sigma = sigma                              # Variance of the Gaussian
-        self.area = area                                # Area below the Gaussian
-        self.peak = area/sigma/np.sqrt(np.pi)           # Height of the Gaussian peak
-        self.perc = 0                    # Fraction of data points classified in this state
-        self.th_inf = [mean - 2.0*sigma, -1]    # Lower thrashold of the state
-        self.th_sup = [mean + 2.0*sigma, -1]    # Upper thrashold of the state
-
-    def build_boundaries(self, number_of_sigmas: float):
+    def plot_input_data(self):
         """
-        Sets the thresholds for the classification of data windows inside the state
-
-        Args:
-        - number of sigmas (float)
+        Plots input data for visualization.
         """
-        self.th_inf = [self.mean - number_of_sigmas*self.sigma, -1] # Lower thrashold of the state
-        self.th_sup = [self.mean + number_of_sigmas*self.sigma, -1] # Upper thrashold of the state
+        # Flatten the m_clean matrix and compute histogram counts and bins
+        m_clean = self.data.matrix
+        flat_m = m_clean.flatten()
+        bins = self.par.bins
+        counts, bins = np.histogram(flat_m, bins=bins, density=True)
+        counts *= flat_m.size
 
-class StateMulti:
-    """
-    Represents a state as a factorized Gaussian.
-    """
-    def __init__(self, mean: np.ndarray, sigma: np.ndarray, area: np.ndarray):
-        self.mean = mean         # Mean of the Gaussians
-        self.sigma = sigma       # Variance of the Gaussians
-        self.area = area         # Area below the Gaussians
-        self.perc = 0            # Fraction of data points classified in this state
-        self.axis = 2.0*sigma    # Axes of the state
+        # Create a plot with two subplots (side-by-side)
+        fig, ax = plt.subplots(1, 2, sharey=True,
+            gridspec_kw={'width_ratios': [3, 1]},figsize=(9, 4.8))
 
-    def build_boundaries(self, number_of_sigmas: float):
+        # Plot histogram in the second subplot (right side)
+        ax[1].stairs(counts, bins, fill=True, orientation='horizontal')
+
+        # Plot the individual trajectories in the first subplot (left side)
+        time = self.par.print_time(m_clean.shape[1])
+        step = 10 if m_clean.size > 1000000 else 1
+        for mol in m_clean[::step]:
+            ax[0].plot(time, mol, c='xkcd:black', lw=0.1, alpha=0.5, rasterized=True)
+
+        # Set labels and titles for the plots
+        ax[0].set_ylabel('Signal')
+        ax[0].set_xlabel(r'Simulation time $t$ ' + self.par.t_units)
+        ax[1].set_xticklabels([])
+
+        fig.savefig('output_figures/Fig0.png', dpi=600)
+        plt.close(fig)
+
+    def preparing_the_data(self):
         """
-        Sets the thresholds for the classification of data windows inside the state
-
-        Args:
-        - number of sigmas (float)
+        Processes raw data for analysis.
         """
-        self.axis = number_of_sigmas*self.sigma     # Axes of the state
+        tau_window, t_smooth = self.par.tau_w, self.par.t_smooth
+        t_conv, t_units = self.par.t_conv, self.par.t_units
 
-class UniData:
-    """
-    The input signals of the analysis.
-    """
-    def __init__(self, data_path: str):
-        if data_path.endswith(('.npz', '.npy', '.txt', '.xyz')):
-            try:
-                if data_path.endswith('.npz'):
-                    with np.load(data_path) as data:
-                        # Load the first variable (assumed to be the data) into a NumPy array.
-                        data_name = data.files[0]
-                        self.matrix = np.array(data[data_name])
-                elif data_path.endswith('.npy'):
-                    self.matrix = np.load(data_path)
-                elif data_path.endswith('.xyz'):
-                    self.matrix = read_from_xyz(data_path)
-                else: # .txt file
-                    self.matrix = np.loadtxt(data_path, dtype=float)
-                print('\tOriginal data shape:', self.matrix.shape)
-            except Exception as exc_msg:
-                print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
-                return
-        else:
-            print('\tERROR: unsupported format for input file.')
-            return
+        # Apply filtering on the data
+        self.data.smooth_mov_av(t_smooth)  # Smoothing using moving average
+        # self.data.smooth_lpf(1/t_conv, t_smooth) # Smoothing using low-passing filter
 
-        self.num_of_particles = self.matrix.shape[0]
-        self.num_of_steps = self.matrix.shape[1]
-        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
-        self.labels = np.array([])
+        # Normalize the data to the range [0, 1]. Usually not needed. ###
+        # self.data.normalize()
 
-    def print_info(self):
-        """
-        Prints information about the input data.
-        """
-        print('Number of particles:', self.num_of_particles)
-        print('Number of steps:', self.num_of_steps)
-        print('Data range:', self.range)
+        # Calculate the number of windows for the analysis.
+        num_windows = int(self.data.num_of_steps / tau_window)
 
-    def remove_delay(self, t_delay: int):
-        """
-        Removes a specified time delay from the data.
+        # Print informative messages about trajectory details.
+        print('\tTrajectory has ' + str(self.data.num_of_particles) + ' particles. ')
+        print('\tTrajectory of length ' + str(self.data.num_of_steps) +
+            ' frames (' + str(self.data.num_of_steps*t_conv), t_units + ')')
+        print('\tUsing ' + str(num_windows) + ' windows of length ' + str(tau_window) +
+            ' frames (' + str(tau_window*t_conv), t_units + ')')
 
-        Args:
-        - t_delay (int): Number of steps to remove from the beginning of the data.
-        """
-        self.matrix = self.matrix[:, t_delay:]
-        self.num_of_steps = self.matrix.shape[1]
 
-    def smooth_lpf(self, sampling_freq: int, window: int):
+    def plot_state_populations(self):
         """
-        Smooths the data using a digital low-passing, forward-backward filter.
+        Plots the populations of states over time.
 
-        Args:
-        - sampling_freq (int): the sampling frequency, in t_units
-        - window (int): inverse of the maximum frequency (in frames).
-        """
-        if window == 1:
-            return
-        if window == 2:
-            max_freq = sampling_freq/(window + 0.0000001)
-        else:
-            max_freq = sampling_freq/window
-        coeff_1, coeff_0 =scipy.signal.iirfilter(4, Wn=max_freq, fs=sampling_freq,
-            btype="low", ftype="butter")
-        self.matrix = np.apply_along_axis(lambda x: scipy.signal.filtfilt(coeff_1, coeff_0, x),
-            axis=1, arr=self.matrix)
-        self.num_of_steps = self.matrix.shape[1]
-        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
+        Steps:
+        - Computes the populations of each state at different time steps.
+        - Creates a plot illustrating state populations against time.
+        - Utilizes Matplotlib to generate the plot based on provided data.
+        - Saves the resulting plot as an image file.
 
-    def smooth_mov_av(self, window: int):
+        Note:
+        - Uses Matplotlib for creating the state population vs. time visualization.
+        - Provides options for file naming and displaying the plot based on the parameters.
         """
-        Smooths the data using a moving average with a specified window size.
+        print('* Printing populations vs time...')
+        num_part = self.data.labels.shape[0]
 
-        Args:
-        - window (int): Size of the moving average window.
-        """
-        weights = np.ones(window) / window
-        self.matrix = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
-            axis=1, arr=self.matrix)
-        self.num_of_steps = self.matrix.shape[1]
-        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
-
-    def normalize(self):
-        """
-        Normalizes the data between 0 and 1 based on its minimum and maximum values.
-        """
-        data_min, data_max = self.range[0], self.range[1]
-        self.matrix = (self.matrix - data_min)/(data_max - data_min)
-        self.range = [ np.min(self.matrix), np.max(self.matrix) ]
-
-    def create_copy(self):
-        """
-        Returns an independent copy of the UniData object.
-        Changes to the copy will not affect the original object.
-        """
-        copy_data = copy.deepcopy(self)
-        return copy_data
-
-    def plot_medoids(self, output_file: str):
-        """
-        Computes and plots the average time sequence inside each identified environment.
-
-        Notes:
-        - Computes cluster means and standard deviations for each identified cluster.
-        - Plots the average time sequence and standard deviation for each cluster.
-        - Saves the figure as a PNG file in the 'output_figures' directory.
-        """
-        tau_window = int(self.num_of_steps / self.labels.shape[1])
-        all_the_labels = self.labels
-        # Initialize lists to store cluster means and standard deviations
-        center_list = []
-        std_list = []
-
+        unique_labels = np.unique(self.data.labels)
         # If there are no assigned window, we still need the "0" state
         # for consistency:
-        missing_zero = 0
-        list_of_labels = np.unique(all_the_labels)
-        if 0 not in list_of_labels:
-            list_of_labels = np.insert(list_of_labels, 0, 0)
-            missing_zero = 1
+        if 0 not in unique_labels:
+            unique_labels = np.insert(unique_labels, 0, 0)
 
-        # Loop through unique labels (clusters)
-        for ref_label in list_of_labels:
-            tmp = []
-            # Iterate through molecules and their labels
-            for i, mol in enumerate(all_the_labels):
-                for window, label in enumerate(mol):
-                     # Define time interval
-                    time_0 = window*tau_window
-                    time_1 = (window + 1)*tau_window
-                    # If the label matches the current cluster, append the corresponding data to tmp
-                    if label == ref_label:
-                        tmp.append(self.matrix[i][time_0:time_1])
+        list_of_populations = []
+        for label in unique_labels:
+            population = np.sum(self.data.labels == label, axis=0)
+            list_of_populations.append(population / num_part)
 
-            # Calculate mean and standard deviation for the current cluster
-            if len(tmp) > 0:
-                center_list.append(np.mean(tmp, axis=0))
-                std_list.append(np.std(tmp, axis=0))
-
-        # Create a color palette
+        # Generate the color palette.
         palette = []
-        cmap = plt.get_cmap('viridis', list_of_labels.size)
-        palette.append(rgb2hex(cmap(0)))
+        n_states = unique_labels.size
+        cmap = plt.get_cmap('viridis', n_states)
+        for i in range(cmap.N):
+            rgba = cmap(i)
+            palette.append(rgb2hex(rgba))
+
+        fig, ax = plt.subplots()
+        t_steps = self.data.labels.shape[1]
+        time = self.par.print_time(t_steps)
+        for label, pop in enumerate(list_of_populations):
+            # pop_full = np.repeat(pop, self.par.tau_w)
+            ax.plot(time, pop, label='ENV' + str(label), color=palette[label])
+        ax.set_xlabel(r'Time ' + self.par.t_units)
+        ax.set_ylabel(r'Population')
+        ax.legend()
+
+        fig.savefig('output_figures/Fig5.png', dpi=600)
+
+
+    def plot_cumulative_figure(self):
+        """
+        Generates a cumulative figure with signal trajectories and state Gaussian distributions.
+
+        Notes:
+        - Plots signal trajectories and Gaussian distributions of identified states.
+        - Visualizes state thresholds and their corresponding signal ranges.
+        - Saves the figure as a PNG file in the 'output_figures' directory.
+        """
+
+        print('* Printing cumulative figure...')
+
+        # Compute histogram of flattened self.data.matrix
+        flat_m = self.data.matrix.flatten()
+        counts, bins = np.histogram(flat_m, bins=self.par.bins, density=True)
+        counts *= flat_m.size
+
+        # Create a 1x2 subplots with shared y-axis
+        fig, ax = plt.subplots(1, 2, sharey=True, gridspec_kw={'width_ratios': [3, 1]},
+            figsize=(9, 4.8))
+
+        # Plot the histogram on the right subplot (ax[1])
+        ax[1].stairs(counts, bins, fill=True, orientation='horizontal', alpha=0.5)
+
+        # Create a color palette for plotting states
+        palette = []
+        n_states = len(self.states)
+        cmap = plt.get_cmap('viridis', n_states + 1)
         for i in range(1, cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
 
-        # Plot
-        fig, ax = plt.subplots()
-        time_seq = range(tau_window)
-        for center_id, center in enumerate(center_list):
-            err_inf = center - std_list[center_id]
-            err_sup = center + std_list[center_id]
-            ax.fill_between(time_seq, err_inf, err_sup, alpha=0.25,
-                color=palette[center_id + missing_zero])
-            ax.plot(time_seq, center, label='ENV'+str(center_id + missing_zero), marker='o',
-                c=palette[center_id + missing_zero])
-        fig.suptitle('Average time sequence inside each environments')
-        ax.set_xlabel(r'Time $t$ [frames]')
-        ax.set_ylabel(r'Signal')
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.legend()
+        # Define time and y-axis limits for the left subplot (ax[0])
+        y_spread = np.max(self.data.matrix) - np.min(self.data.matrix)
+        y_lim = [np.min(self.data.matrix) - 0.025*y_spread, np.max(self.data.matrix) + 0.025*y_spread]
+        time = self.par.print_time(self.data.matrix.shape[1])
 
-        fig.savefig('output_figures/' + output_file + '.png', dpi=600)
+        # Plot the individual trajectories on the left subplot (ax[0])
+        step = 10 if self.data.matrix.size > 1000000 else 1
+        for mol in self.data.matrix[::step]:
+            ax[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1, alpha=0.5, rasterized=True)
 
-class MultiData:
-    """
-    The input signals of the analysis.
-    """
-    def __init__(self, path_list: str):
-        data_list = []
-        for data_path in path_list:
-            if data_path.endswith(('.npz', '.npy', '.txt')):
-                try:
-                    if data_path.endswith('.npz'):
-                        with np.load(data_path) as data:
-                            # Load the first variable (assumed to be the data) into a NumPy array.
-                            data_name = data.files[0]
-                            data_list.append(np.array(data[data_name]))
-                    elif data_path.endswith('.npy'):
-                        data_list.append(np.load(data_path))
-                    else: # .txt file
-                        data_list.append(np.loadtxt(data_path))
-                    print('\tOriginal data shape:', data_list[-1].shape)
-                except Exception as exc_msg:
-                    print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
-                    return
-            else:
-                print('\tERROR: unsupported format for input file.')
-                return
+        # Plot the Gaussian distributions of states on the right subplot (ax[1])
+        for state_id, state in enumerate(self.states):
+            popt = [state.mean, state.sigma, state.area]
+            ax[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt),
+                np.linspace(bins[0], bins[-1], 1000), color=palette[state_id])
 
-        for dim, data in enumerate(data_list[:-1]):
-            if data_list[dim].shape != data_list[dim + 1].shape :
-                print('ERROR: The signals do not correspond. Abort.')
-                # self.matrix = None
-                return
+        # Plot the horizontal lines and shaded regions to mark states' thresholds
+        style_color_map = {
+            0: ('--', 'xkcd:black'),
+            1: ('--', 'xkcd:blue'),
+            2: ('--', 'xkcd:red'),
+        }
 
-        data_arr = np.array(data_list)
-        self.matrix = np.transpose(data_arr, axes=(1, 2, 0))
+        time2 = np.linspace(time[0] - 0.05*(time[-1] - time[0]),
+            time[-1] + 0.05*(time[-1] - time[0]), 100)
+        for state_id, state in enumerate(self.states):
+            linestyle, color = style_color_map.get(state.th_inf[1], ('-', 'xkcd:black'))
+            ax[1].hlines(state.th_inf[0], xmin=0.0, xmax=np.amax(counts),
+                linestyle=linestyle, color=color)
+            ax[0].fill_between(time2, state.th_inf[0], state.th_sup[0],
+                color=palette[state_id], alpha=0.25)
+        ax[1].hlines(self.states[-1].th_sup[0], xmin=0.0, xmax=np.amax(counts),
+            linestyle=linestyle, color='black')
 
-        self.num_of_particles = self.matrix.shape[0]
-        self.num_of_steps = self.matrix.shape[1]
-        self.dims = self.matrix.shape[2]
-        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in data_list ])
-        self.labels = np.array([])
+        # Set plot titles and axis labels
+        ax[0].set_ylabel('Signal')
+        ax[0].set_xlabel(r'Time $t$ ' + self.par.t_units)
+        ax[0].set_xlim([time2[0], time2[-1]])
+        ax[0].set_ylim(y_lim)
+        ax[1].set_xticklabels([])
 
-    def print_info(self):
+        fig.savefig('output_figures/Fig2.png', dpi=600)
+        plt.close(fig)
+
+
+    def create_all_the_labels(self) -> np.ndarray:
         """
-        Prints information about the input data.
-        """
-        print('Number of particles:', self.num_of_particles)
-        print('Number of steps:', self.num_of_steps)
-        print('Number of components:', self.dims)
-        print('Data range:', self.range)
-
-    def remove_delay(self, t_delay: int):
-        """
-        Removes a specified time delay from the data.
+        Assigns labels to individual frames by repeating the existing labels.
 
         Args:
-        - t_delay (int): Number of steps to remove from the beginning of the data.
-        """
-        self.matrix = self.matrix[:, t_delay:, :]
-        self.num_of_steps = self.matrix.shape[1]
-
-    def smooth(self, window: int):
-        """
-        Smooths the data using a moving average with a specified window size.
-
-        Args:
-        - window (int): Size of the moving average window.
-        """
-        weights = np.ones(window) / window
-        tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
-        tmp_matrix = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
-            axis=2, arr=tmp_matrix)
-        self.matrix = np.transpose(tmp_matrix, axes=(1, 2, 0))
-        self.num_of_steps = self.matrix.shape[1]
-        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in tmp_matrix ])
-
-    def normalize(self, dim_to_avoid: list[int]):
-        """
-        Normalizes the data between 0 and 1 based on its minimum and maximum values.
-        """
-        tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
-        new_matrix = []
-        for dim, comp in enumerate(tmp_matrix):
-            if dim not in dim_to_avoid:
-                data_min, data_max = np.min(comp), np.max(comp)
-                new_matrix.append((comp - data_min)/(data_max - data_min))
-            else:
-                new_matrix.append(comp)
-        self.matrix = np.transpose(np.array(new_matrix), axes=(1, 2, 0))
-        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in new_matrix ])
-
-    def create_copy(self):
-        """
-        Returns an independent copy of the UniData object.
-        Changes to the copy will not affect the original object.
-        """
-        copy_data = copy.deepcopy(self)
-        return copy_data
-
-    def plot_medoids(self, output_file: str):
-        """
-        Plot the mean time sequence for clusters in the data.
+        - tau_window (int): The number of frames for which the labels are to be assigned.
 
         Returns:
-        - None: If the third dimension of input data is greater than 2.
+        - np.ndarray: An updated ndarray with labels assigned to individual frames
+            by repeating the existing labels.
         """
-        if self.dims > 2:
-            print('plot_medoids() does not work with 3D data.')
-            return
+        all_the_labels = np.repeat(self.data.labels, self.par.tau_w, axis=1)
+        return all_the_labels
 
-        # Initialize lists to store cluster means and standard deviations
-        tau_window = int(self.num_of_steps / self.labels.shape[1])
-        center_list = []
+    def plot_one_trajectory(self):
+        """
+        Plots a single trajectory of an example particle with labeled data points.
 
-        # Loop through unique labels (clusters)
-        for ref_label in np.unique(self.labels):
-            tmp = []
-            # Iterate through molecules and their labels
-            for i, mol in enumerate(self.labels):
-                for j, label in enumerate(mol):
-                    # Define time interval
-                    t_0 = j*tau_window
-                    t_1 = (j + 1)*tau_window
-                    # If the label matches the current cluster, append the corresponding data to tmp
-                    if label == ref_label:
-                        tmp.append(self.matrix[i][t_0:t_1])
+        Notes:
+        - Plots a single trajectory with labeled data points based on classifications.
+        - Uses a colormap to differentiate and visualize different data point labels.
+        - Saves the figure as a PNG file in the 'output_figures' directory.
+        """
 
-            # Calculate mean and standard deviation for the current cluster
-            center_list.append(np.mean(tmp, axis=0))
+        example_id = self.par.example_id
+        # Get the signal of the example particle
+        all_the_labels = self.create_all_the_labels()
+        signal = self.data.matrix[example_id][:all_the_labels.shape[1]]
 
-        # Create a color palette
-        palette = []
-        cmap = plt.get_cmap('viridis', np.unique(self.labels).size)
-        palette.append(rgb2hex(cmap(0)))
-        for i in range(1, cmap.N):
-            rgba = cmap(i)
-            palette.append(rgb2hex(rgba))
+        # Create time values for the x-axis
+        time = self.par.print_time(all_the_labels.shape[1])
 
-        # Plot
+        # Create a figure and axes for the plot
         fig, ax = plt.subplots()
-        for id_c, center in enumerate(center_list):
-            sig_x = center[:, 0]
-            sig_y = center[:, 1]
-            ax.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o', c=palette[id_c])
-        fig.suptitle('Average time sequence inside each environments')
-        ax.set_xlabel(r'Signal 1')
-        ax.set_ylabel(r'Signal 2')
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.legend()
 
-        fig.savefig('output_figures/' + output_file + '.png', dpi=600)
+        # Create a colormap to map colors to the labels of the example particle
+        unique_labels = np.unique(all_the_labels)
+        # If there are no assigned window, we still need the "0" state
+        # for consistency:
+        if 0 not in unique_labels:
+            unique_labels = np.insert(unique_labels, 0, 0)
 
-class Parameters:
-    """
-    Contains the set of parameters for the specific analysis.
-    """
-    def __init__(self, input_file: str):
-        try:
-            with open(input_file, 'r', encoding="utf-8") as file:
-                lines = file.readlines()
-        except:
-            print('\tinput_parameters.txt file missing or wrongly formatted.')
+        cmap = plt.get_cmap('viridis',
+            np.max(unique_labels) - np.min(unique_labels) + 1)
+        color = all_the_labels[example_id]
+        ax.plot(time, signal, c='black', lw=0.1)
 
-        ### Ste the default values ###
-        self.t_smooth = 1
-        self.t_delay = 0
-        self.t_conv = 1.
-        self.t_units = '[frames]'
-        self.example_id = 0
-        self.bins: Union[str, int] = 'auto'
-        self.num_tau_w = 20
-        self.min_tau_w = 2
-        self.max_tau_w = -1
-        self.min_t_smooth = 1
-        self.max_t_smooth = 5
-        self.step_t_smooth = 1
+        # Plot the signal as a line and scatter plot with colors based on the labels
+        ax.scatter(time, signal, c=color, cmap=cmap,
+            vmin=np.min(unique_labels), vmax=np.max(unique_labels), s=1.0)
 
-        for line in lines:
-            key, value = [ s for s in line.strip().split('\t') if s != '']
-            if key == 'tau_window':
-                self.tau_w = int(value)
-            elif key == 't_smooth':
-                self.t_smooth = int(value)
-            elif key == 't_delay':
-                self.t_delay = int(value)
-            elif key == 't_conv':
-                self.t_conv = float(value)
-            elif key == 't_units':
-                self.t_units = r'[' + str(value) + r']'
-            elif key == 'example_ID':
-                self.example_id = int(value)
-            elif key == 'bins':
-                self.bins = int(value)
-            elif key == 'num_tau_w':
-                self.num_tau_w = int(value)
-            elif key == 'min_tau_w':
-                self.min_tau_w = int(value)
-            elif key == 'max_tau_w':
-                self.max_tau_w = int(value)
-            elif key == 'min_t_smooth':
-                self.min_t_smooth = int(value)
-            elif key == 'max_t_smooth':
-                self.max_t_smooth = int(value)
-            elif key == 'step_t_smooth':
-                self.step_t_smooth = int(value)
+        # Add title and labels to the axes
+        fig.suptitle('Example particle: ID = ' + str(example_id))
+        ax.set_xlabel('Time ' + self.par.t_units)
+        ax.set_ylabel('Signal')
 
-    def print_time(self, num_of_steps: int):
+        fig.savefig('output_figures/Fig3.png', dpi=600)
+        plt.close(fig)
+
+    def print_colored_trj_from_xyz(trj_file: str):
         """
-        Generates time values based on parameters and number of steps.
+        Creates a new XYZ file ('colored_trj.xyz') by coloring the original trajectory
+        based on cluster labels.
 
         Args:
-        - num_of_steps (int): Number of time steps.
+        - trj_file (str): Path to the original XYZ trajectory file.
 
-        Returns:
-        - np.ndarray: Array of time values.
+        Steps:
+        - Reads the original trajectory file 'trj_file'.
+        - Removes the initial and final frames based on 'par.t_smooth',
+            'par.t_delay', and available frames.
+        - Creates a new XYZ file 'colored_trj.xyz' by adding cluster labels to the particle entries.
         """
-        t_start = self.t_delay + int(self.t_smooth/2)
-        time = np.linspace(t_start, t_start + num_of_steps, num_of_steps) * self.t_conv
-        return time
+        if os.path.exists(trj_file):
+            print('* Loading trajectory.xyz...')
+            with open(trj_file, "r", encoding="utf-8") as in_file:
+                tmp = [line.strip().split() for line in in_file]
 
-    def print_to_screen(self):
-        """
-        Prints to screen all the analysis' parameters.
-        """
-        print('\n########################')
-        print('### Input parameters ###')
-        print('# tau_window = ', self.tau_w)
-        print('# t_smooth = ', self.t_smooth)
-        print('# t_delay = ', self.t_delay)
-        print('# t_conv = ', self.t_conv)
-        print('# t_units = ', self.t_units)
-        print('# example_ID = ', self.example_id)
-        print('# bins = ', self.bins)
-        print('# num_tau_w = ', self.num_tau_w)
-        print('# min_tau_w = ', self.min_tau_w)
-        if self.max_tau_w > 1:
-            print('# max_tau_w = ', self.max_tau_w)
-        print('# min_t_smooth = ', self.min_t_smooth)
-        print('# max_t_smooth = ', self.max_t_smooth)
-        print('# step_t_smooth = ', self.step_t_smooth)
-        print('########################\n')
+            all_the_labels = self.create_all_the_labels()
+            num_of_particles = all_the_labels.shape[0]
+            total_time = all_the_labels.shape[1]
+            nlines = (num_of_particles + 2) * total_time
 
-    def create_copy(self):
+            frames_to_remove = int(self.par.t_smooth/2) + par.t_delay
+            print('\t Removing the first', frames_to_remove, 'frames...')
+            tmp = tmp[frames_to_remove * (num_of_particles + 2):]
+
+            frames_to_remove = int((len(tmp) - nlines)/(num_of_particles + 2))
+            print('\t Removing the last', frames_to_remove, 'frames...')
+            tmp = tmp[:nlines]
+
+            with open('colored_trj.xyz', "w+", encoding="utf-8") as out_file:
+                i = 0
+                for j in range(total_time):
+                    print(tmp[i][0], file=out_file)
+                    print('Properties=species:S:1:pos:R:3', file=out_file)
+                    for k in range(num_of_particles):
+                        print(all_the_labels[k][j],
+                            tmp[i + 2 + k][1], tmp[i + 2 + k][2], tmp[i + 2 + k][3], file=out_file)
+                    i += num_of_particles + 2
+        else:
+            print('No ' + trj_file + ' found for coloring the trajectory.')
+
+
+    def print_mol_labels_fbf_xyz():
         """
-        Returns an independent copy of the Parameter object.
-        Changes to the copy will not affect the original object.
+        Prints color IDs for Ovito visualization in XYZ format.
+
+        Steps:
+        - Creates a file ('all_cluster_IDs_xyz.dat') to store color IDs for Ovito visualization.
+        - Iterates through each frame's molecular labels and writes them to the file in XYZ format.
         """
-        copy_par = copy.deepcopy(self)
-        return copy_par
+        print('* Print color IDs for Ovito...')
+        all_the_labels = self.reate_all_the_labels()
+        with open('all_cluster_IDs_xyz.dat', 'w+', encoding="utf-8") as file:
+            for j in range(all_the_labels.shape[1]):
+                # Print two lines containing '#' to separate time steps.
+                print('#', file=file)
+                print('#', file=file)
+                # Use np.savetxt to write the labels for each time step efficiently.
+                np.savetxt(file, all_the_labels[:, j], fmt='%d', comments='')
