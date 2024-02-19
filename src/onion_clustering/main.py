@@ -237,15 +237,13 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     return state
 
 def find_stable_trj(
-        m_clean: np.ndarray, tau_window: int, state: StateUni,
-        all_the_labels: np.ndarray, offset: int
+    cl_ob: ClusteringObject, state: StateUni, tmp_labels: np.ndarray, lim: int
     ):
     """
     Identifies stable windows in a trajectory based on criteria.
 
     Args:
-    - m_clean (np.ndarray): Input trajectory data.
-    - tau_window (int): Size of the window for analysis.
+    - cl_ob (ClusteringObject): the clustering object
     - state (StateUni): Object containing stable state parameters.
     - all_the_labels (np.ndarray): Labels indicating window classifications.
     - offset (int): Offset value for classifying stable windows.
@@ -264,16 +262,18 @@ def find_stable_trj(
     print('* Finding stable windows...')
 
     # Calculate the number of windows in the trajectory
-    number_of_windows = all_the_labels.shape[1]
+    number_of_windows = tmp_labels.shape[1]
+    m_clean = cl_ob.data.matrix
+    tau_window = cl_ob.par.tau_w
 
-    mask_unclassified = all_the_labels < 0.5
-    m_reshaped = m_clean[:, :number_of_windows*tau_window].reshape(m_clean.shape[0],
-        number_of_windows, tau_window)
+    mask_unclassified = tmp_labels < 0.5
+    m_reshaped = m_clean[:, :number_of_windows*tau_window].reshape(
+        m_clean.shape[0], number_of_windows, tau_window)
     mask_inf = np.min(m_reshaped, axis=2) >= state.th_inf[0]
     mask_sup = np.max(m_reshaped, axis=2) <= state.th_sup[0]
     mask = mask_unclassified & mask_inf & mask_sup
 
-    all_the_labels[mask] = offset + 1
+    tmp_labels[mask] = lim + 1
     counter = np.sum(mask)
 
     # Initialize an empty list to store non-stable windows
@@ -284,12 +284,14 @@ def find_stable_trj(
         remaning_data.append(r_w)
 
     # Calculate the fraction of stable windows found
-    window_fraction = counter/(all_the_labels.size)
+    window_fraction = counter/(tmp_labels.size)
 
     # Print the fraction of stable windows
     with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
-        print(f'\tFraction of windows in state {offset + 1} = {window_fraction:.3}')
-        print(f'\tFraction of windows in state {offset + 1} = {window_fraction:.3}', file=file)
+        print(f'\tFraction of windows in state {lim + 1}'
+            f' = {window_fraction:.3}')
+        print(f'\tFraction of windows in state {lim + 1}'
+            f' = {window_fraction:.3}', file=file)
 
     # Convert the list of non-stable windows to a NumPy array
     m2_array = np.array(remaning_data)
@@ -341,8 +343,7 @@ def iterative_search(cl_ob: ClusteringObject, name: str):
 
         ### Find the windows in which the trajectories are stable in the maximum
         m_next, counter, one_last_state = find_stable_trj(
-            cl_ob.data.matrix, cl_ob.par.tau_w,
-            state, tmp_labels, states_counter)
+            cl_ob, state, tmp_labels, states_counter)
         state.perc = counter
 
         states_list.append(state)
@@ -462,6 +463,8 @@ def time_resolution_analysis(cl_ob: ClusteringObject):
 
 def main() -> ClusteringObject:
     """
+    Returns the clustering object with the analysi.
+
     all_the_input_stuff() reads the data and the parameters
     time_resolution_analysis() explore the parameter (tau_window, t_smooth) space.
     full_output_analysis() performs a detailed analysis with the chosen parameters.
