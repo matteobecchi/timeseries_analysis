@@ -1,15 +1,16 @@
 """
 Contains the classes used for storing parameters and system states.
 """
-
+import copy
 from typing import Union
 import scipy.signal
-from matplotlib.colors import rgb2hex
-from matplotlib.ticker import MaxNLocator
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import rgb2hex
+from matplotlib.ticker import MaxNLocator
 
 def read_from_xyz(data_file: str, col: int=4):
+    """Read the input data from .xyz file."""
     with open(data_file, "r", encoding="utf-8") as file:
         tmp_list = [line.strip().split() for line in file]
 
@@ -37,7 +38,7 @@ class StateUni:
         self.sigma = sigma                              # Variance of the Gaussian
         self.area = area                                # Area below the Gaussian
         self.peak = area/sigma/np.sqrt(np.pi)           # Height of the Gaussian peak
-        self.perc = 0                    # Fraction of data points classified in this state
+        self.perc = 0       # Fraction of data points classified in this state
         self.th_inf = [mean - 2.0*sigma, -1]    # Lower thrashold of the state
         self.th_sup = [mean + 2.0*sigma, -1]    # Upper thrashold of the state
 
@@ -48,8 +49,8 @@ class StateUni:
         Args:
         - number of sigmas (float)
         """
-        self.th_inf = [self.mean - number_of_sigmas*self.sigma, -1] # Lower thrashold of the state
-        self.th_sup = [self.mean + number_of_sigmas*self.sigma, -1] # Upper thrashold of the state
+        self.th_inf = [self.mean - number_of_sigmas*self.sigma, -1]
+        self.th_sup = [self.mean + number_of_sigmas*self.sigma, -1]
 
 class StateMulti:
     """
@@ -80,7 +81,6 @@ class UniData:
             try:
                 if data_path.endswith('.npz'):
                     with np.load(data_path) as data:
-                        # Load the first variable (assumed to be the data) into a NumPy array.
                         data_name = data.files[0]
                         self.matrix = np.array(data[data_name])
                 elif data_path.endswith('.npy'):
@@ -136,7 +136,8 @@ class UniData:
             max_freq = sampling_freq/window
         coeff_1, coeff_0 =scipy.signal.iirfilter(4, Wn=max_freq, fs=sampling_freq,
             btype="low", ftype="butter")
-        self.matrix = np.apply_along_axis(lambda x: scipy.signal.filtfilt(coeff_1, coeff_0, x),
+        self.matrix = np.apply_along_axis(lambda x:
+            scipy.signal.filtfilt(coeff_1, coeff_0, x),
             axis=1, arr=self.matrix)
         self.num_of_steps = self.matrix.shape[1]
         self.range = [ np.min(self.matrix), np.max(self.matrix) ]
@@ -149,7 +150,8 @@ class UniData:
         - window (int): Size of the moving average window.
         """
         weights = np.ones(window) / window
-        self.matrix = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
+        self.matrix = np.apply_along_axis(lambda x:
+            np.convolve(x, weights, mode='valid'),
             axis=1, arr=self.matrix)
         self.num_of_steps = self.matrix.shape[1]
         self.range = [ np.min(self.matrix), np.max(self.matrix) ]
@@ -172,10 +174,10 @@ class UniData:
 
     def plot_medoids(self):
         """
-        Computes and plots the average time sequence inside each identified environment.
+        Computes and plots the average time sequence inside each environment.
 
         Notes:
-        - Computes cluster means and standard deviations for each identified cluster.
+        - Computes cluster means and standard deviations for each cluster.
         - Plots the average time sequence and standard deviation for each cluster.
         - Saves the figure as a PNG file in the 'output_figures' directory.
         """
@@ -202,7 +204,8 @@ class UniData:
                      # Define time interval
                     time_0 = window*tau_window
                     time_1 = (window + 1)*tau_window
-                    # If the label matches the current cluster, append the corresponding data to tmp
+                    # If the label matches the current cluster,
+                    # append the corresponding data to tmp
                     if label == ref_label:
                         tmp.append(self.matrix[i][time_0:time_1])
 
@@ -220,20 +223,20 @@ class UniData:
             palette.append(rgb2hex(rgba))
 
         # Plot
-        fig, ax = plt.subplots()
+        fig, axes = plt.subplots()
         time_seq = range(tau_window)
         for center_id, center in enumerate(center_list):
             err_inf = center - std_list[center_id]
             err_sup = center + std_list[center_id]
-            ax.fill_between(time_seq, err_inf, err_sup, alpha=0.25,
+            axes.fill_between(time_seq, err_inf, err_sup, alpha=0.25,
                 color=palette[center_id + missing_zero])
-            ax.plot(time_seq, center, label='ENV'+str(center_id + missing_zero), marker='o',
-                c=palette[center_id + missing_zero])
+            axes.plot(time_seq, center, label='ENV'+str(center_id + missing_zero),
+                marker='o', c=palette[center_id + missing_zero])
         fig.suptitle('Average time sequence inside each environments')
-        ax.set_xlabel(r'Time $t$ [frames]')
-        ax.set_ylabel(r'Signal')
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.legend()
+        axes.set_xlabel(r'Time $t$ [frames]')
+        axes.set_ylabel(r'Signal')
+        axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes.legend()
 
         fig.savefig('output_figures/Fig4.png', dpi=600)
 
@@ -248,7 +251,6 @@ class MultiData:
                 try:
                     if data_path.endswith('.npz'):
                         with np.load(data_path) as data:
-                            # Load the first variable (assumed to be the data) into a NumPy array.
                             data_name = data.files[0]
                             data_list.append(np.array(data[data_name]))
                     elif data_path.endswith('.npy'):
@@ -306,16 +308,15 @@ class MultiData:
         """
         weights = np.ones(window) / window
         tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
-        tmp_matrix = np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
+        tmp_matrix = np.apply_along_axis(lambda x:
+            np.convolve(x, weights, mode='valid'),
             axis=2, arr=tmp_matrix)
         self.matrix = np.transpose(tmp_matrix, axes=(1, 2, 0))
         self.num_of_steps = self.matrix.shape[1]
         self.range = np.array([ [np.min(comp), np.max(comp)] for comp in tmp_matrix ])
 
     def normalize(self, dim_to_avoid: list[int]):
-        """
-        Normalizes the data between 0 and 1 based on its minimum and maximum values.
-        """
+        """Normalizes the data between 0 and 1."""
         tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
         new_matrix = []
         for dim, comp in enumerate(tmp_matrix):
@@ -359,7 +360,8 @@ class MultiData:
                     # Define time interval
                     t_0 = j*tau_window
                     t_1 = (j + 1)*tau_window
-                    # If the label matches the current cluster, append the corresponding data to tmp
+                    # If the label matches the current cluster,
+                    # append the corresponding data to tmp
                     if label == ref_label:
                         tmp.append(self.matrix[i][t_0:t_1])
 
@@ -375,16 +377,16 @@ class MultiData:
             palette.append(rgb2hex(rgba))
 
         # Plot
-        fig, ax = plt.subplots()
+        fig, axes = plt.subplots()
         for id_c, center in enumerate(center_list):
             sig_x = center[:, 0]
             sig_y = center[:, 1]
-            ax.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o', c=palette[id_c])
+            axes.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o', c=palette[id_c])
         fig.suptitle('Average time sequence inside each environments')
-        ax.set_xlabel(r'Signal 1')
-        ax.set_ylabel(r'Signal 2')
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.legend()
+        axes.set_xlabel(r'Signal 1')
+        axes.set_ylabel(r'Signal 2')
+        axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes.legend()
 
         fig.savefig('output_figures/' + output_file + '.png', dpi=600)
 

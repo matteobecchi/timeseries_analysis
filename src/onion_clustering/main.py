@@ -1,10 +1,21 @@
 """
-Code for clustering of univariate time-series data. 
+Code for clustering of univariate time-series data.
 See the documentation for all the details.
 """
+import os
+import copy
 import shutil
-from onion_clustering.classes import *
-from onion_clustering.functions import *
+from typing import List
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.signal
+
+from onion_clustering.first_classes import UniData, StateUni, Parameters
+from onion_clustering.functions import read_input_data, plot_histo
+from onion_clustering.functions import gaussian, moving_average
+from onion_clustering.functions import relabel_states, set_final_states
+from onion_clustering.functions import param_grid
+from onion_clustering.classes import ClusteringObject
 
 NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = 'states_output.txt'
@@ -17,12 +28,6 @@ def all_the_input_stuff():
     Returns:
     - data: Processed raw data after removing initial frames based on 't_delay'.
     - par: Object containing input parameters.
-
-    Notes:
-    - Ensure 'input_parameters.txt' exists and contains necessary parameters.
-    - 'OUTPUT_FILE' constant specifies the output file.
-    - 'tau_delay' parameter from 'input_parameters.txt' determines frames removal.
-    - Creates 'output_figures' directory for storing output files.
     """
 
     # Read input parameters from files.
@@ -59,10 +64,7 @@ def all_the_input_stuff():
 
     return clustering_object
 
-def perform_gaussian_fit(
-        id0: int, id1: int, max_ind: int, bins: np.ndarray,
-        counts: np.ndarray, n_data: int, gap: int, interval_type: str
-    ):
+def perform_gauss_fit(param: List[int], data: List[np.ndarray], int_type: str):
     """
     Perform Gaussian fit on given data within the specified range and parameters.
 
@@ -84,6 +86,9 @@ def perform_gaussian_fit(
     The function performs a Gaussian fit on the specified data within the provided range.
     It assesses the goodness of the fit based on various criteria and returns the result.
     """
+    id0, id1, max_ind, n_data, gap = param
+    bins, counts = data
+
     goodness = 5
     selected_bins = bins[id0:id1]
     selected_counts = counts[id0:id1]
@@ -91,8 +96,9 @@ def perform_gaussian_fit(
     sigma0 = (bins[id0] - bins[id1])/6
     area0 = counts[max_ind]*np.sqrt(np.pi)*sigma0
     try:
-        popt, pcov = scipy.optimize.curve_fit(gaussian, selected_bins, selected_counts,
-            p0=[mu0, sigma0, area0])
+        popt, pcov, _, _, _ = scipy.optimize.curve_fit(gaussian,
+            selected_bins, selected_counts, p0=[mu0, sigma0, area0],
+            full_output=True)
         if popt[1] < 0:
             popt[1] = -popt[1]
             popt[2] = -popt[2]
@@ -112,13 +118,13 @@ def perform_gaussian_fit(
             goodness -= 1
         return True, goodness, popt
     except RuntimeError:
-        print('\t' + interval_type + ' fit: Runtime error. ')
+        print('\t' + int_type + ' fit: Runtime error. ')
         return False, goodness, None
     except TypeError:
-        print('\t' + interval_type + ' fit: TypeError.')
+        print('\t' + int_type + ' fit: TypeError.')
         return False, goodness, None
     except ValueError:
-        print('\t' + interval_type + ' fit: ValueError.')
+        print('\t' + int_type + ' fit: ValueError.')
         return False, goodness, None
 
 def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
@@ -142,11 +148,6 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
     - Generates a plot showing the distribution and the fitted Gaussian.
     """
     print('* Gaussian fit...')
-    ######################################################
-    # This is under development. Do not use it.
-    # tmp_m = dense_interpolation(m_clean, dense_factor=2)
-    # flat_m = tmp_m.flatten()
-    ######################################################
     flat_m = m_clean.flatten()
 
     ### 1. Histogram ###
@@ -172,8 +173,10 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         min_id1 += 1
 
     ### 5. Try the fit between the minima and check its goodness ###
-    flag_min, goodness_min, popt_min = perform_gaussian_fit(min_id0,
-        min_id1, max_ind, bins, counts, flat_m.size, gap, 'Min')
+    fit_param = [min_id0, min_id1, max_ind, flat_m.size, gap]
+    fit_data = [bins, counts]
+    flag_min, goodness_min, popt_min = perform_gauss_fit(
+        fit_param, fit_data, 'Min')
 
     ### 6. Find the inrterval of half height ###
     half_id0 = np.max([max_ind - gap, 0])
@@ -184,8 +187,10 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
         half_id1 += 1
 
     ### 7. Try the fit between the minima and check its goodness ###
-    flag_half, goodness_half, popt_half = perform_gaussian_fit(half_id0,
-        half_id1, max_ind, bins, counts, flat_m.size, gap, 'Half')
+    fit_param = [half_id0, half_id1, max_ind, flat_m.size, gap]
+    fit_data = [bins, counts]
+    flag_half, goodness_half, popt_half = perform_gauss_fit(
+        fit_param, fit_data, 'Half')
 
     ### 8. Choose the best fit ###
     goodness = goodness_min
@@ -209,19 +214,21 @@ def gauss_fit_max(m_clean: np.ndarray, par: Parameters, filename: str):
 
     with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
         print('\n', file=file)
-        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}')
-        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f}, area = {state.area:.4f}',
+        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},'
+            f' area = {state.area:.4f}')
+        print(f'\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},'
+            f' area = {state.area:.4f}',
             file=file)
         print('\tFit goodness = ' + str(goodness), file=file)
 
     ### Plot the distribution and the fitted gaussians
     y_spread = np.max(m_clean) - np.min(m_clean)
     y_lim = [np.min(m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
-    fig, ax = plt.subplots()
-    plot_histo(ax, counts, bins)
-    ax.set_xlim(y_lim)
+    fig, axes = plt.subplots()
+    plot_histo(axes, counts, bins)
+    axes.set_xlim(y_lim)
     tmp_popt = [state.mean, state.sigma, state.area/flat_m.size]
-    ax.plot(np.linspace(bins[0], bins[-1], 1000),
+    axes.plot(np.linspace(bins[0], bins[-1], 1000),
         gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
     fig.savefig(filename + '.png', dpi=600)
@@ -311,7 +318,8 @@ def iterative_search(cl_ob: ClusteringObject, name: str):
     - Divides the trajectory into windows and iteratively identifies stable states.
     - Uses Gaussian fitting and stability criteria to determine stable windows.
     - Updates labels for each window based on identified stable states.
-    - Returns the updated labels, list of identified states, and a flag for one last state.
+    - Returns the updated labels, list of identified states, and a flag
+        for one last state.
     """
 
     # Initialize an array to store labels for each window.
@@ -325,14 +333,16 @@ def iterative_search(cl_ob: ClusteringObject, name: str):
     one_last_state = False
     while True:
         ### Locate and fit maximum in the signal distribution
-        state = gauss_fit_max(m_copy, cl_ob.par, 'output_figures/' + name + 'Fig1_' + str(iteration_id))
+        state = gauss_fit_max(m_copy, cl_ob.par, 'output_figures/' +
+            name + 'Fig1_' + str(iteration_id))
         if state is None:
-            print('Iterations interrupted because unable to fit a Gaussian over the histogram. ')
+            print('Iterations interrupted because fit does not converge. ')
             break
 
         ### Find the windows in which the trajectories are stable in the maximum
-        m_next, counter, one_last_state = find_stable_trj(cl_ob.data.matrix, cl_ob.par.tau_w, state,
-            tmp_labels, states_counter)
+        m_next, counter, one_last_state = find_stable_trj(
+            cl_ob.data.matrix, cl_ob.par.tau_w,
+            state, tmp_labels, states_counter)
         state.perc = counter
 
         states_list.append(state)
@@ -340,7 +350,7 @@ def iterative_search(cl_ob: ClusteringObject, name: str):
         iteration_id += 1
         ### Exit the loop if no new stable windows are found
         if counter <= 0.0:
-            print('Iterations interrupted because no data point has been assigned to last state. ')
+            print('Iterations interrupted because last state is empty. ')
             break
         m_copy = m_next
 
@@ -348,146 +358,118 @@ def iterative_search(cl_ob: ClusteringObject, name: str):
     cl_ob.states = lis
     return cl_ob, atl, one_last_state
 
-def timeseries_analysis(original_data: UniData, original_par: Parameters,
-    tau_w: int, t_smooth: int):
+def timeseries_analysis(cl_ob: ClusteringObject, tau_w: int, t_smooth: int):
     """
     Performs an analysis pipeline on time series data.
 
     Args:
-    - m_raw (np.ndarray): Raw input time series data.
-    - par (Parameters): Object containing parameters for analysis.
+    - cl_ob (ClusteringObject)
     - tau_w (int): the time window for the analysis
     - t_smooth (int): the width of the moving average for the analysis
 
     Returns:
     - num_states (int): Number of identified states.
     - fraction_0 (float): Fraction of unclassified data points.
-
-    Notes:
-    - Prepares the data, performs an iterative search for states, and sets final states.
-    - Analyzes the time series data based on specified parameters in the 'par' object.
-    - Handles memory cleanup after processing to prevent accumulation.
-    - Returns the number of identified states and the fraction of unclassified data points.
     """
 
     print('* New analysis: ', tau_w, t_smooth)
     name = str(t_smooth) + '_' + str(tau_w) + '_'
 
-    par = original_par.create_copy()
-    par.tau_w = tau_w
-    par.t_smooth = t_smooth
-    data = original_data.create_copy()
+    tmp_cl_ob = copy.deepcopy(cl_ob)
+    tmp_cl_ob.par.tau_w = tau_w
+    tmp_cl_ob.par.t_smooth = t_smooth
 
-    data = preparing_the_data(data, par)
-    plot_input_data(data, par, name + 'Fig0')
+    tmp_cl_ob.preparing_the_data()
+    tmp_cl_ob.plot_input_data(name + 'Fig0')
 
-    tmp_labels, list_of_states, one_last_state = iterative_search(data, par, name)
+    tmp_cl_ob, tmp_labels, one_last_state = iterative_search(tmp_cl_ob,
+        name)
 
-    if len(list_of_states) == 0:
+    if len(tmp_cl_ob.states) == 0:
         print('* No possible classification was found. ')
         # We need to free the memory otherwise it accumulates
-        del data
-        del tmp_labels
+        del tmp_cl_ob
         return 1, 1.0
 
-    list_of_states, data.labels = set_final_states(list_of_states, tmp_labels, data.range)
+    tmp_cl_ob.states, tmp_cl_ob.data.labels = set_final_states(
+        tmp_cl_ob.states, tmp_labels, tmp_cl_ob.data.range)
+
+    fraction_0 = 1 - np.sum([ state.perc for state in tmp_cl_ob.states ])
+    n_states = len(tmp_cl_ob.states)
+
+    if one_last_state:
+        n_states += 1
 
     # We need to free the memory otherwise it accumulates
-    del data
-    del tmp_labels
+    del tmp_cl_ob
 
-    fraction_0 = 1 - np.sum([ state.perc for state in list_of_states ])
-    if one_last_state:
-        print('Number of states identified:', len(list_of_states) + 1,
-            '[' + str(fraction_0) + ']\n')
-        return len(list_of_states) + 1, fraction_0
+    print('Number of states identified:',
+        n_states, '[' + str(fraction_0) + ']\n')
+    return n_states, fraction_0
 
-    print('Number of states identified:', len(list_of_states), '[' + str(fraction_0) + ']\n')
-    return len(list_of_states), fraction_0
-
-def full_output_analysis(cl_ob: ClusteringObject):
+def full_output_analysis(cl_ob: ClusteringObject) -> ClusteringObject:
     """
     Conducts a comprehensive analysis pipeline on a dataset,
     generating multiple figures and outputs.
 
     Args:
-    - data (UniData): Raw input data.
-    - par (Parameters): Object containing parameters for analysis.
-
-    Notes:
-    - Prepares the data, conducts iterative search for states, and sets final states.
-    - Computes cluster mean sequences, assigns single frames, and generates various plots.
-    - Prints molecular labels and colored trajectories based on analysis results.
+    - cl_ob (ClusteringObject): Conteining now only the raw input data.
     """
 
-    tau_w = cl_ob.par.tau_w
+    # tau_w = cl_ob.par.tau_w
     cl_ob.preparing_the_data()
 
     cl_ob, tmp_labels, _ = iterative_search(cl_ob, '')
     if len(cl_ob.states) == 0:
         print('* No possible classification was found. ')
-        return
-    cl_ob.states, cl_ob.data.labels = set_final_states(cl_ob.states, tmp_labels, cl_ob.data.range)
-
-    # sankey(data.labels, [0, 10, 20, 30, 40], par, 'Fig6')
-    # sankey(data.labels, [1, 53, 193], par, 'Fig6')
+        return cl_ob
+    cl_ob.states, cl_ob.data.labels = set_final_states(cl_ob.states,
+        tmp_labels, cl_ob.data.range)
 
     return cl_ob
 
-def time_resolution_analysis(data: UniData, par: Parameters, perform_anew: bool):
+def time_resolution_analysis(cl_ob: ClusteringObject):
     """
-    Performs Temporal Resolution Analysis (TRA) to explore parameter space and analyze the dataset.
+    Performs Temporal Resolution Analysis (TRA) to explore parameter
+    space and analyze the dataset.
 
     Args:
-    - data (UniData): Raw input data.
-    - par (Parameters): Object containing parameters for analysis.
-    - perform_anew (bool): Flag to indicate whether to perform analysis anew
-        or load previous results.
-
-    Notes:
-    - Conducts TRA for different combinations of parameters.
-    - Analyzes the dataset with varying 'tau_window' and 't_smooth'.
-    - Saves results to text files and plots t.r.a. figures based on analysis outcomes.
+    - cl_ob (ClusteringObject): Conteining now only the raw input data.
     """
-    tau_window_list, t_smooth_list = param_grid(par, data.num_of_steps)
+    tau_window_list, t_smooth_list = param_grid(cl_ob.par, cl_ob.data.num_of_steps)
 
-    if perform_anew:
-        ### If the analysis hat to be performed anew ###
-        number_of_states = []
-        fraction_0 = []
-        for tau_w in tau_window_list:
-            tmp = [tau_w]
-            tmp1 = [tau_w]
-            for t_s in t_smooth_list:
-                n_s, f_0 = timeseries_analysis(data, par, tau_w, t_s)
-                tmp.append(n_s)
-                tmp1.append(f_0)
-            number_of_states.append(tmp)
-            fraction_0.append(tmp1)
-        number_of_states_arr = np.array(number_of_states)
-        fraction_0_arr = np.array(fraction_0)
+    number_of_states = []
+    fraction_0 = []
+    for tau_w in tau_window_list:
+        tmp = [tau_w]
+        tmp1 = [tau_w]
+        for t_s in t_smooth_list:
+            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s)
+            tmp.append(n_s)
+            tmp1.append(f_0)
+        number_of_states.append(tmp)
+        fraction_0.append(tmp1)
+    number_of_states_arr = np.array(number_of_states)
+    fraction_0_arr = np.array(fraction_0)
 
-        np.savetxt('number_of_states.txt', number_of_states, fmt='%i',
-            delimiter='\t', header='tau_window\t number_of_states for different t_smooth')
-        np.savetxt('fraction_0.txt', fraction_0, delimiter=' ',
-            header='tau_window\t fraction in ENV0 for different t_smooth')
-    else:
-        ### Otherwise, just do this ###
-        number_of_states_arr = np.loadtxt('number_of_states.txt')
-        fraction_0_arr = np.loadtxt('fraction_0.txt')
+    np.savetxt('number_of_states.txt', number_of_states, fmt='%i',
+        delimiter='\t', header='tau_window\t number_of_states for different t_smooth')
+    np.savetxt('fraction_0.txt', fraction_0, delimiter=' ',
+        header='tau_window\t fraction in ENV0 for different t_smooth')
 
-    plot_tra_figure(number_of_states_arr, fraction_0_arr, par)
+    cl_ob.number_of_states = number_of_states_arr
+    cl_ob.fraction_0 = fraction_0_arr
 
-def main():
+def main() -> ClusteringObject:
     """
     all_the_input_stuff() reads the data and the parameters
     time_resolution_analysis() explore the parameter (tau_window, t_smooth) space.
-        Use 'False' to skip it.
     full_output_analysis() performs a detailed analysis with the chosen parameters.
     """
     clustering_object = all_the_input_stuff()
-    # time_resolution_analysis(data, par, True)
+    time_resolution_analysis(clustering_object)
     clustering_object = full_output_analysis(clustering_object)
+
     return clustering_object
 
 if __name__ == "__main__":

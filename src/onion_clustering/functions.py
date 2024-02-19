@@ -1,14 +1,12 @@
 """
 Should contains all the functions in common between the 2 codes.
 """
-import os
-import numpy as np
-import plotly.graph_objects as go
 import scipy.optimize
 import scipy.signal
-import copy
-from onion_clustering.first_classes import *
-
+import numpy as np
+import matplotlib.pyplot as plt
+from onion_clustering.first_classes import Parameters
+from onion_clustering.first_classes import StateUni, StateMulti
 
 def read_input_data():
     """
@@ -61,22 +59,25 @@ def moving_average_2d(data: np.ndarray, side: int):
 
     Args:
     - data (np.ndarray): The 2D input array to be smoothed.
-    - side (int): The side length of the square moving average window (must be an odd number).
+    - side (int): The side length of the square moving average window
+        (must be an odd number).
 
     Returns:
-    - np.ndarray: The smoothed array obtained after applying the 2D moving average filter.
+    - np.ndarray: The smoothed array obtained after applying the 2D
+        moving average filter.
 
     Raises:
     - ValueError: If the side length 'side' is not an odd number.
     """
 
-    if side % 2 == 0:                           # Check if side is an odd number
+    if side % 2 == 0: # Check if side is an odd number
         raise ValueError("L must be an odd number.")
-    half_width = (side - 1) // 2                # Calculate the half-width of the moving window
-    result = np.zeros_like(data, dtype=float)   # Initialize the result array with zeros
+    half_width = (side - 1) // 2 # Calculate the half-width of the moving window
+    result = np.zeros_like(data, dtype=float) # Initialize the result array with zeros
 
     for index in np.ndindex(*data.shape):
-        slices = tuple(slice(max(0, i - half_width), min(data.shape[dim], i + half_width + 1))
+        slices = tuple(slice(max(0, i - half_width),
+            min(data.shape[dim], i + half_width + 1))
             for dim, i in enumerate(index))
         subarray = data[slices]
         # Calculate the average if the subarray is not empty
@@ -84,23 +85,6 @@ def moving_average_2d(data: np.ndarray, side: int):
             result[index] = subarray.mean()
 
     return result
-
-def dense_interpolation(m_clean: np.ndarray, dense_factor: int):
-    """
-    This is work in progress. Function for dense interpolation:
-    dense_factor points are added, via linear interpolation, between
-    consecutive data points.
-    """
-    m_dense = []
-    for _, data_i in enumerate(m_clean):
-        tmp = []
-        for j, _ in enumerate(data_i[1:]):
-            for k in range(dense_factor):
-                new_point = data_i[j] + (data_i[j + 1] - data_i[j])/dense_factor*k
-                tmp.append(new_point)
-        m_dense.append(tmp)
-    m_dense_arr = np.array(m_dense)
-    return m_dense_arr
 
 def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     """Plots a histogram on the specified axes.
@@ -401,7 +385,8 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
 
     # Remove merged states from the state list
     states_to_remove = set(s0 for s0, s1 in best_merge)
-    updated_states = [state for i, state in enumerate(list_of_states) if i not in states_to_remove]
+    updated_states = [state for i, state in enumerate(list_of_states)
+        if i not in states_to_remove]
 
     # Compute the fraction of data points in each state
     for st_id, state in enumerate(updated_states):
@@ -437,7 +422,8 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
         all_the_labels[mask] -= 1
 
     # Step 3: Write the final states and final thresholds to text files.
-    # The data is saved in two separate files: 'final_states.txt' and 'final_thresholds.txt'.
+    # The data is saved in two separate files:
+    # 'final_states.txt' and 'final_thresholds.txt'.
     with open('final_states.txt', 'w', encoding="utf-8") as file:
         print('# Mu \t Sigma \t A \t state_fraction', file=file)
         for state in updated_states:
@@ -555,207 +541,3 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
             print(centers, axis, state.perc, file=file)
 
     return all_the_labels, updated_states
-
-def plot_tra_figure(number_of_states: np.ndarray, fraction_0: np.ndarray,
-    par: Parameters):
-    """
-    Plots time resolution analysis figures based on the number of states
-    and fraction of a specific state.
-
-    Args:
-    - number_of_states (np.ndarray): Array containing the number of states.
-    - fraction_0 (np.ndarray): Array containing the fraction of a specific state.
-    - par (Parameters): Instance of Parameters with time-related parameters.
-    """
-    t_conv, units = par.t_conv, par.t_units
-    min_t_s, max_t_s, step_t_s = par.min_t_smooth, par.max_t_smooth, par.step_t_smooth
-
-    time = number_of_states.T[0]*t_conv
-    number_of_states = number_of_states[:, 1:].T
-    fraction_0 = fraction_0[:, 1:].T
-
-    for i, t_smooth in enumerate(range(min_t_s, max_t_s + 1, step_t_s)):
-        fig, ax = plt.subplots()
-        y_signal = number_of_states[i]
-        y_2 = fraction_0[i]
-
-        ### General plot settings ###
-        ax.plot(time, y_signal, marker='o')
-        ax.set_xlabel(r'Time resolution $\Delta t$ ' + units)#, weight='bold')
-        ax.set_ylabel(r'# environments', weight='bold', c='#1f77b4')
-        ax.set_xscale('log')
-        ax.set_xlim(time[0]*0.75, time[-1]*1.5)
-        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-
-        ### Top x-axes settings ###
-        ax2 = ax.twiny()
-        ax2.set_xlabel(r'Time resolution $\Delta t$ [frames]')
-        ax2.set_xscale('log')
-        ax2.set_xlim(time[0]*0.75/t_conv, time[-1]*1.5/t_conv)
-
-        axr = ax.twinx()
-        axr.plot(time, y_2, marker='o', c='#ff7f0e')
-        axr.set_ylabel('Population of env 0', weight='bold', c='#ff7f0e')
-
-        fig.savefig('output_figures/Time_resolution_analysis_' + str(t_smooth) + '.png', dpi=600)
-
-def sankey(all_the_labels: np.ndarray, tmp_frame_list: list[int],
-    par: Parameters, filename: str):
-    """
-    Computes and plots a Sankey diagram based on provided data and parameters.
-
-    Args:
-    - all_the_labels (np.ndarray): Array containing labels for each frame.
-    - tmp_frame_list (list[int]): List of frame indices.
-    - par (Parameters): Instance of Parameters containing time-related parameters.
-    - filename (str): Name of the file for the output Sankey diagram.
-
-    Steps:
-    - Computes transition matrices for each time window based on label data.
-    - Constructs source, target, and value arrays for the Sankey diagram.
-    - Generates node labels and color palette for the diagram visualization.
-    - Creates Sankey diagram using Plotly library and custom node/link data.
-    - Saves the generated Sankey diagram as an image file.
-    """
-    print('* Computing and plotting the Sankey diagram...')
-
-    # Determine the number of unique states in the data.
-    frame_list = np.array(tmp_frame_list)
-
-    unique_labels = np.unique(all_the_labels)
-    # If there are no assigned window, we still need the "0" state
-    # for consistency:
-    if 0 not in unique_labels:
-        unique_labels = np.insert(unique_labels, 0, 0)
-    n_states = unique_labels.size
-
-    # Create arrays to store the source, target, and value data for the Sankey diagram.
-    source = np.empty((frame_list.size - 1) * n_states**2)
-    target = np.empty((frame_list.size - 1) * n_states**2)
-    value = np.empty((frame_list.size - 1) * n_states**2)
-
-    # Initialize a counter variable.
-    count = 0
-
-    # Create temporary lists to store node labels for the Sankey diagram.
-    tmp_label1 = []
-    tmp_label2 = []
-
-    # Loop through the frame_list and calculate the transition matrix for each time window.
-    for i, t_0 in enumerate(frame_list[:-1]):
-        # Calculate the time jump for the current time window.
-        t_jump = frame_list[i + 1] - frame_list[i]
-
-        # Initialize a matrix to store the transition counts between states.
-        trans_mat = np.zeros((n_states, n_states))
-
-        # Iterate through the current time window and increment the transition counts in trans_mat.
-        for label in all_the_labels:
-            trans_mat[label[t_0]][label[t_0 + t_jump]] += 1
-
-        # Store the source, target, and value for the Sankey diagram based on trans_mat.
-        for j, row in enumerate(trans_mat):
-            for k, elem in enumerate(row):
-                source[count] = j + i * n_states
-                target[count] = k + (i + 1) * n_states
-                value[count] = elem
-                count += 1
-
-        # Calculate the starting and ending fractions for each state and store node labels.
-        for j in range(n_states):
-            start_fr = np.sum(trans_mat[j]) / np.sum(trans_mat)
-            end_fr = np.sum(trans_mat.T[j]) / np.sum(trans_mat)
-            if i == 0:
-                tmp_label1.append('State ' + str(j) + ': ' + "{:.2f}".format(start_fr * 100) + '%')
-            tmp_label2.append('State ' + str(j) + ': ' + "{:.2f}".format(end_fr * 100) + '%')
-
-    # Concatenate the temporary labels to create the final node labels.
-    label = np.concatenate((tmp_label1, np.array(tmp_label2).flatten()))
-
-    # Generate a color palette for the Sankey diagram.
-    palette = []
-    cmap = plt.get_cmap('viridis', n_states)
-    for i in range(cmap.N):
-        rgba = cmap(i)
-        palette.append(rgb2hex(rgba))
-
-    # Tile the color palette to match the number of frames.
-    color = np.tile(palette, frame_list.size)
-
-    # Create dictionaries to define the Sankey diagram nodes and links.
-    node = dict(label=label, pad=30, thickness=20, color=color)
-    link = dict(source=source, target=target, value=value)
-
-    # Create the Sankey diagram using Plotly.
-    sankey_data = go.Sankey(link=link, node=node, arrangement="perpendicular")
-    fig = go.Figure(sankey_data)
-
-    # Add the title with the time information.
-    fig.update_layout(title='Frames: ' + str(frame_list * par.t_conv) + ' ' + par.t_units)
-
-    fig.write_image('output_figures/' + filename + '.png', scale=5.0)
-
-def print_mol_labels_fbf_gro(all_the_labels: np.ndarray):
-    """
-    Prints color IDs for Ovito visualization in GRO format.
-
-    Args:
-    - all_the_labels (np.ndarray): Array containing molecular labels for each frame.
-
-    Steps:
-    - Creates a file ('all_cluster_IDs_gro.dat') to store color IDs for Ovito visualization.
-    - Iterates through each frame's molecular labels and writes them to the file in GRO format.
-    """
-    print('* Print color IDs for Ovito...')
-    with open('all_cluster_IDs_gro.dat', 'w', encoding="utf-8") as file:
-        for labels in all_the_labels:
-            # Join the elements of 'labels' using a space as the separator and write to the file.
-            print(' '.join(map(str, labels)), file=file)
-
-def print_signal_with_labels(m_clean: np.ndarray, all_the_labels: np.ndarray):
-    """
-    Creates a file ('signal_with_labels.dat') with signal values and associated cluster labels.
-
-    Args:
-    - m_clean (np.ndarray): Signal array containing the signals for each frame.
-    - all_the_labels (np.ndarray): Array containing cluster labels for each frame.
-
-    Steps:
-    - Checks the dimensionality of 'm_clean' to determine the signal attributes.
-    - Writes the signals along with cluster labels for each frame to 'signal_with_labels.dat'.
-    - Assumes the structure of 'm_clean' with signal values based on dimensionality (2D or 3D).
-    - Incorporates 'all_the_labels' as cluster labels for respective frames.
-    """
-    with open('signal_with_labels.dat', 'w+', encoding="utf-8") as file:
-        if m_clean.shape[2] == 2:
-            print("Signal 1 Signal 2 Cluster Frame", file=file)
-        else:
-            print("Signal 1 Signal 2 Signal 3 Cluster Frame", file=file)
-        for j in range(all_the_labels.shape[1]):
-            for i in range(all_the_labels.shape[0]):
-                if m_clean.shape[2] == 2:
-                    print(m_clean[i][j][0], m_clean[i][j][1],
-                        all_the_labels[i][j], j + 1, file=file)
-                else:
-                    print(m_clean[i][j][0], m_clean[i][j][1], m_clean[i][j][2],
-                        all_the_labels[i][j], j + 1, file=file)
-
-def print_mol_labels_fbf_lam(all_the_labels: np.ndarray):
-    """
-    Prints color IDs for Ovito visualization in .lammps format.
-
-    Args:
-    - all_the_labels (np.ndarray): Array containing molecular labels for each frame.
-
-    Steps:
-    - Creates a file ('all_cluster_IDs_lam.dat') to store color IDs for Ovito visualization.
-    - Iterates through each frame's molecular labels and writes them to the file in .lammps format.
-    """
-    print('* Print color IDs for Ovito...')
-    with open('all_cluster_IDs_lam.dat', 'w', encoding="utf-8") as file:
-        for j in range(all_the_labels.shape[1]):
-            # Print nine lines containing '#' to separate time steps.
-            for _ in range(9):
-                print('#', file=file)
-            # Use np.savetxt to write the labels for each time step efficiently.
-            np.savetxt(file, all_the_labels[:, j], fmt='%d', comments='')
