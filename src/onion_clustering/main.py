@@ -355,6 +355,7 @@ def iterative_search(cl_ob: ClusteringObject, name: str):
             break
         m_copy = m_next
 
+    cl_ob.iterations = len(states_list)
     atl, lis = relabel_states(tmp_labels, states_list)
     cl_ob.states = lis
     return cl_ob, atl, one_last_state

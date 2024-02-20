@@ -21,6 +21,7 @@ class ClusteringObject:
         self.par: Parameters = par
         self.data: UniData = data
         self.states: List[StateUni] = []
+        self.iterations = -1
         self.number_of_states: np.ndarray
         self.fraction_0: np.ndarray
 
@@ -116,7 +117,8 @@ class ClusteringObject:
         time = self.par.print_time(t_steps)
         for label, pop in enumerate(list_of_populations):
             # pop_full = np.repeat(pop, self.par.tau_w)
-            axes.plot(time, pop, label='ENV' + str(label), color=palette[label])
+            axes.plot(time, pop, label='ENV' + str(label),
+                color=palette[label])
         axes.set_xlabel(r'Time ' + self.par.t_units)
         axes.set_ylabel(r'Population')
         axes.legend()
@@ -129,13 +131,6 @@ class ClusteringObject:
 
         Args:
         - tmp_frame_list (list[int]): List of frame indices.
-
-        Steps:
-        - Computes transition matrices for each time window based on label data.
-        - Constructs source, target, and value arrays for the Sankey diagram.
-        - Generates node labels and color palette for the diagram visualization.
-        - Creates Sankey diagram using Plotly library and custom node/link data.
-        - Saves the generated Sankey diagram as an image file.
         """
         print('* Computing and plotting the Sankey diagram...')
 
@@ -157,7 +152,6 @@ class ClusteringObject:
         # Initialize a counter variable.
         count = 0
 
-        # Create temporary lists to store node labels for the Sankey diagram.
         tmp_label1 = []
         tmp_label2 = []
 
@@ -167,7 +161,6 @@ class ClusteringObject:
             # Calculate the time jump for the current time window.
             t_jump = frame_list[i + 1] - frame_list[i]
 
-            # Initialize a matrix to store the transition counts between states.
             trans_mat = np.zeros((n_states, n_states))
 
             # Iterate through the current time window and increment
@@ -213,12 +206,13 @@ class ClusteringObject:
         link = dict(source=source, target=target, value=value)
 
         # Create the Sankey diagram using Plotly.
-        sankey_data = go.Sankey(link=link, node=node, arrangement="perpendicular")
+        sankey_data = go.Sankey(link=link,
+            node=node, arrangement="perpendicular")
         fig = go.Figure(sankey_data)
 
         # Add the title with the time information.
-        fig.update_layout(title='Frames: ' + str(frame_list * self.par.t_conv) +
-            ' ' + self.par.t_units)
+        fig.update_layout(title='Frames: ' +
+            str(frame_list * self.par.t_conv) + ' ' + self.par.t_units)
 
         fig.write_image('output_figures/Fig6.png', scale=5.0)
 
@@ -260,13 +254,11 @@ class ClusteringObject:
             axes[0].plot(time, mol, c='xkcd:black', ms=0.1, lw=0.1,
                 alpha=0.5, rasterized=True)
 
-        # Plot the Gaussian distributions of states on the right subplot (axes[1])
         for state_id, state in enumerate(self.states):
             popt = [state.mean, state.sigma, state.area]
             axes[1].plot(gaussian(np.linspace(bins[0], bins[-1], 1000), *popt),
                 np.linspace(bins[0], bins[-1], 1000), color=palette[state_id])
 
-        # Plot the horizontal lines and shaded regions to mark states' thresholds
         style_color_map = {
             0: ('--', 'xkcd:black'),
             1: ('--', 'xkcd:blue'),
@@ -406,7 +398,7 @@ class ClusteringObject:
 
             ### General plot settings ###
             axes.plot(time, y_signal, marker='o')
-            axes.set_xlabel(r'Time resolution $\Delta t$ ' + units)#, weight='bold')
+            axes.set_xlabel(r'Time resolution $\Delta t$ ' + units)
             axes.set_ylabel(r'# environments', weight='bold', c='#1f77b4')
             axes.set_xscale('log')
             axes.set_xlim(time[0]*0.75, time[-1]*1.5)
@@ -442,7 +434,6 @@ class ClusteringObject:
                 # Print two lines containing '#' to separate time steps.
                 print('#', file=file)
                 print('#', file=file)
-                # Use np.savetxt to write the labels for each time step efficiently.
                 np.savetxt(file, all_the_labels[:, j], fmt='%d', comments='')
 
     def print_mol_labels_fbf_gro(self):
@@ -478,13 +469,8 @@ class ClusteringObject:
 
     def print_signal_with_labels(self):
         """
-        Creates a file ('signal_with_labels.dat') with signal values and associated cluster labels.
-
-        Steps:
-        - Checks the dimensionality of 'm_clean' to determine the signal attributes.
-        - Writes the signals along with cluster labels for each frame to 'signal_with_labels.dat'.
-        - Assumes the structure of 'm_clean' with signal values based on dimensionality (2D or 3D).
-        - Incorporates 'all_the_labels' as cluster labels for respective frames.
+        Creates a file ('signal_with_labels.dat') with signal values
+        and associated cluster labels.
         """
         m_clean = self.data.matrix
         all_the_labels = self.create_all_the_labels()
