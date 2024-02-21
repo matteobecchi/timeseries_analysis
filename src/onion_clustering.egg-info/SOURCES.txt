@@ -3,13 +3,14 @@ LICENSE
 README.md
 pyproject.toml
 pytest.ini
-examples/data_directory.txt
+dist/onion_clustering-0.0.8-py3-none-any.whl
+dist/onion_clustering-0.0.8.tar.gz
 examples/example_script.py
 examples/example_script_2d.py
-examples/input_parameters.txt
 src/onion_clustering/__init__.py
 src/onion_clustering/__version__.py
 src/onion_clustering/classes.py
+src/onion_clustering/first_classes.py
 src/onion_clustering/functions.py
 src/onion_clustering/main.py
 src/onion_clustering/main_2d.py

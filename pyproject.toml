@@ -40,6 +40,9 @@ strict_optional = true
 
 [[tool.mypy.overrides]]
 module = [
-    'onion_clustering.*'
+    'onion_clustering.*',
+    'scipy.*',
+    'plotly.*',
+    'mpl_toolkits.mplot3d'
 ]
 ignore_missing_imports = true
