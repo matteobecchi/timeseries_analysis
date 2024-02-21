@@ -2,7 +2,7 @@
 Code for unsupervised clustering of time-correlated data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
 
 ## Input data
-A one-dimensional timeseries, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported. 
+A one-dimensional time-series, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported, with the fifth column containing the data values. 
 
 ## Usage
 Install the package using `pip install onion_clustering`. 
@@ -24,33 +24,28 @@ The keyword and the value must be separated by one tab.
 * `num_tau_w` (int, optional): the number of different tau_window values tested. Default is 20. 
 * `min_tau_w` (int, optional): the smaller tau_window value tested. It has to be larger that 1. Default is 2. 
 * `max_tau_w` (int, optional): the larger tau_window value tested. It has to be larger that 2. Default is the largest possible window. 
-* `min_t_smooth` (int, optional): the smaller t_smooth value tested. It has to be larger that 0. Default is 1. 
+* `min_t_smooth` (int, optional): the smaller t_smooth value tested. It has to be larger that 0. Default is 1 (corresponding to no smoothing). 
 * `max_t_smooth` (int, optional): the larger t_smooth value tested. It has to be larger that 0. Default is 5. 
 * `step_t_smooth` (int, optional): the step in the t_smooth values tested. It has to be larger that 0. Default is 1. 
 
 ## Output
-The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from 1 frame, i.e no smoothing, to 5 frames, unless differently specified in the input parameters) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). 
+The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from `min_t_smooth` frames to `max_t_smooth` frames, with steps of `step_t_smooth`) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). 
 
 * `number_of_states.txt` contains the number of clusters for each combination of `tau_window` and `t_smooth` tested. 
 * `fraction_0.txt` contains the fraction of unclassified data points for each combination of `tau_window` and `t_smooth` tested. 
-* `output_figures/Time_resolution_analysis.png` plots the previous two data, for the case `t_smooth = 1`. 
 * Figures with all the Gaussian fittings are saved in the folder `output_figures` with the format `t_smooth_tau_window_Fig1_iteration.png`. 
 
-Then, the analysis with the values of `tau_window` and `t_smooth`  specified in `input_parameters.txt` will be performed. 
+Then, the analysis with the values of `tau_window` and `t_smooth` specified in `input_parameters.txt` will be performed. 
 
 * The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. 
+* `output_figures/Fig1_iteration.png` plot the histograms and best fits for each iteration. 
 * The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. 
 * The file `final_tresholds.txt` contains the list of the tresholds between states. 
-* `output_figures/Fig0.png` plots the raw data. 
-* `output_figures/Fig1_iteration.png` plot the histograms and best fits for each iteration. 
-* `output_figures/Fig2.png` plots the data with the clustering thresholds and Gaussians. 
-* `output_figures/Fig3.png` plots the colored signal for the particle with `example_ID` ID. 
-* `output_figures/Fig4.png` shows the mean time sequence inside each state, and it's useful for checking the meaningfulness of the results. 
-* The file `all_cluster_IDs_xyz.dat` allows to plot the trajectory using the clustering for the color coding. Altough, they are not super friendly to use. 
-* If the trajectory from which the signal was computed is present in the working directory, and called `trajectory.xyz`, a new file, `colored_trj.xyz` will be printed, with the correct typing according to the clustering. But a bit of fine-tuning will be necessary inside the function `print_colored_trj_from_xyz()` in `function.py`. 
+
+The analisys returns a `ClusteringObject`, which contains methods for plotting all the results. They are illustrated in the example scripts. 
 
 ## Multivariate time-series version
-The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded with its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. You can find an example of usage in `examples/example_script_2d.py`
+The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded as its own input data; just add one line with the path to the files to `data_directory.txt`. Signals are normalized between 0 and 1; changing this can change the performance of the algorithm, so you may want to try the clustering with different normalizations. You can find an example of usage in `examples/example_script_2d.py`
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `plotly`, `scipy`. 
@@ -70,4 +65,4 @@ The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D 
 6. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops, returning a warning message. 
 
 ## Aknowledgements
-The comments in the code wouldn't have been possible without the help of ChatGPT. 
+The comments in the code wouldn't have been possible without the help of ChatGPT. Thanks also to Andrew Tarzia for all the help with the code formatting and documentation. 

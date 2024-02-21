@@ -50,13 +50,29 @@ with open('input_parameters.txt', "w+", encoding="utf-8") as file:
 clustering_object = main.main()
 
 ### Plot the output figures in output_figures/ ###
+
+# Plots number of states and fraction_0 as a function of tau_window
 clustering_object.plot_tra_figure()
+
+# Plots the raw data
 clustering_object.plot_input_data('Fig0')
+
+# Plots the data with the clustering thresholds and Gaussians
 clustering_object.plot_cumulative_figure()
+
+# Plots the colored signal for the particle with `example_ID` ID
 clustering_object.plot_one_trajectory()
+
+# Plots the mean time sequence inside each state
 clustering_object.data.plot_medoids()
+
+# Plots the population of each state as a function of time
 clustering_object.plot_state_populations()
+
+# Plots the Sankey diagram between the input time_windows
 clustering_object.sankey([0, 10, 20, 30, 40])
+
+# Writes the files for the visualization of the colored trj
 if os.path.exists('trajectory.xyz'):
     clustering_object.print_colored_trj_from_xyz('trajectory.xyz')
 else:
