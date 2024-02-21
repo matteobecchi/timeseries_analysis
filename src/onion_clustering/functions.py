@@ -17,8 +17,10 @@ def read_input_data() -> Union[str, np.ndarray]:
     """
     try:
         data_dir = np.loadtxt('data_directory.txt', dtype=str)
-    except:
-        print('\tdata_directory.txt file missing or wrongly formatted.')
+    except OSError as msg_exc:
+        print(f'\t Reading data_directory.txt: {msg_exc}')
+    except ValueError as msg_exc:
+        print(f'\t Reading data_directory.txt: {msg_exc}')
 
     print('* Reading data from', data_dir)
 

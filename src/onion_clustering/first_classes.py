@@ -34,17 +34,18 @@ class StateUni:
     Represents a state as a Gaussian.
     """
     def __init__(self, mean: float, sigma: float, area: float):
-        self.mean = mean                                # Mean of the Gaussian
-        self.sigma = sigma                              # Variance of the Gaussian
-        self.area = area                                # Area below the Gaussian
-        self.peak = area/sigma/np.sqrt(np.pi)           # Height of the Gaussian peak
-        self.perc = 0.0       # Fraction of data points classified in this state
-        self.th_inf = [mean - 2.0*sigma, -1]    # Lower thrashold of the state
-        self.th_sup = [mean + 2.0*sigma, -1]    # Upper thrashold of the state
+        self.mean = mean # Mean of the Gaussian
+        self.sigma = sigma # Variance of the Gaussian
+        self.area = area # Area below the Gaussian
+        self.peak = area/sigma/np.sqrt(np.pi) # Height of the Gaussian peak
+        self.perc = 0.0 # Fraction of data points classified in this state
+        self.th_inf = [mean - 2.0*sigma, -1] # Lower thrashold of the state
+        self.th_sup = [mean + 2.0*sigma, -1] # Upper thrashold of the state
 
     def build_boundaries(self, number_of_sigmas: float):
         """
-        Sets the thresholds for the classification of data windows inside the state
+        Sets the thresholds for the classification of data windows
+        inside the state
 
         Args:
         - number of sigmas (float)
@@ -57,15 +58,16 @@ class StateMulti:
     Represents a state as a factorized Gaussian.
     """
     def __init__(self, mean: np.ndarray, sigma: np.ndarray, area: np.ndarray):
-        self.mean = mean         # Mean of the Gaussians
-        self.sigma = sigma       # Variance of the Gaussians
-        self.area = area         # Area below the Gaussians
-        self.perc = 0.0            # Fraction of data points classified in this state
-        self.axis = 2.0*sigma    # Axes of the state
+        self.mean = mean # Mean of the Gaussians
+        self.sigma = sigma # Variance of the Gaussians
+        self.area = area # Area below the Gaussians
+        self.perc = 0.0 # Fraction of data points classified in this state
+        self.axis = 2.0*sigma # Axes of the state
 
     def build_boundaries(self, number_of_sigmas: float):
         """
-        Sets the thresholds for the classification of data windows inside the state
+        Sets the thresholds for the classification of data windows
+        inside the state
 
         Args:
         - number of sigmas (float)
@@ -90,8 +92,11 @@ class UniData:
                 else: # .txt file
                     self.matrix = np.loadtxt(data_path, dtype=float)
                 print('\tOriginal data shape:', self.matrix.shape)
-            except Exception as exc_msg:
-                print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
+            except OSError as exc_msg:
+                print(f'\tReading data from {data_path}: {exc_msg}')
+                return
+            except ValueError as exc_msg:
+                print(f'\tReading data from {data_path}: {exc_msg}')
                 return
         else:
             print('\tERROR: unsupported format for input file.')
@@ -115,7 +120,8 @@ class UniData:
         Removes a specified time delay from the data.
 
         Args:
-        - t_delay (int): Number of steps to remove from the beginning of the data.
+        - t_delay (int): Number of steps to remove from the
+        beginning of the data.
         """
         self.matrix = self.matrix[:, t_delay:]
         self.num_of_steps = self.matrix.shape[1]
@@ -134,8 +140,8 @@ class UniData:
             max_freq = sampling_freq/(window + 0.0000001)
         else:
             max_freq = sampling_freq/window
-        coeff_1, coeff_0 =scipy.signal.iirfilter(4, Wn=max_freq, fs=sampling_freq,
-            btype="low", ftype="butter")
+        coeff_1, coeff_0 =scipy.signal.iirfilter(4, Wn=max_freq,
+            fs=sampling_freq, btype="low", ftype="butter")
         self.matrix = np.apply_along_axis(lambda x:
             scipy.signal.filtfilt(coeff_1, coeff_0, x),
             axis=1, arr=self.matrix)
@@ -157,9 +163,8 @@ class UniData:
         self.range = [ np.min(self.matrix), np.max(self.matrix) ]
 
     def normalize(self):
-        """
-        Normalizes the data between 0 and 1 based on its minimum and maximum values.
-        """
+        """Normalizes the data between 0 and 1."""
+
         data_min, data_max = self.range[0], self.range[1]
         self.matrix = (self.matrix - data_min)/(data_max - data_min)
         self.range = [ np.min(self.matrix), np.max(self.matrix) ]
@@ -178,7 +183,8 @@ class UniData:
 
         Notes:
         - Computes cluster means and standard deviations for each cluster.
-        - Plots the average time sequence and standard deviation for each cluster.
+        - Plots the average time sequence and standard
+            deviation for each cluster.
         - Saves the figure as a PNG file in the 'output_figures' directory.
         """
         tau_window = int(self.num_of_steps / self.labels.shape[1])
@@ -230,7 +236,8 @@ class UniData:
             err_sup = center + std_list[center_id]
             axes.fill_between(time_seq, err_inf, err_sup, alpha=0.25,
                 color=palette[center_id + missing_zero])
-            axes.plot(time_seq, center, label='ENV'+str(center_id + missing_zero),
+            axes.plot(time_seq, center,
+                label='ENV'+str(center_id + missing_zero),
                 marker='o', c=palette[center_id + missing_zero])
         fig.suptitle('Average time sequence inside each environments')
         axes.set_xlabel(r'Time $t$ [frames]')
@@ -258,9 +265,11 @@ class MultiData:
                     else: # .txt file
                         data_list.append(np.loadtxt(data_path))
                     print('\tOriginal data shape:', data_list[-1].shape)
-                except Exception as exc_msg:
-                    print(f'\tERROR: Failed to read data from {data_path}.'
-                        ' Reason: {exc_msg}')
+                except OSError as exc_msg:
+                    print(f'\tReading data from {data_path}: {exc_msg}')
+                    return
+                except ValueError as exc_msg:
+                    print(f'\tReading data from {data_path}: {exc_msg}')
                     return
             else:
                 print('\tERROR: unsupported format for input file.')
@@ -403,8 +412,10 @@ class Parameters:
         try:
             with open(input_file, 'r', encoding="utf-8") as file:
                 lines = file.readlines()
-        except:
-            print('\tinput_parameters.txt file missing or wrongly formatted.')
+        except OSError as exc_msg:
+            print(f'\tReading input_parameters.txt: {exc_msg}')
+        except ValueError as exc_msg:
+            print(f'\tReading input_parameters.txt: {exc_msg}')
 
         ### Ste the default values ###
         self.t_smooth = 1
@@ -460,7 +471,8 @@ class Parameters:
         - np.ndarray: Array of time values.
         """
         t_start = self.t_delay + int(self.t_smooth/2)
-        time = np.linspace(t_start, t_start + num_of_steps, num_of_steps) * self.t_conv
+        time = np.linspace(t_start, t_start + num_of_steps,
+            num_of_steps) * self.t_conv
         return time
 
     def print_to_screen(self):

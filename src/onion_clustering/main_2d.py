@@ -47,7 +47,7 @@ def all_the_input_stuff() -> ClusteringObject2D:
                 os.remove(file_path)
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
-        except Exception as exc_msg:
+        except OSError as exc_msg:
             print(f'Failed to delete {file_path}. Reason: {exc_msg}')
 
     clustering_object = ClusteringObject2D(par, data)
@@ -171,7 +171,7 @@ def gauss_fit_max(
             popt[2] *= flat_m.T[0].size
             popt_min.extend(popt)
             goodness_min += goodness
-        except:
+        except RuntimeError:
             popt_min = []
             flag_min = False
             goodness_min -= 5
@@ -231,7 +231,7 @@ def gauss_fit_max(
             popt[2] *= flat_m.T[0].size
             popt_half.extend(popt)
             goodness_half += goodness
-        except:
+        except RuntimeError:
             popt_half = []
             flag_half = False
             goodness_half -= 5
