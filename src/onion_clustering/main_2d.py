@@ -56,7 +56,7 @@ def all_the_input_stuff() -> ClusteringObject2D:
 
 def gauss_fit_max(
     m_clean: np.ndarray, m_limits: np.ndarray, bins: Union[int, str],
-    filename: str) -> Union[StateMulti, None]:
+    filename: str, full_out: bool) -> Union[StateMulti, None]:
     """
     Perform Gaussian fit and generate plots based on the provided data.
 
@@ -277,21 +277,26 @@ def gauss_fit_max(
                 f' area = {popt[2]:.4f}, {popt[5]:.4f}', file=file)
             print('\tFit goodness = ' + str(goodness), file=file)
 
-        fig, ax = plt.subplots(figsize=(6, 6))
-        img = NonUniformImage(ax, interpolation='nearest')
-        xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-        ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-        img.set_data(xcenters, ycenters, counts.T)
-        ax.add_image(img)
-        ax.scatter(mean[0], mean[1], s=8.0, c='red')
-        circle1 = Ellipse(tuple(mean), sigma[0], sigma[1],
-            color='r', fill=False)
-        circle2 = Ellipse(tuple(mean), state.axis[0], state.axis[1],
-            color='r', fill=False)
-        ax.add_patch(circle1)
-        ax.add_patch(circle2)
-        ax.set_xlim(m_limits[0][0], m_limits[0][1])
-        ax.set_ylim(m_limits[1][0], m_limits[1][1])
+        if full_out:
+            fig, ax = plt.subplots(figsize=(6, 6))
+            img = NonUniformImage(ax, interpolation='nearest')
+            xcenters = (edges[0][:-1] + edges[0][1:]) / 2
+            ycenters = (edges[1][:-1] + edges[1][1:]) / 2
+            img.set_data(xcenters, ycenters, counts.T)
+            ax.add_image(img)
+            ax.scatter(mean[0], mean[1], s=8.0, c='red')
+            circle1 = Ellipse(tuple(mean), sigma[0], sigma[1],
+                color='r', fill=False)
+            circle2 = Ellipse(tuple(mean), state.axis[0], state.axis[1],
+                color='r', fill=False)
+            ax.add_patch(circle1)
+            ax.add_patch(circle2)
+            ax.set_xlim(m_limits[0][0], m_limits[0][1])
+            ax.set_ylim(m_limits[1][0], m_limits[1][1])
+
+            fig.savefig(filename + '.png', dpi=600)
+            plt.close(fig)
+
     elif m_clean.shape[2] == 3:
         with open(OUTPUT_FILE, 'a', encoding="utf-8") as file:
             print('\n', file=file)
@@ -304,53 +309,54 @@ def gauss_fit_max(
                 file=file)
             print('\tFit goodness = ' + str(goodness), file=file)
 
-        fig, ax = plt.subplots(2, 2, figsize=(6, 6))
-        xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-        ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-        zcenters = (edges[2][:-1] + edges[2][1:]) / 2
+        if full_out:
+            fig, ax = plt.subplots(2, 2, figsize=(6, 6))
+            xcenters = (edges[0][:-1] + edges[0][1:]) / 2
+            ycenters = (edges[1][:-1] + edges[1][1:]) / 2
+            zcenters = (edges[2][:-1] + edges[2][1:]) / 2
 
-        img = NonUniformImage(ax[0][0], interpolation='nearest')
-        img.set_data(xcenters, ycenters, np.sum(counts, axis=0))
-        ax[0][0].add_image(img)
-        ax[0][0].scatter(mean[0], mean[1], s=8.0, c='red')
-        circle1 = Ellipse(tuple([mean[0], mean[1]]), sigma[0], sigma[1],
-            color='r', fill=False)
-        circle2 = Ellipse(tuple([mean[0], mean[1]]), state.axis[0],
-            state.axis[1], color='r', fill=False)
-        ax[0][0].add_patch(circle1)
-        ax[0][0].add_patch(circle2)
+            img = NonUniformImage(ax[0][0], interpolation='nearest')
+            img.set_data(xcenters, ycenters, np.sum(counts, axis=0))
+            ax[0][0].add_image(img)
+            ax[0][0].scatter(mean[0], mean[1], s=8.0, c='red')
+            circle1 = Ellipse(tuple([mean[0], mean[1]]), sigma[0], sigma[1],
+                color='r', fill=False)
+            circle2 = Ellipse(tuple([mean[0], mean[1]]), state.axis[0],
+                state.axis[1], color='r', fill=False)
+            ax[0][0].add_patch(circle1)
+            ax[0][0].add_patch(circle2)
 
-        img = NonUniformImage(ax[0][1], interpolation='nearest')
-        img.set_data(zcenters, ycenters, np.sum(counts, axis=1))
-        ax[0][1].add_image(img)
-        ax[0][1].scatter(mean[2], mean[1], s=8.0, c='red')
-        circle1 = Ellipse(tuple([mean[2], mean[1]]), sigma[2], sigma[1],
-            color='r', fill=False)
-        circle2 = Ellipse(tuple([mean[2], mean[1]]), state.axis[2],
-            state.axis[1], color='r', fill=False)
-        ax[0][1].add_patch(circle1)
-        ax[0][1].add_patch(circle2)
+            img = NonUniformImage(ax[0][1], interpolation='nearest')
+            img.set_data(zcenters, ycenters, np.sum(counts, axis=1))
+            ax[0][1].add_image(img)
+            ax[0][1].scatter(mean[2], mean[1], s=8.0, c='red')
+            circle1 = Ellipse(tuple([mean[2], mean[1]]), sigma[2], sigma[1],
+                color='r', fill=False)
+            circle2 = Ellipse(tuple([mean[2], mean[1]]), state.axis[2],
+                state.axis[1], color='r', fill=False)
+            ax[0][1].add_patch(circle1)
+            ax[0][1].add_patch(circle2)
 
-        img = NonUniformImage(ax[1][0], interpolation='nearest')
-        img.set_data(xcenters, zcenters, np.sum(counts, axis=2))
-        ax[1][0].add_image(img)
-        ax[1][0].scatter(mean[0], mean[2], s=8.0, c='red')
-        circle1 = Ellipse(tuple([mean[0], mean[2]]), sigma[0], sigma[2],
-            color='r', fill=False)
-        circle2 = Ellipse(tuple([mean[0], mean[2]]), state.axis[0],
-            state.axis[2], color='r', fill=False)
-        ax[1][0].add_patch(circle1)
-        ax[1][0].add_patch(circle2)
+            img = NonUniformImage(ax[1][0], interpolation='nearest')
+            img.set_data(xcenters, zcenters, np.sum(counts, axis=2))
+            ax[1][0].add_image(img)
+            ax[1][0].scatter(mean[0], mean[2], s=8.0, c='red')
+            circle1 = Ellipse(tuple([mean[0], mean[2]]), sigma[0], sigma[2],
+                color='r', fill=False)
+            circle2 = Ellipse(tuple([mean[0], mean[2]]), state.axis[0],
+                state.axis[2], color='r', fill=False)
+            ax[1][0].add_patch(circle1)
+            ax[1][0].add_patch(circle2)
 
-        ax[0][0].set_xlim(m_limits[0][0], m_limits[0][1])
-        ax[0][0].set_ylim(m_limits[1][0], m_limits[1][1])
-        ax[0][1].set_xlim(m_limits[2][0], m_limits[2][1])
-        ax[0][1].set_ylim(m_limits[1][0], m_limits[1][1])
-        ax[1][0].set_xlim(m_limits[0][0], m_limits[0][1])
-        ax[1][0].set_ylim(m_limits[2][0], m_limits[2][1])
+            ax[0][0].set_xlim(m_limits[0][0], m_limits[0][1])
+            ax[0][0].set_ylim(m_limits[1][0], m_limits[1][1])
+            ax[0][1].set_xlim(m_limits[2][0], m_limits[2][1])
+            ax[0][1].set_ylim(m_limits[1][0], m_limits[1][1])
+            ax[1][0].set_xlim(m_limits[0][0], m_limits[0][1])
+            ax[1][0].set_ylim(m_limits[2][0], m_limits[2][1])
 
-    fig.savefig(filename + '.png', dpi=600)
-    plt.close(fig)
+            fig.savefig(filename + '.png', dpi=600)
+            plt.close(fig)
 
     return state
 
@@ -418,7 +424,7 @@ def find_stable_trj(
     return m_new_arr, fraction_of_points, one_last_state
 
 def iterative_search(
-        cl_ob: ClusteringObject2D, name: str
+        cl_ob: ClusteringObject2D, name: str, full_out: bool
     )-> Tuple[ClusteringObject2D, bool]:
     """
     Perform an iterative search to identify stable windows in trajectory data.
@@ -445,7 +451,7 @@ def iterative_search(
     while True:
         ### Locate and fit maximum in the signal distribution
         state = gauss_fit_max(m_copy, cl_ob.data.range, bins,
-            'output_figures/' + name + 'Fig1_' + str(iteration_id))
+            'output_figures/' + name + 'Fig1_' + str(iteration_id), full_out)
         if state is None:
             print('Iterations interrupted because fit does not converge. ')
             break
@@ -476,7 +482,7 @@ def iterative_search(
     return cl_ob, one_last_state
 
 def timeseries_analysis(
-        cl_ob: ClusteringObject2D, tau_w: int, t_smooth: int
+        cl_ob: ClusteringObject2D, tau_w: int, t_smooth: int, full_out: bool
     ) -> Tuple[int, float]:
     """
     Perform time series analysis on the input data.
@@ -501,7 +507,7 @@ def timeseries_analysis(
     tmp_cl_ob.preparing_the_data()
     tmp_cl_ob.plot_input_data(name + 'Fig0')
 
-    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob, name)
+    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob, name, full_out)
 
     if len(tmp_cl_ob.states) == 0:
         print('* No possible classification was found. ')
@@ -522,19 +528,20 @@ def timeseries_analysis(
         n_states, '[' + str(fraction_0) + ']\n')
     return n_states, fraction_0
 
-def full_output_analysis(cl_ob: ClusteringObject2D) -> ClusteringObject2D:
+def full_output_analysis(cl_ob: ClusteringObject2D, full_out: bool
+    ) -> ClusteringObject2D:
     """Perform a comprehensive analysis on the input data."""
 
     cl_ob.preparing_the_data()
 
-    cl_ob, _ = iterative_search(cl_ob, '')
+    cl_ob, _ = iterative_search(cl_ob, '', full_out)
     if len(cl_ob.states) == 0:
         print('* No possible classification was found. ')
         return cl_ob
 
     return cl_ob
 
-def time_resolution_analysis(cl_ob: ClusteringObject2D):
+def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     """
     Performs Temporal Resolution Analysis (TRA) to explore parameter
     space and analyze the dataset.
@@ -552,7 +559,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
         tmp = [tau_w]
         tmp1 = [tau_w]
         for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s)
+            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
         number_of_states.append(tmp)
@@ -571,7 +578,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
 
     cl_ob.plot_tra_figure()
 
-def main() -> ClusteringObject2D:
+def main(full_output: bool=True) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysi.
 
@@ -582,8 +589,8 @@ def main() -> ClusteringObject2D:
         with the chosen parameters.
     """
     clustering_object = all_the_input_stuff()
-    time_resolution_analysis(clustering_object)
-    clustering_object = full_output_analysis(clustering_object)
+    time_resolution_analysis(clustering_object, full_output)
+    clustering_object = full_output_analysis(clustering_object, full_output)
 
     return clustering_object
 
