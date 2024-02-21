@@ -61,7 +61,7 @@ def all_the_input_stuff() -> ClusteringObject1D:
 
 def perform_gauss_fit(
         param: List[int], data: List[np.ndarray], int_type: str
-    ) -> Tuple[bool, int, np.ndarray]:
+    ) -> Tuple[bool, int, Union[np.ndarray, None]]:
     """
     Perform Gaussian fit on given data.
 
@@ -231,7 +231,7 @@ def gauss_fit_max(
 
 def find_stable_trj(
         cl_ob: ClusteringObject1D, state: StateUni,
-        tmp_labels: np.ndarray, lim: int, full_out: bool
+        tmp_labels: np.ndarray, lim: int
     ) -> Tuple[np.ndarray, float, bool]:
     """
     Identifies stable windows in a trajectory.
@@ -327,7 +327,7 @@ def iterative_search(
 
         ### Find the windows in which the trajectories are stable
         m_next, counter, one_last_state = find_stable_trj(
-            cl_ob, state, tmp_labels, states_counter, full_out)
+            cl_ob, state, tmp_labels, states_counter)
         state.perc = counter
 
         states_list.append(state)
