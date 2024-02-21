@@ -41,7 +41,7 @@ def test_output_files(setup_test_environment):
         print('bins\t' + str(BINS), file=file)
 
     # Call your code to generate the output files
-    main_2d.main()
+    cl_ob = main_2d.main()
 
     # Define the paths to the expected and actual output files
     original_dir = "/Users/mattebecchi/00_signal_analysis/timeseries_analysis/test/"

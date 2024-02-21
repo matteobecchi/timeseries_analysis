@@ -38,7 +38,7 @@ class StateUni:
         self.sigma = sigma                              # Variance of the Gaussian
         self.area = area                                # Area below the Gaussian
         self.peak = area/sigma/np.sqrt(np.pi)           # Height of the Gaussian peak
-        self.perc = 0       # Fraction of data points classified in this state
+        self.perc = 0.0       # Fraction of data points classified in this state
         self.th_inf = [mean - 2.0*sigma, -1]    # Lower thrashold of the state
         self.th_sup = [mean + 2.0*sigma, -1]    # Upper thrashold of the state
 
@@ -60,7 +60,7 @@ class StateMulti:
         self.mean = mean         # Mean of the Gaussians
         self.sigma = sigma       # Variance of the Gaussians
         self.area = area         # Area below the Gaussians
-        self.perc = 0            # Fraction of data points classified in this state
+        self.perc = 0.0            # Fraction of data points classified in this state
         self.axis = 2.0*sigma    # Axes of the state
 
     def build_boundaries(self, number_of_sigmas: float):
@@ -259,7 +259,8 @@ class MultiData:
                         data_list.append(np.loadtxt(data_path))
                     print('\tOriginal data shape:', data_list[-1].shape)
                 except Exception as exc_msg:
-                    print(f'\tERROR: Failed to read data from {data_path}. Reason: {exc_msg}')
+                    print(f'\tERROR: Failed to read data from {data_path}.'
+                        ' Reason: {exc_msg}')
                     return
             else:
                 print('\tERROR: unsupported format for input file.')
@@ -277,7 +278,8 @@ class MultiData:
         self.num_of_particles = self.matrix.shape[0]
         self.num_of_steps = self.matrix.shape[1]
         self.dims = self.matrix.shape[2]
-        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in data_list ])
+        self.range = np.array([ [np.min(comp), np.max(comp)]
+            for comp in data_list ])
         self.labels = np.array([])
 
     def print_info(self):
@@ -294,7 +296,7 @@ class MultiData:
         Removes a specified time delay from the data.
 
         Args:
-        - t_delay (int): Number of steps to remove from the beginning of the data.
+        - t_delay (int): Number of steps to remove from the beginning.
         """
         self.matrix = self.matrix[:, t_delay:, :]
         self.num_of_steps = self.matrix.shape[1]
@@ -313,7 +315,8 @@ class MultiData:
             axis=2, arr=tmp_matrix)
         self.matrix = np.transpose(tmp_matrix, axes=(1, 2, 0))
         self.num_of_steps = self.matrix.shape[1]
-        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in tmp_matrix ])
+        self.range = np.array([ [np.min(comp), np.max(comp)]
+            for comp in tmp_matrix ])
 
     def normalize(self, dim_to_avoid: list[int]):
         """Normalizes the data between 0 and 1."""
@@ -326,7 +329,8 @@ class MultiData:
             else:
                 new_matrix.append(comp)
         self.matrix = np.transpose(np.array(new_matrix), axes=(1, 2, 0))
-        self.range = np.array([ [np.min(comp), np.max(comp)] for comp in new_matrix ])
+        self.range = np.array([ [np.min(comp), np.max(comp)]
+            for comp in new_matrix ])
 
     def create_copy(self):
         """
@@ -336,7 +340,7 @@ class MultiData:
         copy_data = copy.deepcopy(self)
         return copy_data
 
-    def plot_medoids(self, output_file: str):
+    def plot_medoids(self):
         """
         Plot the mean time sequence for clusters in the data.
 
@@ -381,14 +385,15 @@ class MultiData:
         for id_c, center in enumerate(center_list):
             sig_x = center[:, 0]
             sig_y = center[:, 1]
-            axes.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o', c=palette[id_c])
+            axes.plot(sig_x, sig_y, label='ENV'+str(id_c), marker='o',
+                c=palette[id_c])
         fig.suptitle('Average time sequence inside each environments')
         axes.set_xlabel(r'Signal 1')
         axes.set_ylabel(r'Signal 2')
         axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         axes.legend()
 
-        fig.savefig('output_figures/' + output_file + '.png', dpi=600)
+        fig.savefig('output_figures/Fig4.png', dpi=600)
 
 class Parameters:
     """

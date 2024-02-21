@@ -1,6 +1,8 @@
 """
 Should contains all the functions in common between the 2 codes.
 """
+from typing import Union, List, Tuple
+
 import scipy.optimize
 import scipy.signal
 import numpy as np
@@ -8,7 +10,7 @@ import matplotlib.pyplot as plt
 from onion_clustering.first_classes import Parameters
 from onion_clustering.first_classes import StateUni, StateMulti
 
-def read_input_data():
+def read_input_data() -> Union[str, np.ndarray]:
     """
     Attempt to read the content of 'data_directory.txt' file
     and load it into a NumPy array as strings.
@@ -24,7 +26,7 @@ def read_input_data():
         return str(data_dir)
     return data_dir
 
-def moving_average(data: np.ndarray, window: int):
+def moving_average(data: np.ndarray, window: int) -> np.ndarray:
     """Applies a moving average filter to a 1D or 2D NumPy array.
 
     Args:
@@ -32,29 +34,35 @@ def moving_average(data: np.ndarray, window: int):
     - window (int): The size of the moving average window.
 
     Returns:
-    - np.ndarray: The smoothed array obtained after applying the moving average filter.
+    - np.ndarray: The smoothed array obtained after applying
+    the moving average filter.
 
     Raises:
     - ValueError: If the input array dimension is not supported
     (only 1D and 2D arrays are supported).
     """
 
-    # Step 1: Create a NumPy array 'weights' with the values 1.0 repeated 'window' times.
-    # Then, divide each element of 'weights' by the 'window' value to get the average weights.
+    # Step 1: Create a NumPy array 'weights' with the values 1.0
+    # repeated 'window' times.
+    # Then, divide each element of 'weights' by the 'window' value
+    # to get the average weights.
     weights = np.ones(window) / window
 
-    # Step 2: Apply the moving average filter to the 'data' array using the 'weights' array.
-    # The 'np.convolve' function performs a linear convolution between 'data' and 'weights'.
-    # The result is a smoothed version of the 'data',
-    # where each point represents the weighted average of its neighbors.
+    # Step 2: Apply the moving average filter to the 'data' array using
+    # the 'weights' array. The 'np.convolve' function performs a linear
+    # convolution between 'data' and 'weights'. The result is a smoothed
+    # version of the 'data', where each point represents the weighted
+    # average of its neighbors.
     if data.ndim == 1:
         return np.convolve(data, weights, mode='valid')
     if data.ndim >= 2:
-        return np.apply_along_axis(lambda x: np.convolve(x, weights, mode='valid'),
+        return np.apply_along_axis(lambda x: np.convolve(x, weights,
+            mode='valid'),
             axis=1, arr=data)
-    raise ValueError('Invalid array dimension. Only 1D and 2D arrays are supported.')
+    raise ValueError('Invalid array dimension. Only 1D and 2D arrays'
+        ' are supported.')
 
-def moving_average_2d(data: np.ndarray, side: int):
+def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
     """Applies a 2D moving average filter to a NumPy array.
 
     Args:
@@ -72,8 +80,8 @@ def moving_average_2d(data: np.ndarray, side: int):
 
     if side % 2 == 0: # Check if side is an odd number
         raise ValueError("L must be an odd number.")
-    half_width = (side - 1) // 2 # Calculate the half-width of the moving window
-    result = np.zeros_like(data, dtype=float) # Initialize the result array with zeros
+    half_width = (side - 1) // 2
+    result = np.zeros_like(data, dtype=float)
 
     for index in np.ndindex(*data.shape):
         slices = tuple(slice(max(0, i - half_width),
@@ -105,38 +113,46 @@ def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     ax.set_xlabel(r'Normalized signal')
     ax.set_ylabel(r'Probability distribution')
 
-def param_grid(par: Parameters, trj_len: int):
+def param_grid(
+        par: Parameters, trj_len: int
+    ) -> Tuple[List, List]:
     """Generates parameter grids for tau_window and t_smooth.
 
     Args:
-    - par (Parameters): An instance of the Parameters class containing parameter details.
+    - par (Parameters): An instance of the Parameters class containing
+        parameter details.
     - trj_len (int): Length of the trajectory data.
 
     Returns:
     - tau_window (List[int]): A list of tau_window values.
     - t_smooth (List[int]): A list of t_smooth values.
 
-    This function generates grids of values for 'tau_window' and 't_smooth' based on
-    the provided 'Parameters' instance and the length of the trajectory. It calculates
-    the values for 'tau_window' within the range defined in 'Parameters' and generates
-    't_smooth' values within the specified range.
+    This function generates grids of values for 'tau_window' and 't_smooth'
+    based on the provided 'Parameters' instance and the length of the
+    trajectory. It calculates the values for 'tau_window' within the range
+    defined in 'Parameters' and generates 't_smooth' values within the
+    specified range.
     """
 
     if par.max_tau_w == -1:
         par.max_tau_w = trj_len - par.max_t_smooth
-    tmp = np.geomspace(par.min_tau_w, par.max_tau_w, num=par.num_tau_w, dtype=int)
+    tmp = np.geomspace(par.min_tau_w, par.max_tau_w,
+        num=par.num_tau_w, dtype=int)
     tau_window = []
     for tau_w in tmp:
         if tau_w not in tau_window:
             tau_window.append(tau_w)
     print('* Tau_w used:', tau_window)
 
-    t_smooth = list(range(par.min_t_smooth, par.max_t_smooth + 1, par.step_t_smooth))
+    t_smooth = list(range(par.min_t_smooth, par.max_t_smooth + 1,
+        par.step_t_smooth))
     print('* t_smooth used:', t_smooth)
 
     return tau_window, t_smooth
 
-def gaussian(x_points: np.ndarray, x_mean: float, sigma: float, area: float):
+def gaussian(
+        x_points: np.ndarray, x_mean: float, sigma: float, area: float
+    ) -> np.ndarray:
     """Compute the Gaussian function values at given points 'x'.
 
     Args:
@@ -146,47 +162,46 @@ def gaussian(x_points: np.ndarray, x_mean: float, sigma: float, area: float):
     - area (float): Area under the Gaussian curve.
 
     Returns:
-    - np.ndarray: Gaussian function values computed at the input points 'x_points'.
+    - np.ndarray: Gaussian function values computed at the input points.
 
     This function calculates the values of a Gaussian function at the given
-    array of points 'x_points' using the provided 'x_mean', 'sigma' (standard deviation),
-    and 'area' (area under the curve) parameters. It returns an array of Gaussian
-    function values corresponding to the input 'x_points'.
+    array of points 'x_points' using the provided 'x_mean', 'sigma'
+    (standard deviation), and 'area' (area under the curve) parameters.
+    It returns an array of Gaussian function values corresponding to the
+    input 'x_points'.
     """
 
     return np.exp(-((x_points - x_mean)/sigma)**2)*area/(np.sqrt(np.pi)*sigma)
 
-def custom_fit(dim: int, max_ind: int, minima: list[int],
-    edges: np.ndarray, counts: np.ndarray, gap: int, m_limits: np.ndarray):
+def custom_fit(
+        dim: int, max_ind: int, minima: list[int],
+        edges: np.ndarray, counts: np.ndarray, gap: int, m_limits: np.ndarray
+    ) -> Tuple[int, int, np.ndarray]:
     """Fit a Gaussian curve to selected data based on provided parameters.
 
     Args:
-    - dim (int): The dimension to fit the Gaussian curve (0 for x, 1 for y, etc.).
+    - dim (int): The dimension of the data.
     - max_ind (int): Index of the maximum value in the histogram.
     - minima (list[int]): List of indices representing the minimum points.
     - edges (np.ndarray): Array containing the bin edges of the histogram.
     - counts (np.ndarray): Array containing histogram counts.
     - gap (int): Minimum allowed gap size for fitting intervals.
-    - m_limits (list[list[int]]): List of min and max limits for each dimension.
+    - m_limits (list[list[int]]): List of min and max limits for each
+        dimension.
 
     Returns:
     - tuple[int, int, list[float]]: A tuple containing:
-        - flag (int): Flag indicating the success (1) or failure (0) of the fitting process.
-        - goodness (int): Goodness value representing the fitting quality (higher is better).
+        - flag (int): Flag indicating the success (1) or failure (0) of
+            the fitting process.
+        - goodness (int): Goodness value representing the fitting quality
+            (higher is better).
         - popt (list[float]): Optimal values for the parameters
-        (mu, sigma, area) of the fitted Gaussian.
+            (mu, sigma, area) of the fitted Gaussian.
 
-    This function attempts to fit a Gaussian curve to selected data within the specified
-    dimension 'dim' based on provided histogram data ('edges' and 'counts'). It uses
-    'max_ind' to initialize parameters and 'minima' to define the fitting interval.
-
-    'gap' represents the minimum allowed gap size for fitting intervals.
-    'm_limits' contains minimum and maximum limits for each dimension.
-
-    It returns a tuple consisting of:
-    - 'flag' indicating success (1) or failure (0) of the fitting process.
-    - 'goodness', a value representing the quality of the fit (higher is better).
-    - 'popt', the optimal values for the parameters (mu, sigma, area) of the fitted Gaussian curve.
+    This function attempts to fit a Gaussian curve to selected data within the
+    specified dimension 'dim' based on provided histogram data ('edges' and
+    'counts'). It uses 'max_ind' to initialize parameters and 'minima' to
+    define the fitting interval.
     """
 
     # Initialize flag and goodness variables
@@ -206,9 +221,10 @@ def custom_fit(dim: int, max_ind: int, minima: list[int],
 
     try:
         # Attempt to fit a Gaussian using curve_fit
-        popt, pcov = scipy.optimize.curve_fit(gaussian, edges_selection, counts_selection,
-            p0=[mu0, sigma0, area0], bounds=([m_limits[dim][0], 0.0, 0.0],
-            [m_limits[dim][1], np.inf, np.inf]))
+        popt, pcov, _, _, _ = scipy.optimize.curve_fit(gaussian,
+            edges_selection, counts_selection, p0=[mu0, sigma0, area0],
+            bounds=([m_limits[dim][0], 0.0, 0.0],
+                [m_limits[dim][1], np.inf, np.inf]), full_output=True)
 
         # Check goodness of fit and update the goodness variable
         if popt[0] < edges_selection[0] or popt[0] > edges_selection[-1]:
@@ -231,34 +247,39 @@ def custom_fit(dim: int, max_ind: int, minima: list[int],
     except RuntimeError:
         print('\tFit: Runtime error. ')
         flag = 0
-        popt = []
+        popt = np.empty((3,))
     except TypeError:
         print('\tFit: TypeError.')
         flag = 0
-        popt = []
+        popt = np.empty((3,))
     except ValueError:
         print('\tFit: ValueError.')
         flag = 0
-        popt = []
+        popt = np.empty((3,))
     return flag, goodness, popt
 
-def relabel_states(all_the_labels: np.ndarray, states_list: list[StateUni]):
-    """Relabel states and update the state list based on occurrence in 'all_the_labels'.
+def relabel_states(
+        all_the_labels: np.ndarray, states_list: list[StateUni]
+    ) -> Tuple[np.ndarray, list[StateUni]]:
+    """Relabel states and update the state list based on occurrence in
+        'all_the_labels'.
 
     Args:
     - all_the_labels (np.ndarray): Array containing labels assigned
         to each window in the trajectory.
-    - states_list (list[StateUni]): List of StateUni objects representing different states.
+    - states_list (list[StateUni]): List of StateUni objects representing
+        different states.
 
     Returns:
     - tuple[np.ndarray, list[StateUni]]: A tuple containing:
-        - all_the_labels (np.ndarray): Updated labels array with relabeled states.
+        - all_the_labels (np.ndarray): Updated labels array with relabeled
+            states.
         - relevant_states (list[StateUni]): Updated list of non-empty states,
         ordered by mean values.
 
-    This function performs several operations to relabel the states and update the state list.
-    It removes empty states, reorders them based on the mean values and relabels the labels in
-    'all_the_labels'.
+    This function performs several operations to relabel the states and update
+    the state list. It removes empty states, reorders them based on the mean
+    values and relabels the labels in 'all_the_labels'.
     """
     # Step 1: Remove states with zero relevance
     relevant_states = [state for state in states_list if state.perc != 0.0]
@@ -272,29 +293,32 @@ def relabel_states(all_the_labels: np.ndarray, states_list: list[StateUni]):
 
     relabel_map = np.zeros(len(states_list) + 1, dtype=int)
     for key, value in state_mapping.items():
-        relabel_map[key + 1] = value  # Increment key by 1 to account for zero-indexed relabeling
+        # Increment key by 1 to account for zero-indexed relabeling
+        relabel_map[key + 1] = value
 
-    # Step 4: Relabel the data in all_the_labels according to the new states_list
+    # Step 4: Relabel the data in all_the_labels according to the
+    # new states_list
     mask = all_the_labels != 0  # Create a mask for non-zero elements
     all_the_labels[mask] = relabel_map[all_the_labels[mask]]
 
     return all_the_labels, relevant_states
 
-def find_intersection(st_0: StateUni, st_1: StateUni):
+def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
     """
     Finds the intersection between two Gaussians.
 
     Args:
-    - st_0, st_1 (StateUni): the two states we are computing the threshold between
+    - st_0, st_1 (StateUni): the two states we are computing the threshold
+        between
 
     Returns:
     - th_val (float): the value of the threshold
     - th_type (int): the type of the threshold (1 or 2)
 
-    If the intersection exists, the threshold is type 1. If there are 2 intersections,
-    the one with higher value is chosen.
-    If no intersection exists, the threshold is type 2. Its value will be the average
-    between the two means, weighted with the two sigmas.
+    If the intersection exists, the threshold is type 1. If there are 2
+    intersections, the one with higher value is chosen.
+    If no intersection exists, the threshold is type 2. Its value will be
+    the average between the two means, weighted with the two sigmas.
     """
     coeff_a = st_1.sigma**2 - st_0.sigma**2
     coeff_b = -2*(st_0.mean*st_1.sigma**2 - st_1.mean*st_0.sigma**2)
@@ -305,7 +329,8 @@ def find_intersection(st_0: StateUni, st_1: StateUni):
     delta = coeff_b**2 - 4*coeff_a*coeff_c
     if coeff_a == 0.0:
         only_th = ((st_0.mean + st_1.mean)/2
-            - st_0.sigma**2/2/(st_1.mean - st_0.mean)*np.log(st_0.area/st_1.area))
+            - st_0.sigma**2/2/(st_1.mean - st_0.mean) *
+            np.log(st_0.area/st_1.area))
         return only_th, 1
     if delta >= 0:
         th_plus = (- coeff_b + np.sqrt(delta))/(2*coeff_a)
@@ -315,17 +340,22 @@ def find_intersection(st_0: StateUni, st_1: StateUni):
         if intercept_plus >= intercept_minus:
             return th_plus, 1
         return th_minus, 1
-    th_aver = (st_0.mean/st_0.sigma + st_1.mean/st_1.sigma)/(1/st_0.sigma + 1/st_1.sigma)
+    th_aver = (st_0.mean/st_0.sigma + st_1.mean/st_1.sigma) / \
+        (1/st_0.sigma + 1/st_1.sigma)
     return th_aver, 2
 
-def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
-    m_range: list[float]):
+def set_final_states(
+        list_of_states: list[StateUni], all_the_labels: np.ndarray,
+        m_range: list[float]
+    ) -> Tuple[List[StateUni], np.ndarray]:
     """
     Assigns final states and relabels labels based on specific criteria.
 
     Args:
-    - list_of_states (list[StateUni]): List of StateUni objects representing potential states.
-    - all_the_labels (np.ndarray): 2D NumPy array containing labels for each data point.
+    - list_of_states (list[StateUni]): List of StateUni objects representing
+        potential states.
+    - all_the_labels (np.ndarray): 2D NumPy array containing labels for each
+        data point.
     - m_range (list[float]): Range of values in the data.
 
     Returns:
@@ -339,7 +369,8 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
             if j != i:
-                if st_0.peak > st_1.peak and abs(st_1.mean - st_0.mean) < st_0.sigma:
+                if st_0.peak > st_1.peak and \
+                    abs(st_1.mean - st_0.mean) < st_0.sigma:
                     proposed_merge.append([j, i])
 
     # Find the best merges (merge into the closest candidate)
@@ -374,7 +405,8 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
     for key, value in relabel_dic.items():
         relabel_map[key + 1] = value + 1
 
-    all_the_labels = relabel_map[all_the_labels.flatten()].reshape(all_the_labels.shape)
+    all_the_labels = relabel_map[all_the_labels.flatten(
+        )].reshape(all_the_labels.shape)
 
     final_map = np.zeros(max(np.unique(all_the_labels)) + 1, dtype=int)
     for i, el in enumerate(np.unique(all_the_labels)):
@@ -400,7 +432,8 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
     updated_states[0].th_inf[1] = 0
 
     for i in range(len(updated_states) - 1):
-        th_val, th_type = find_intersection(updated_states[i], updated_states[i + 1])
+        th_val, th_type = find_intersection(
+            updated_states[i], updated_states[i + 1])
         updated_states[i].th_sup[0] = th_val
         updated_states[i].th_sup[1] = th_type
         updated_states[i + 1].th_inf[0] = th_val
@@ -431,24 +464,30 @@ def set_final_states(list_of_states: list[StateUni], all_the_labels: np.ndarray,
     with open('final_thresholds.txt', 'w', encoding="utf-8") as file:
         for state in updated_states:
             print(state.th_inf[0], state.th_inf[1], file=file)
-        print(updated_states[-1].th_sup[0], updated_states[-1].th_sup[1], file=file)
+        print(updated_states[-1].th_sup[0], updated_states[-1].th_sup[1],
+            file=file)
 
     # Step 5: Return the 'updated_states' as the output of the function.
     return updated_states, all_the_labels
 
-def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti]):
+def relabel_states_2d(
+        all_the_labels: np.ndarray, states_list: list[StateMulti]
+    ) -> Tuple[np.ndarray, List[StateMulti]]:
     """
-    Reorders labels and merges strongly overlapping states in a multidimensional space.
+    Reorders labels and merges strongly overlapping states in a
+    multidimensional space.
 
     Args:
-    - all_the_labels (np.ndarray): An ndarray containing labels associated with each state.
+    - all_the_labels (np.ndarray): An ndarray containing labels associated
+        with each state.
     - states_list (list[StateMulti]): A list of StateMulti objects
         representing states to be evaluated.
 
     Returns:
     - tuple[np.ndarray, list[StateMulti]]: A tuple containing:
         - Updated ndarray of labels reflecting the changes in state indices.
-        - Modified list of StateMulti objects after merging and relabeling states.
+        - Modified list of StateMulti objects after merging and relabeling
+        states.
     """
 
     ### Step 1: Remove states with zero relevance
@@ -473,7 +512,8 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
         for j, st_1 in enumerate(sorted_states):
             if j > i:
                 diff = np.abs(np.subtract(st_1.mean, st_0.mean))
-                if np.all(diff < [ max(st_0.sigma[k], st_1.sigma[k]) for k in range(diff.size) ]):
+                if np.all(diff < [ max(st_0.sigma[k], st_1.sigma[k])
+                    for k in range(diff.size) ]):
                     proposed_merge.append([j, i])
 
     # Find the best merges (merge into the closest candidate)
@@ -515,11 +555,13 @@ def relabel_states_2d(all_the_labels: np.ndarray, states_list: list[StateMulti])
     for i, elem in enumerate(relabel_map):
         relabel_map[i] = map2[elem]
 
-    all_the_labels = relabel_map[all_the_labels.flatten()].reshape(all_the_labels.shape)
+    all_the_labels = relabel_map[all_the_labels.flatten(
+        )].reshape(all_the_labels.shape)
 
     # Remove merged states from the state list
     states_to_remove = set(s0 for s0, s1 in best_merge)
-    updated_states = [state for i, state in enumerate(sorted_states) if i not in states_to_remove]
+    updated_states = [state for i, state in enumerate(sorted_states) \
+        if i not in states_to_remove]
 
     # Compute the fraction of data points in each state
     for st_id, state in enumerate(updated_states):
