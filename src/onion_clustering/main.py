@@ -123,7 +123,7 @@ def perform_gauss_fit(
         return False, goodness, None
 
 def gauss_fit_max(
-        m_clean: np.ndarray, par: Parameters, filename: str
+        m_clean: np.ndarray, par: Parameters, filename: str, full_out: bool
     ) -> Union[StateUni, None]:
     """
     Performs Gaussian fitting on input data.
@@ -159,7 +159,8 @@ def gauss_fit_max(
     min_id1 = np.min([max_ind + gap, counts.size - 1])
     while min_id0 > 0 and counts[min_id0] > counts[min_id0 - 1]:
         min_id0 -= 1
-    while min_id1 < counts.size - 1 and counts[min_id1] > counts[min_id1 + 1]:
+    while min_id1 < counts.size - 1 and \
+        counts[min_id1] > counts[min_id1 + 1]:
         min_id1 += 1
 
     ### 5. Try the fit between the minima and check its goodness ###
@@ -211,25 +212,26 @@ def gauss_fit_max(
             file=file)
         print('\tFit goodness = ' + str(goodness), file=file)
 
-    ### Plot the distribution and the fitted gaussians
-    y_spread = np.max(m_clean) - np.min(m_clean)
-    y_lim = [np.min(
-        m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
-    fig, axes = plt.subplots()
-    plot_histo(axes, counts, bins)
-    axes.set_xlim(y_lim)
-    tmp_popt = [state.mean, state.sigma, state.area/flat_m.size]
-    axes.plot(np.linspace(bins[0], bins[-1], 1000),
-        gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
+    if full_out:
+        ### Plot the distribution and the fitted gaussians
+        y_spread = np.max(m_clean) - np.min(m_clean)
+        y_lim = [np.min(
+            m_clean) - 0.025*y_spread, np.max(m_clean) + 0.025*y_spread]
+        fig, axes = plt.subplots()
+        plot_histo(axes, counts, bins)
+        axes.set_xlim(y_lim)
+        tmp_popt = [state.mean, state.sigma, state.area/flat_m.size]
+        axes.plot(np.linspace(bins[0], bins[-1], 1000),
+            gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt))
 
-    fig.savefig(filename + '.png', dpi=600)
-    plt.close(fig)
+        fig.savefig(filename + '.png', dpi=600)
+        plt.close(fig)
 
     return state
 
 def find_stable_trj(
         cl_ob: ClusteringObject1D, state: StateUni,
-        tmp_labels: np.ndarray, lim: int
+        tmp_labels: np.ndarray, lim: int, full_out: bool
     ) -> Tuple[np.ndarray, float, bool]:
     """
     Identifies stable windows in a trajectory.
@@ -290,7 +292,7 @@ def find_stable_trj(
     return m2_array, window_fraction, one_last_state
 
 def iterative_search(
-        cl_ob: ClusteringObject1D, name: str
+        cl_ob: ClusteringObject1D, name: str, full_out: bool
     ) -> Tuple[ClusteringObject1D, np.ndarray, bool]:
     """
     Performs an iterative search for stable states in a trajectory.
@@ -318,14 +320,14 @@ def iterative_search(
     while True:
         ### Locate and fit maximum in the signal distribution
         state = gauss_fit_max(m_copy, cl_ob.par, 'output_figures/' +
-            name + 'Fig1_' + str(iteration_id))
+            name + 'Fig1_' + str(iteration_id), full_out)
         if state is None:
             print('Iterations interrupted because fit does not converge. ')
             break
 
         ### Find the windows in which the trajectories are stable
         m_next, counter, one_last_state = find_stable_trj(
-            cl_ob, state, tmp_labels, states_counter)
+            cl_ob, state, tmp_labels, states_counter, full_out)
         state.perc = counter
 
         states_list.append(state)
@@ -343,7 +345,8 @@ def iterative_search(
     return cl_ob, atl, one_last_state
 
 def timeseries_analysis(
-        cl_ob: ClusteringObject1D, tau_w: int, t_smooth: int
+        cl_ob: ClusteringObject1D, tau_w: int, t_smooth: int,
+        full_out: bool
     ) -> Tuple[int, float]:
     """
     Performs an analysis pipeline on time series data.
@@ -369,7 +372,7 @@ def timeseries_analysis(
     tmp_cl_ob.plot_input_data(name + 'Fig0')
 
     tmp_cl_ob, tmp_labels, one_last_state = iterative_search(tmp_cl_ob,
-        name)
+        name, full_out)
 
     if len(tmp_cl_ob.states) == 0:
         print('* No possible classification was found. ')
@@ -393,12 +396,13 @@ def timeseries_analysis(
         n_states, '[' + str(fraction_0) + ']\n')
     return n_states, fraction_0
 
-def full_output_analysis(cl_ob: ClusteringObject1D) -> ClusteringObject1D:
+def full_output_analysis(cl_ob: ClusteringObject1D, full_out: bool
+    ) -> ClusteringObject1D:
     """Perform a comprehensive analysis on the input data."""
 
     cl_ob.preparing_the_data()
 
-    cl_ob, tmp_labels, _ = iterative_search(cl_ob, '')
+    cl_ob, tmp_labels, _ = iterative_search(cl_ob, '', full_out)
     if len(cl_ob.states) == 0:
         print('* No possible classification was found. ')
         return cl_ob
@@ -407,7 +411,7 @@ def full_output_analysis(cl_ob: ClusteringObject1D) -> ClusteringObject1D:
 
     return cl_ob
 
-def time_resolution_analysis(cl_ob: ClusteringObject1D):
+def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
     """
     Performs Temporal Resolution Analysis (TRA) to explore parameter
     space and analyze the dataset.
@@ -424,7 +428,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D):
         tmp = [tau_w]
         tmp1 = [tau_w]
         for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s)
+            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
         number_of_states.append(tmp)
@@ -441,7 +445,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D):
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
 
-def main() -> ClusteringObject1D:
+def main(full_output: bool=True) -> ClusteringObject1D:
     """
     Returns the clustering object with the analysi.
 
@@ -452,8 +456,8 @@ def main() -> ClusteringObject1D:
         with the chosen parameters.
     """
     clustering_object = all_the_input_stuff()
-    time_resolution_analysis(clustering_object)
-    clustering_object = full_output_analysis(clustering_object)
+    time_resolution_analysis(clustering_object, full_output)
+    clustering_object = full_output_analysis(clustering_object, full_output)
 
     return clustering_object
 
