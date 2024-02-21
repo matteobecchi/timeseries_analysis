@@ -1,5 +1,5 @@
 # timeseries_analysis
-Code for unsupervised clustering of time-correlated data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
+Code for unsupervised clustering of time-series data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
 
 ## Input data
 A one-dimensional time-series, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported, with the fifth column containing the data values. 
@@ -12,8 +12,7 @@ The `examples/` folder contains an example of usage. Run `python3 example_script
 * A text file called `data_directory.txt` containing one line with the path to the input data file (including the input data file name). 
 and run the code. 
 
-## input_parameters.txt
-The keyword and the value must be separated by one tab. 
+## input_parameters.txt 
 * `tau_window` (int): the length of the time window (in number of frames). 
 * `t_smooth` (int, optional): the length of the smoothing window (in number of frames) for the moving average. A value of `t_smooth = 1` correspond to no smoothing. Default is 1. 
 * `t_delay` (int, optional): is for ignoring the first tau_delay frames of the trajectory. Default is 0. 
@@ -24,25 +23,25 @@ The keyword and the value must be separated by one tab.
 * `num_tau_w` (int, optional): the number of different tau_window values tested. Default is 20. 
 * `min_tau_w` (int, optional): the smaller tau_window value tested. It has to be larger that 1. Default is 2. 
 * `max_tau_w` (int, optional): the larger tau_window value tested. It has to be larger that 2. Default is the largest possible window. 
-* `min_t_smooth` (int, optional): the smaller t_smooth value tested. It has to be larger that 0. Default is 1 (corresponding to no smoothing). 
+* `min_t_smooth` (int, optional): the smaller t_smooth value tested. It has to be larger that 0. Default is 1. 
 * `max_t_smooth` (int, optional): the larger t_smooth value tested. It has to be larger that 0. Default is 5. 
 * `step_t_smooth` (int, optional): the step in the t_smooth values tested. It has to be larger that 0. Default is 1. 
 
 ## Output
-The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from `min_t_smooth` frames to `max_t_smooth` frames, with steps of `step_t_smooth`) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). 
+The algorithm will attempt to perform the clustering on the input data, using different `t_smooth` (from `min_t_smooth` frames to `max_t_smooth` frames, with steps of `step_t_smooth`) and different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). The results are saved in the folowing files:
 
 * `number_of_states.txt` contains the number of clusters for each combination of `tau_window` and `t_smooth` tested. 
 * `fraction_0.txt` contains the fraction of unclassified data points for each combination of `tau_window` and `t_smooth` tested. 
 * Figures with all the Gaussian fittings are saved in the folder `output_figures` with the format `t_smooth_tau_window_Fig1_iteration.png`. 
 
-Then, the analysis with the values of `tau_window` and `t_smooth` specified in `input_parameters.txt` will be performed. 
+Then, the analysis with the values of `tau_window` and `t_smooth` specified in `input_parameters.txt` will be performed. The results are saved in the folowing files:
 
-* The file `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. 
+* `states_output.txt` contains information about the recursive fitting procedure, useful for debugging. 
 * `output_figures/Fig1_iteration.png` plot the histograms and best fits for each iteration. 
-* The file `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. 
-* The file `final_tresholds.txt` contains the list of the tresholds between states. 
+* `final_states.txt` contains the list of the states, for which central value, width and relevance are listed. 
+* `final_tresholds.txt` contains the list of the tresholds between states. 
 
-The analisys returns a `ClusteringObject`, which contains methods for plotting all the results. They are illustrated in the example scripts. 
+The analisys returns a `ClusteringObject`, which contains methods for plotting all the results. They are listed in the example scripts. 
 
 ## Multivariate time-series version
 The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded as its own input data; just add one line with the path to the files to `data_directory.txt`. You can find an example of usage in `examples/example_script_2d.py`
@@ -51,7 +50,7 @@ The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D 
 `matplotlib`, `numpy`, `plotly`, `scipy`. 
 
 ## Gaussian fitting procedure
-1. The histogram of the timeseries is computed, using the `bins='auto'` numpy option (unless a different `bins` is passed as imput parameter). 
+1. The histogram of the time-series is computed, using the `bins='auto'` numpy option (unless a different `bins` is passed as imput parameter). 
 2. The histogram is smoothed with moving average with `window_size=3` (unless there are less that 50 bins, in wich case no smoothing occurs). 
 3. The absolute maximum of the histogram is found. 
 4. Two Gaussian fits are performed:
@@ -65,4 +64,4 @@ The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D 
 6. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops, returning a warning message. 
 
 ## Aknowledgements
-The comments in the code wouldn't have been possible without the help of ChatGPT. Thanks also to Andrew Tarzia for all the help with the code formatting and documentation. 
+Thanks to Andrew Tarzia for all the help with the code formatting and documentation, and to Domiziano Doria, Chiara Lionello and Simone Martino for the beta-testing. Writing all this code wouldn't have been possible without the help of ChatGPT. 
