@@ -44,7 +44,7 @@ Then, the analysis with the values of `tau_window` and `t_smooth` specified in `
 The analisys returns a `ClusteringObject`, which contains methods for plotting all the results. They are listed in the example scripts. 
 
 ## Multivariate time-series version
-The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. Each component of the signal has to be loaded as its own input data; just add one line with the path to the files to `data_directory.txt`. You can find an example of usage in `examples/example_script_2d.py`
+The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. The input file contained in `data_directory.txt` must contain an array of shape `(D, N, T)` where _D_ is the number of components. Only `.npy, .npz` are supported. You can find an example of usage in `examples/example_script_2d.py`
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `plotly`, `scipy`. 

@@ -36,10 +36,7 @@ def all_the_input_stuff() -> ClusteringObject2D:
     par = Parameters("input_parameters.txt")
     par.print_to_screen()
 
-    if isinstance(data_directory, np.ndarray):
-        data = MultiData(data_directory)
-    else:
-        print("ERROR in data_directory.txt.")
+    data = MultiData(data_directory)
     data.remove_delay(par.t_delay)
 
     ### Create files for output

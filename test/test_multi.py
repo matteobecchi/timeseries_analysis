@@ -19,8 +19,7 @@ def setup_test_environment(tmpdir):
 # Define the actual test
 def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
-    PATH_TO_INPUT_DATA_0 = "/Users/mattebecchi/00_signal_analysis/synthetic_2D/3D_synthetic_data_0.npy"
-    PATH_TO_INPUT_DATA_1 = "/Users/mattebecchi/00_signal_analysis/synthetic_2D/3D_synthetic_data_1.npy"
+    PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/synthetic_2D/3D_synthetic_data.npy"
     TAU_WINDOW = 10  # time resolution of the analysis
     T_CONV = 200  # convert frames in time units (default 1)
     T_UNITS = "dt"  # the time units (default 'frames')
@@ -31,8 +30,7 @@ def test_output_files(setup_test_environment):
 
     ### Create the 'data_directory.txt' file ###
     with open("data_directory.txt", "w+", encoding="utf-8") as file:
-        print(PATH_TO_INPUT_DATA_0, file=file)
-        print(PATH_TO_INPUT_DATA_1, file=file)
+        print(PATH_TO_INPUT_DATA, file=file)
 
     ### Create the 'input_parameter.txt' file ###
     with open("input_parameters.txt", "w+", encoding="utf-8") as file:

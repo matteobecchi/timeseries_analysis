@@ -277,45 +277,39 @@ class MultiData:
     The input signals of the analysis.
     """
 
-    def __init__(self, path_list: np.ndarray):
-        data_list = []
-        for data_path in path_list:
-            if data_path.endswith((".npz", ".npy", ".txt")):
-                try:
-                    if data_path.endswith(".npz"):
-                        with np.load(data_path) as data:
-                            data_name = data.files[0]
-                            data_list.append(np.array(data[data_name]))
-                    elif data_path.endswith(".npy"):
-                        data_list.append(np.load(data_path))
-                    else:  # .txt file
-                        data_list.append(np.loadtxt(data_path))
-                    print("\tOriginal data shape:", data_list[-1].shape)
-                except OSError as exc_msg:
-                    print(f"\tReading data from {data_path}: {exc_msg}")
-                    return
-                except ValueError as exc_msg:
-                    print(f"\tReading data from {data_path}: {exc_msg}")
-                    return
-            else:
-                print("\tERROR: unsupported format for input file.")
+    def __init__(self, filename: str):
+        if filename.endswith((".npz", ".npy")):
+            try:
+                if filename.endswith(".npz"):
+                    with np.load(filename) as data:
+                        data_name = data.files[0]
+                        data_array = data[data_name]
+                else:
+                    data_array = np.load(filename)
+                print("\tOriginal data shape:", data_array.shape)
+            except OSError as exc_msg:
+                print(f"\tReading data from {filename}: {exc_msg}")
                 return
+            except ValueError as exc_msg:
+                print(f"\tReading data from {filename}: {exc_msg}")
+                return
+        else:
+            print("\tERROR: unsupported format for input file.")
+            return
 
-        for dim, data in enumerate(data_list[:-1]):
-            if data_list[dim].shape != data_list[dim + 1].shape:
+        for dim, _ in enumerate(data_array[:-1]):
+            if data_array[dim].shape != data_array[dim + 1].shape:
                 print("ERROR: The signals do not correspond. Abort.")
-                # self.matrix = None
                 return
 
-        data_arr = np.array(data_list)
-        self.matrix = np.transpose(data_arr, axes=(1, 2, 0))
-
-        self.num_of_particles = self.matrix.shape[0]
-        self.num_of_steps = self.matrix.shape[1]
-        self.dims = self.matrix.shape[2]
+        self.dims = data_array.shape[0]
+        self.num_of_particles = data_array.shape[1]
+        self.num_of_steps = data_array.shape[2]
         self.range = np.array(
-            [[np.min(comp), np.max(comp)] for comp in data_list]
+            [[np.min(data), np.max(data)] for data in data_array]
         )
+
+        self.matrix: np.ndarray = np.transpose(data_array, axes=(1, 2, 0))
         self.labels = np.array([])
 
     def print_info(self):

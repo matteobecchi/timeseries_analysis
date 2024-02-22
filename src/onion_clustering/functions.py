@@ -1,7 +1,7 @@
 """
 Should contains all the functions in common between the 2 codes.
 """
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,7 @@ import scipy.signal
 from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
 
-def read_input_data() -> Union[str, np.ndarray]:
+def read_input_data() -> str:
     """
     Attempt to read the content of 'data_directory.txt' file
     and load it into a NumPy array as strings.
@@ -25,9 +25,7 @@ def read_input_data() -> Union[str, np.ndarray]:
 
     print("* Reading data from", data_dir)
 
-    if data_dir.size == 1:
-        return str(data_dir)
-    return data_dir
+    return str(data_dir)
 
 
 def moving_average(data: np.ndarray, window: int) -> np.ndarray:
