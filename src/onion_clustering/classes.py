@@ -241,8 +241,18 @@ class ClusteringObject:
         else:
             print("No " + trj_file + " found for coloring the trajectory.")
 
+    def print_labels(self):
+        """
+        Print the label for every particle for every frame.
+        Output is a (N, T) array in a .npy file.
+        """
+        print("* Print labels for all the data points...")
+        all_the_labels = self.create_all_the_labels()
+        np.save("all_labels.npy", all_the_labels)
+
     def print_mol_labels_fbf_xyz(self):
         """
+        TO REMOVE
         Prints color IDs for Ovito visualization in XYZ format.
 
         Steps:
@@ -262,6 +272,7 @@ class ClusteringObject:
 
     def print_mol_labels_fbf_gro(self):
         """
+        TO REMOVE
         Prints color IDs for Ovito visualization in GRO format.
 
         Args:
@@ -276,6 +287,7 @@ class ClusteringObject:
 
     def print_mol_labels_fbf_lam(self):
         """
+        TO REMOVE
         Prints color IDs for Ovito visualization in .lammps format.
 
         Args:

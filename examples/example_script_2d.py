@@ -89,6 +89,6 @@ try:
     if os.path.exists("trajectory.xyz"):
         cl_ob.print_colored_trj_from_xyz("trajectory.xyz")
     else:
-        cl_ob.print_mol_labels_fbf_xyz()
+        cl_ob.print_labels()
 finally:
     os.chdir(original_dir)
