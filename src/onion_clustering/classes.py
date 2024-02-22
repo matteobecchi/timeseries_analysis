@@ -28,7 +28,6 @@ class ClusteringObject:
     def __init__(self, par: Parameters, data: Union[UniData, MultiData]):
         self.par = par
         self.data = data
-        # self.states: Union[List[StateUni], List[StateMulti]] = []
         self.iterations = -1
         self.number_of_states: np.ndarray
         self.fraction_0: np.ndarray
@@ -249,59 +248,6 @@ class ClusteringObject:
         print("* Print labels for all the data points...")
         all_the_labels = self.create_all_the_labels()
         np.save("all_labels.npy", all_the_labels)
-
-    def print_mol_labels_fbf_xyz(self):
-        """
-        TO REMOVE
-        Prints color IDs for Ovito visualization in XYZ format.
-
-        Steps:
-        - Creates a file ('all_cluster_IDs_xyz.dat') to store color IDs
-            for Ovito visualization.
-        - Iterates through each frame's molecular labels and writes
-            them to the file in XYZ format.
-        """
-        print("* Print color IDs for Ovito...")
-        all_the_labels = self.create_all_the_labels()
-        with open("all_cluster_IDs_xyz.dat", "w+", encoding="utf-8") as file:
-            for j in range(all_the_labels.shape[1]):
-                # Print two lines containing '#' to separate time steps.
-                print("#", file=file)
-                print("#", file=file)
-                np.savetxt(file, all_the_labels[:, j], fmt="%d", comments="")
-
-    def print_mol_labels_fbf_gro(self):
-        """
-        TO REMOVE
-        Prints color IDs for Ovito visualization in GRO format.
-
-        Args:
-        - all_the_labels (np.ndarray): Array containing
-            molecular labels for each frame.
-        """
-        print("* Print color IDs for Ovito...")
-        all_the_labels = self.create_all_the_labels()
-        with open("all_cluster_IDs_gro.dat", "w", encoding="utf-8") as file:
-            for labels in all_the_labels:
-                print(" ".join(map(str, labels)), file=file)
-
-    def print_mol_labels_fbf_lam(self):
-        """
-        TO REMOVE
-        Prints color IDs for Ovito visualization in .lammps format.
-
-        Args:
-        - all_the_labels (np.ndarray): Array containing
-            molecular labels for each frame.
-        """
-        print("* Print color IDs for Ovito...")
-        all_the_labels = self.create_all_the_labels()
-        with open("all_cluster_IDs_lam.dat", "w", encoding="utf-8") as file:
-            for j in range(all_the_labels.shape[1]):
-                # Print nine lines containing '#' to separate time steps.
-                for _ in range(9):
-                    print("#", file=file)
-                np.savetxt(file, all_the_labels[:, j], fmt="%d", comments="")
 
     def print_signal_with_labels(self):
         """
