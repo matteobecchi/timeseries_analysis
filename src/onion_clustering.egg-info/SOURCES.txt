@@ -1,10 +1,10 @@
+.coverage
 .gitignore
 LICENSE
 README.md
+justfile
 pyproject.toml
 pytest.ini
-dist/onion_clustering-0.0.8-py3-none-any.whl
-dist/onion_clustering-0.0.8.tar.gz
 examples/example_script.py
 examples/example_script_2d.py
 src/onion_clustering/__init__.py

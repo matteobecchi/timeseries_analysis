@@ -501,7 +501,7 @@ def set_final_states(
     if updated_states[-1].th_inf[0] > m_range[1]:
         updated_states.pop(-1)
         updated_states[-1].th_inf[1] = m_range[1]
-        mask = all_the_labels == max(all_the_labels)
+        mask = all_the_labels == np.max(all_the_labels)
         all_the_labels[mask] -= 1
 
     # Step 3: Write the final states and final thresholds to text files.
