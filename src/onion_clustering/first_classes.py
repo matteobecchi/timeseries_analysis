@@ -235,6 +235,19 @@ class UniData:
                 center_list.append(np.mean(tmp, axis=0))
                 std_list.append(np.std(tmp, axis=0))
 
+        center_arr = np.array(center_list)
+        std_arr = np.array(std_list)
+        np.savetxt(
+            "medoid_center.txt",
+            center_arr,
+            header="Signal average for each ENV",
+        )
+        np.savetxt(
+            "medoid_stddev.txt",
+            std_arr,
+            header="Signal standard deviation for each ENV",
+        )
+
         # Create a color palette
         palette = []
         cmap = plt.get_cmap("viridis", list_of_labels.size)
