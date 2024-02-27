@@ -86,8 +86,8 @@ try:
     cl_ob.sankey([0, 100, 200, 300, 400])
 
     # Writes the files for the visualization of the colored trj
-    if os.path.exists("trajectory.xyz"):
-        cl_ob.print_colored_trj_from_xyz("trajectory.xyz")
+    if os.path.exists("../trajectory.xyz"):
+        cl_ob.print_colored_trj_from_xyz("../trajectory.xyz")
     else:
         cl_ob.print_labels()
 finally:
