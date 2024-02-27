@@ -43,7 +43,17 @@ def test_output_files(setup_test_environment):
         print("bins\t" + str(BINS), file=file)
 
     # Call your code to generate the output files
-    _ = main_2d.main()
+    tmp = main_2d.main()
+
+    # Test the output
+    tmp.plot_tra_figure()
+    tmp.plot_input_data("Fig0")
+    tmp.plot_cumulative_figure()
+    tmp.plot_one_trajectory()
+    tmp.data.plot_medoids()
+    tmp.plot_state_populations()
+    tmp.sankey([0, 10, 20, 30, 40])
+    tmp.print_labels()
 
     # Define the paths to the expected and actual output files
     original_dir = (

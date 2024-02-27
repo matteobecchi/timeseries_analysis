@@ -19,7 +19,8 @@ def setup_test_environment(tmpdir):
 # Define the actual test
 def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
-    PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/water_coex_100ps_1nm_LENS.npy"
+    FILE = "water_coex_100ps_1nm_LENS.npy"
+    PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/" + FILE
     TAU_WINDOW = 10  # time resolution of the analysis
     T_DELAY = 1  # remove the first t_delay frames (default 0)
     T_CONV = 0.1  # convert frames in time units (default 1)
@@ -43,7 +44,17 @@ def test_output_files(setup_test_environment):
         print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
 
     # Call your code to generate the output files
-    _ = main.main()
+    tmp = main.main()
+
+    # Test the output
+    tmp.plot_tra_figure()
+    tmp.plot_input_data("Fig0")
+    tmp.plot_cumulative_figure()
+    tmp.plot_one_trajectory()
+    tmp.data.plot_medoids()
+    tmp.plot_state_populations()
+    tmp.sankey([0, 10, 20, 30, 40])
+    tmp.print_labels()
 
     # Define the paths to the expected and actual output files
     original_dir = (
@@ -56,7 +67,8 @@ def test_output_files(setup_test_environment):
     actual_output_path_2 = "number_of_states.txt"
     actual_output_path_3 = "fraction_0.txt"
 
-    # Use filecmp to compare the contents of the expected and actual output directories
+    # Use filecmp to compare the contents of the expected
+    # and actual output directories
     with open(expected_output_path_1, "r") as expected_file, open(
         actual_output_path_1, "r"
     ) as actual_file:
