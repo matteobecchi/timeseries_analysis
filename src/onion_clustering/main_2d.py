@@ -686,6 +686,11 @@ def main(full_output: bool = True) -> ClusteringObject2D:
     full_output_analysis() performs a detailed analysis
         with the chosen parameters.
     """
+    print("##############################################################")
+    print("# If you publish results using onion-clustering, please cite #")
+    print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
+    print("##############################################################")
+
     clustering_object = all_the_input_stuff()
     time_resolution_analysis(clustering_object, full_output)
     clustering_object = full_output_analysis(clustering_object, full_output)
