@@ -337,6 +337,7 @@ class ClusteringObject1D(ClusteringObject):
         flat_m = m_clean.flatten()
         binning = self.par.bins
         counts, bins = np.histogram(flat_m, bins=binning, density=True)
+        bins -= (bins[1] - bins[0])/2
         counts *= flat_m.size
 
         # Create a plot with two subplots (side-by-side)
@@ -413,6 +414,7 @@ class ClusteringObject1D(ClusteringObject):
         # Compute histogram of flattened self.data.matrix
         flat_m = self.data.matrix.flatten()
         counts, bins = np.histogram(flat_m, bins=self.par.bins, density=True)
+        bins -= (bins[1] - bins[0])/2
         counts *= flat_m.size
 
         # Create a 1x2 subplots with shared y-axis
