@@ -181,8 +181,10 @@ def gauss_fit_max(
     counts = moving_average(counts, gap)
     bins = moving_average(bins, gap)
     if (counts == 0.0).any():
-        print("\tWARNING: there are empty bins. "
-            "Consider reducing the number of bins.")
+        print(
+            "\tWARNING: there are empty bins. "
+            "Consider reducing the number of bins."
+        )
 
     ### 3. Find the maximum ###
     max_val = counts.max()

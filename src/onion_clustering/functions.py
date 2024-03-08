@@ -62,7 +62,7 @@ def moving_average(data: np.ndarray, window: int) -> np.ndarray:
             lambda x: np.convolve(x, weights, mode="valid"), axis=1, arr=data
         )
     raise ValueError(
-        "Invalid array dimension. Only 1D and 2D arrays" " are supported."
+        "Invalid array dimension. Only 1D and 2D arrays are supported."
     )
 
 
