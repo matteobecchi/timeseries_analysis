@@ -21,6 +21,8 @@ from onion_clustering.first_classes import (
 )
 from onion_clustering.functions import gaussian
 
+COLORMAP = "viridis"
+
 
 class ClusteringObject:
     """This class contains input, output and methods for plotting."""
@@ -60,7 +62,7 @@ class ClusteringObject:
         # Generate the color palette.
         palette = []
         n_states = unique_labels.size
-        cmap = plt.get_cmap("viridis", n_states)
+        cmap = plt.get_cmap(COLORMAP, n_states)
         for i in range(cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
@@ -148,7 +150,7 @@ class ClusteringObject:
 
         # Generate a color palette for the Sankey diagram.
         palette = []
-        cmap = plt.get_cmap("viridis", n_states)
+        cmap = plt.get_cmap(COLORMAP, n_states)
         for i in range(cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
@@ -337,7 +339,7 @@ class ClusteringObject1D(ClusteringObject):
         flat_m = m_clean.flatten()
         binning = self.par.bins
         counts, bins = np.histogram(flat_m, bins=binning, density=True)
-        bins -= (bins[1] - bins[0])/2
+        bins -= (bins[1] - bins[0]) / 2
         counts *= flat_m.size
 
         # Create a plot with two subplots (side-by-side)
@@ -414,7 +416,7 @@ class ClusteringObject1D(ClusteringObject):
         # Compute histogram of flattened self.data.matrix
         flat_m = self.data.matrix.flatten()
         counts, bins = np.histogram(flat_m, bins=self.par.bins, density=True)
-        bins -= (bins[1] - bins[0])/2
+        bins -= (bins[1] - bins[0]) / 2
         counts *= flat_m.size
 
         # Create a 1x2 subplots with shared y-axis
@@ -434,7 +436,7 @@ class ClusteringObject1D(ClusteringObject):
         # Create a color palette for plotting states
         palette = []
         n_states = len(self.states)
-        cmap = plt.get_cmap("viridis", n_states + 1)
+        cmap = plt.get_cmap(COLORMAP, n_states + 1)
         for i in range(1, cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
@@ -536,7 +538,7 @@ class ClusteringObject1D(ClusteringObject):
             unique_labels = np.insert(unique_labels, 0, 0)
 
         cmap = plt.get_cmap(
-            "viridis", np.max(unique_labels) - np.min(unique_labels) + 1
+            COLORMAP, np.max(unique_labels) - np.min(unique_labels) + 1
         )
         color = all_the_labels[example_id]
         axes.plot(time, signal, c="black", lw=0.1)
@@ -726,9 +728,8 @@ class ClusteringObject2D(ClusteringObject):
         Plot a cumulative figure showing trajectories and identified states.
         """
         print("* Printing cumulative figure...")
-        colormap = "viridis"
         n_states = len(self.states) + 1
-        tmp = plt.get_cmap(colormap, n_states)
+        tmp = plt.get_cmap(COLORMAP, n_states)
         colors_from_cmap = tmp(np.arange(0, 1, 1 / n_states))
         colors_from_cmap[-1] = tmp(1.0)
         m_clean = self.data.matrix
@@ -773,7 +774,7 @@ class ClusteringObject2D(ClusteringObject):
                         mol.T[d_0],
                         mol.T[d_1],
                         c=color_list,
-                        cmap=colormap,
+                        cmap=COLORMAP,
                         vmin=0,
                         vmax=n_states - 1,
                         s=0.5,
@@ -793,7 +794,7 @@ class ClusteringObject2D(ClusteringObject):
                         m_resized[id_min].T[d_0],
                         m_resized[id_min].T[d_1],
                         c=color_list,
-                        cmap=colormap,
+                        cmap=COLORMAP,
                         vmin=0,
                         vmax=n_states - 1,
                         s=0.5,
@@ -812,7 +813,7 @@ class ClusteringObject2D(ClusteringObject):
                         m_resized[id_max].T[d_0],
                         m_resized[id_max].T[d_1],
                         c=color_list,
-                        cmap=colormap,
+                        cmap=COLORMAP,
                         vmin=0,
                         vmax=n_states - 1,
                         s=0.5,
@@ -869,7 +870,7 @@ class ClusteringObject2D(ClusteringObject):
                     mol.T[0],
                     mol.T[1],
                     c=color_list,
-                    cmap=colormap,
+                    cmap=COLORMAP,
                     vmin=0,
                     vmax=n_states - 1,
                     s=0.5,
@@ -889,7 +890,7 @@ class ClusteringObject2D(ClusteringObject):
                 m_resized[id_min].T[0],
                 m_resized[id_min].T[1],
                 c=color_list,
-                cmap=colormap,
+                cmap=COLORMAP,
                 vmin=0,
                 vmax=n_states - 1,
                 s=0.5,
@@ -908,7 +909,7 @@ class ClusteringObject2D(ClusteringObject):
                 m_resized[id_max].T[0],
                 m_resized[id_max].T[1],
                 c=color_list,
-                cmap=colormap,
+                cmap=COLORMAP,
                 vmin=0,
                 vmax=n_states - 1,
                 s=0.5,
@@ -936,7 +937,6 @@ class ClusteringObject2D(ClusteringObject):
     def plot_one_trajectory(self):
         """Plots the colored trajectory of an example particle."""
 
-        colormap = "viridis"
         m_clean = self.data.matrix
         all_the_labels = self.create_all_the_labels()
 
@@ -948,7 +948,7 @@ class ClusteringObject2D(ClusteringObject):
 
         # Create a colormap to map colors to the labels
         cmap = plt.get_cmap(
-            colormap,
+            COLORMAP,
             int(
                 np.max(np.unique(all_the_labels))
                 - np.min(np.unique(all_the_labels))

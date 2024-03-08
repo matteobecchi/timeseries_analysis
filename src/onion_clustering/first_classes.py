@@ -10,6 +10,8 @@ import scipy.signal
 from matplotlib.colors import rgb2hex
 from matplotlib.ticker import MaxNLocator
 
+COLORMAP = "viridis"
+
 
 def read_from_xyz(data_file: str, col: int = 4):
     """Read the input data from .xyz file."""
@@ -250,7 +252,7 @@ class UniData:
 
         # Create a color palette
         palette = []
-        cmap = plt.get_cmap("viridis", list_of_labels.size)
+        cmap = plt.get_cmap(COLORMAP, list_of_labels.size)
         palette.append(rgb2hex(cmap(0)))
         for i in range(1, cmap.N):
             rgba = cmap(i)
@@ -421,7 +423,7 @@ class MultiData:
 
         # Create a color palette
         palette = []
-        cmap = plt.get_cmap("viridis", np.unique(self.labels).size)
+        cmap = plt.get_cmap(COLORMAP, np.unique(self.labels).size)
         palette.append(rgb2hex(cmap(0)))
         for i in range(1, cmap.N):
             rgba = cmap(i)
