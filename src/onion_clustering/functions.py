@@ -14,8 +14,7 @@ from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
 def read_input_data() -> str:
     """
-    Attempt to read the content of 'data_directory.txt' file
-    and load it into a NumPy array as strings.
+    Read the path to the input data location.
     """
     try:
         data_dir = np.loadtxt("data_directory.txt", dtype=str)
@@ -30,32 +29,20 @@ def read_input_data() -> str:
 
 
 def moving_average(data: np.ndarray, window: int) -> np.ndarray:
-    """Applies a moving average filter to a 1D or 2D NumPy array.
+    """
+    Moving average on a 1D or 2D np.ndarray.
 
     Args:
-    - data (np.ndarray): The input array to be smoothed.
-    - window (int): The size of the moving average window.
+    - data (np.ndarray): the input array to be smoothed
+    - window (int): the size of the moving average window
 
     Returns:
-    - np.ndarray: The smoothed array obtained after applying
-    the moving average filter.
+    - np.ndarray: the smoothed array
 
-    Raises:
-    - ValueError: If the input array dimension is not supported
-    (only 1D and 2D arrays are supported).
+    - If the array is 1D, applies the moving average
+    - If the array is 2D, applies the moving average on the axis=1
     """
-
-    # Step 1: Create a NumPy array 'weights' with the values 1.0
-    # repeated 'window' times.
-    # Then, divide each element of 'weights' by the 'window' value
-    # to get the average weights.
     weights = np.ones(window) / window
-
-    # Step 2: Apply the moving average filter to the 'data' array using
-    # the 'weights' array. The 'np.convolve' function performs a linear
-    # convolution between 'data' and 'weights'. The result is a smoothed
-    # version of the 'data', where each point represents the weighted
-    # average of its neighbors.
     if data.ndim == 1:
         return np.convolve(data, weights, mode="valid")
     if data.ndim >= 2:
@@ -68,26 +55,25 @@ def moving_average(data: np.ndarray, window: int) -> np.ndarray:
 
 
 def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
-    """Applies a 2D moving average filter to a NumPy array.
+    """
+    2D moving average on an np.ndarray.
 
     Args:
-    - data (np.ndarray): The 2D input array to be smoothed.
-    - side (int): The side length of the square moving average window
-        (must be an odd number).
+    - data (np.ndarray): the 2D input array to be smoothed
+    - side (int): the side length of the square moving average window
+        (must be an odd number)
 
     Returns:
-    - np.ndarray: The smoothed array obtained after applying the 2D
-        moving average filter.
+    - np.ndarray: the smoothed array
 
-    Raises:
-    - ValueError: If the side length 'side' is not an odd number.
+    - Checks if the side is an odd number
+    - Averages over the sqare centered in each element
     """
-
-    if side % 2 == 0:  # Check if side is an odd number
+    if side % 2 == 0:
         raise ValueError("L must be an odd number.")
+
     half_width = (side - 1) // 2
     result = np.zeros_like(data, dtype=float)
-
     for index in np.ndindex(*data.shape):
         slices = tuple(
             slice(
@@ -97,54 +83,46 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
             for dim, i in enumerate(index)
         )
         subarray = data[slices]
-        # Calculate the average if the subarray is not empty
         if subarray.size > 0:
             result[index] = subarray.mean()
 
     return result
 
 
-def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
-    """Plots a histogram on the specified axes.
+def plot_histo(axes: plt.Axes, counts: np.ndarray, bins: np.ndarray):
+    """
+    Plots a histogram on the specified matplotlib axes.
 
     Args:
-    - ax: The matplotlib axes to plot on.
-    - counts (np.ndarray): The count or frequency of occurrences.
-    - bins (np.ndarray): The bin edges defining the intervals.
-
-    Returns:
-    - None
-
-    The function plots a histogram with the provided count and bin information
-    on the specified axes 'ax' and labels the x and y axes accordingly.
+    - axes (plt.Axes): the matplotlib axes to plot on
+    - counts (np.ndarray): the count of occurrences
+    - bins (np.ndarray): the bin edges defining the intervals
     """
-
-    ax.stairs(counts, bins, fill=True)
-    ax.set_xlabel(r"Normalized signal")
-    ax.set_ylabel(r"Probability distribution")
+    axes.stairs(counts, bins, fill=True)
+    axes.set_xlabel(r"Normalized signal")
+    axes.set_ylabel(r"Probability distribution")
 
 
 def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
-    """Generates parameter grids for tau_window and t_smooth.
+    """
+    Generate the (tau_window, t_smooth) grid.
 
     Args:
-    - par (Parameters): An instance of the Parameters class containing
-        parameter details.
-    - trj_len (int): Length of the trajectory data.
+    - par (Parameters): an instance of the Parameters class containing
+        parameter details
+    - trj_len (int): length of the trajectory data
 
     Returns:
-    - tau_window (List[int]): A list of tau_window values.
-    - t_smooth (List[int]): A list of t_smooth values.
+    - tau_window (List[int]): a list of tau_window values
+    - t_smooth (List[int]): a list of t_smooth values
 
-    This function generates grids of values for 'tau_window' and 't_smooth'
-    based on the provided 'Parameters' instance and the length of the
-    trajectory. It calculates the values for 'tau_window' within the range
-    defined in 'Parameters' and generates 't_smooth' values within the
-    specified range.
+    - If no max_tau_w is specified by the user, uses the maximum possible
+    - Creates the log-spaced list of values for tau_windows (no duplicates)
+    - Creates the lin-spaced list of values for t_smooth
     """
-
     if par.max_tau_w == -1:
         par.max_tau_w = trj_len - par.max_t_smooth
+
     tmp = np.geomspace(
         par.min_tau_w, par.max_tau_w, num=par.num_tau_w, dtype=int
     )
@@ -165,24 +143,17 @@ def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
 def gaussian(
     x_points: np.ndarray, x_mean: float, sigma: float, area: float
 ) -> np.ndarray:
-    """Compute the Gaussian function values at given points 'x'.
+    """Compute the Gaussian function values at given points 'x_points'.
 
     Args:
-    - x_points (np.ndarray): Array of input values.
-    - x_mean (float): Mean value of the Gaussian function.
-    - sigma (float): Standard deviation of the Gaussian function.
-    - area (float): Area under the Gaussian curve.
+    - x_points (np.ndarray): array of input values
+    - x_mean (float): mean value of the Gaussian
+    - sigma (float): rescaled standard deviation of the Gaussian
+    - area (float): area under the Gaussian
 
     Returns:
-    - np.ndarray: Gaussian function values computed at the input points.
-
-    This function calculates the values of a Gaussian function at the given
-    array of points 'x_points' using the provided 'x_mean', 'sigma'
-    (standard deviation), and 'area' (area under the curve) parameters.
-    It returns an array of Gaussian function values corresponding to the
-    input 'x_points'.
+    - np.ndarray: Gaussian function values computed at the input points
     """
-
     return (
         np.exp(-(((x_points - x_mean) / sigma) ** 2))
         * area
@@ -192,19 +163,21 @@ def gaussian(
 
 def find_minima_around_max(
     data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-):
+) -> List[int]:
     """
-    Find minima surrounding the maximum value in the given data array.
+    Minima surrounding the maximum value in the given data array.
 
     Args:
-    - data (np.ndarray): Input data array.
-    - max_ind (tuple): Indices of the maximum value in the data.
-    - gap (int): Gap value to determine the search range
-        around the maximum.
+    - data (np.ndarray): input data array
+    - max_ind (tuple): indices of the maximum value in the data
+    - gap (int): gap value to determine the search range
+        around the maximum
 
     Returns:
-    - list: List of indices representing the minima surrounding
-        the maximum in each dimension.
+    - list [int]: list of indices representing the minima surrounding
+        the maximum in each dimension
+
+    The precise details of this function have to be described.
     """
     minima: List[int] = []
 
@@ -242,20 +215,21 @@ def find_minima_around_max(
 
 def find_half_height_around_max(
     data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-):
+) -> List[int]:
     """
-    Find half-heigth points surrounding the maximum value
-        in the given data array.
+    Half-heigth points surrounding the maximum value in the given data array.
 
     Args:
-    - data (np.ndarray): Input data array.
-    - max_ind (tuple): Indices of the maximum value in the data.
-    - gap (int): Gap value to determine the search range
-        around the maximum.
+    - data (np.ndarray): input data array
+    - max_ind (tuple): indices of the maximum value in the data
+    - gap (int): gap value to determine the search range
+        around the maximum
 
     Returns:
-    - list: List of indices representing the minima surrounding
-        the maximum in each dimension.
+    - list [int]: list of indices representing the minima surrounding
+        the maximum in each dimension
+
+    The precise details of this function have to be described.
     """
     max_val = data.max()
     minima: List[int] = []
@@ -295,50 +269,48 @@ def custom_fit(
     gap: int,
     m_limits: np.ndarray,
 ) -> Tuple[int, int, np.ndarray]:
-    """Fit a Gaussian curve to selected data based on provided parameters.
+    """
+    Fit a Gaussian curve to selected multivarite data.
 
     Args:
-    - dim (int): The dimension of the data.
-    - max_ind (int): Index of the maximum value in the histogram.
-    - minima (list[int]): List of indices representing the minimum points.
-    - edges (np.ndarray): Array containing the bin edges of the histogram.
-    - counts (np.ndarray): Array containing histogram counts.
-    - gap (int): Minimum allowed gap size for fitting intervals.
-    - m_limits (list[list[int]]): List of min and max limits for each
+    - dim (int): the data dimensionality
+    - max_ind (int): index of the maximum value in the histogram
+    - minima (list[int]): list of indices representing the minimum points
+    - edges (np.ndarray): array containing the bin edges of the histogram
+    - counts (np.ndarray): array containing histogram counts
+    - gap (int): minimum allowed gap size for fitting intervals
+    - m_limits (list[list[int]]): list of min and max of the data along each
         dimension.
 
     Returns:
-    - tuple[int, int, list[float]]: A tuple containing:
-        - flag (int): Flag indicating the success (1) or failure (0) of
-            the fitting process.
-        - goodness (int): Goodness value representing the fitting quality
-            (higher is better).
-        - popt (list[float]): Optimal values for the parameters
-            (mu, sigma, area) of the fitted Gaussian.
+    - flag (int): flag indicating the success (1) or failure (0) of
+        the fitting process
+    - goodness (int): goodness value representing the fitting quality
+        (5 is the maximum).
+    - popt (list[float]): optimal values for the parameters
+        (mu, sigma, area) of the fitted Gaussian
 
-    This function attempts to fit a Gaussian curve to selected data within the
-    specified dimension 'dim' based on provided histogram data ('edges' and
-    'counts'). It uses 'max_ind' to initialize parameters and 'minima' to
-    define the fitting interval.
+    - Initializes flag and goodness variables
+    - Selects the data on which the fit will be performed
+    - Compute initial guess for the params
+    - Tries the fit. If it converges:
+        - Computes the fit quality by checking if some requirements
+            are satisfied
+    - If the fit fails, returns (0, 5, np.empty(3))
     """
-
-    # Initialize flag and goodness variables
     flag = 1
     goodness = 5
 
-    # Extract relevant data within the specified minima
     edges_selection = edges[minima[2 * dim] : minima[2 * dim + 1]]
     all_axes = tuple(i for i in range(counts.ndim) if i != dim)
     counts_selection = np.sum(counts, axis=all_axes)
     counts_selection = counts_selection[minima[2 * dim] : minima[2 * dim + 1]]
 
-    # Initial parameter guesses
     mu0 = edges[max_ind]
     sigma0 = (edges[minima[2 * dim + 1]] - edges[minima[2 * dim]]) / 2
     area0 = max(counts_selection) * np.sqrt(np.pi) * sigma0
 
     try:
-        # Attempt to fit a Gaussian using curve_fit
         popt, pcov, _, _, _ = scipy.optimize.curve_fit(
             gaussian,
             edges_selection,
@@ -368,7 +340,6 @@ def custom_fit(
         # Check if the fitting interval is too small in either dimension
         if minima[2 * dim + 1] - minima[2 * dim] <= gap:
             goodness -= 1
-
     except RuntimeError:
         print("\tFit: Runtime error. ")
         flag = 0
@@ -381,54 +352,48 @@ def custom_fit(
         print("\tFit: ValueError.")
         flag = 0
         popt = np.empty((3,))
+
     return flag, goodness, popt
 
 
 def relabel_states(
     all_the_labels: np.ndarray, states_list: list[StateUni]
 ) -> Tuple[np.ndarray, list[StateUni]]:
-    """Relabel states and update the state list based on occurrence in
-        'all_the_labels'.
+    """
+    Relabel states and update the state list.
 
     Args:
-    - all_the_labels (np.ndarray): Array containing labels assigned
-        to each window in the trajectory.
-    - states_list (list[StateUni]): List of StateUni objects representing
-        different states.
+    - all_the_labels (np.ndarray): array containing labels assigned
+        to each window in the trajectory
+    - states_list (list[StateUni]): list of StateUni objects representing
+        different states
 
     Returns:
-    - tuple[np.ndarray, list[StateUni]]: A tuple containing:
-        - all_the_labels (np.ndarray): Updated labels array with relabeled
-            states.
-        - relevant_states (list[StateUni]): Updated list of non-empty states,
-        ordered by mean values.
+    - all_the_labels (np.ndarray): updated labels array with relabeled
+        states
+    - relevant_states (list[StateUni]): updated list of non-empty states,
+        ordered by mean values
 
-    This function performs several operations to relabel the states and update
-    the state list. It removes empty states, reorders them based on the mean
-    values and relabels the labels in 'all_the_labels'.
+    - Removes states with zero relevance
+    - Sorts states according to their mean value
+    - Creates a dictionary to map old state labels to new ones
+    - Relabels the data in all_the_labels according to the new states_list
     """
-    # Step 1: Remove states with zero relevance
     relevant_states = [state for state in states_list if state.perc != 0.0]
 
-    # Step 2: Sort states according to their mean value
     relevant_states.sort(key=lambda x: x.mean)
 
-    # Step 3: Create a dictionary to map old state labels to new ones
     state_mapping = {
         state_index: index + 1
         for index, state_index in enumerate(
             [states_list.index(state) for state in relevant_states]
         )
     }
-
     relabel_map = np.zeros(len(states_list) + 1, dtype=int)
     for key, value in state_mapping.items():
-        # Increment key by 1 to account for zero-indexed relabeling
         relabel_map[key + 1] = value
 
-    # Step 4: Relabel the data in all_the_labels according to the
-    # new states_list
-    mask = all_the_labels != 0  # Create a mask for non-zero elements
+    mask = all_the_labels != 0
     all_the_labels[mask] = relabel_map[all_the_labels[mask]]
 
     return all_the_labels, relevant_states
