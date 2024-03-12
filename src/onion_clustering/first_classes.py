@@ -163,7 +163,7 @@ class UniData:
 
         Args:
         - t_delay (int): number of steps to remove from the beginning
-            of the trjs.
+            of the trjs
         """
         self.matrix = self.matrix[:, t_delay:]
         self.num_of_steps = self.matrix.shape[1]
@@ -174,7 +174,7 @@ class UniData:
 
         Args:
         - sampling_freq (int): the sampling frequency, in t_units
-        - window (int): inverse of the maximum frequency (in frames).
+        - window (int): inverse of the maximum frequency (in frames)
         """
         if window == 1:
             return
@@ -198,7 +198,7 @@ class UniData:
         Smooths the data using a moving average with a specified window size.
 
         Args:
-        - window (int): Size of the moving average window.
+        - window (int): Size of the moving average window
         """
         weights = np.ones(window) / window
         self.matrix = np.apply_along_axis(
@@ -220,7 +220,7 @@ class UniData:
         """
         Returns an independent copy of the UniData object.
 
-        Changes to the copy will not affect the original object.
+        Changes to the copy will not affect the original object
         """
         copy_data = copy.deepcopy(self)
         return copy_data
@@ -357,10 +357,11 @@ class MultiData:
 
     def remove_delay(self, t_delay: int):
         """
-        Removes a specified time delay from the data.
+        Remove the first t_delay points from the trjs.
 
         Args:
-        - t_delay (int): Number of steps to remove from the beginning.
+        - t_delay (int): number of steps to remove from the beginning
+            of the trjs
         """
         self.matrix = self.matrix[:, t_delay:, :]
         self.num_of_steps = self.matrix.shape[1]
@@ -370,7 +371,7 @@ class MultiData:
         Smooths the data using a moving average with a specified window size.
 
         Args:
-        - window (int): Size of the moving average window.
+        - window (int): Size of the moving average window
         """
         weights = np.ones(window) / window
         tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
@@ -386,7 +387,7 @@ class MultiData:
         )
 
     def normalize(self, dim_to_avoid: list[int]):
-        """Normalizes the data between 0 and 1."""
+        """Normalizes linearly the data between 0 and 1."""
         tmp_matrix = np.transpose(self.matrix, axes=(2, 0, 1))
         new_matrix = []
         for dim, comp in enumerate(tmp_matrix):
@@ -472,18 +473,24 @@ class MultiData:
 class Parameters:
     """
     Contains the set of parameters for the specific analysis.
+
+    Attributes:
+    - tau_w (int): time resolution of the analysis
+    - t_smooth (int): smoothing window
+    - t_delay (int): time steps to remove from the beginning
+    - t_conv (float): conversion factro between frames and time units
+    - t_units (str): time units
+    - example_id (int): selected example particle
+    - bins (str/int): method for binning / number of bins for the histogram
+    - num_tau_w (int): number of time resolutoin to use
+    - min_tau_w (int): minimum time resolution to use
+    - max_tau_w (int): maximum time resolution to use
+    - step_t_smooth (int): number of smoothing window to use
+    - min_t_smooth (int): minimum smoothing window to use
+    - max_t_smooth (int): maximum smoothing window to use
     """
 
     def __init__(self, input_file: str):
-        try:
-            with open(input_file, "r", encoding="utf-8") as file:
-                lines = file.readlines()
-        except OSError as exc_msg:
-            print(f"\tReading input_parameters.txt: {exc_msg}")
-        except ValueError as exc_msg:
-            print(f"\tReading input_parameters.txt: {exc_msg}")
-
-        ### Ste the default values ###
         self.t_smooth = 1
         self.t_delay = 0
         self.t_conv = 1.0
@@ -496,6 +503,14 @@ class Parameters:
         self.min_t_smooth = 1
         self.max_t_smooth = 5
         self.step_t_smooth = 1
+
+        try:
+            with open(input_file, "r", encoding="utf-8") as file:
+                lines = file.readlines()
+        except OSError as exc_msg:
+            print(f"\tReading input_parameters.txt: {exc_msg}")
+        except ValueError as exc_msg:
+            print(f"\tReading input_parameters.txt: {exc_msg}")
 
         for line in lines:
             key, value = [s for s in line.strip().split("\t") if s != ""]
@@ -528,13 +543,13 @@ class Parameters:
 
     def print_time(self, num_of_steps: int):
         """
-        Generates time values based on parameters and number of steps.
+        Generates time labels based on parameters and number of steps.
 
         Args:
-        - num_of_steps (int): Number of time steps.
+        - num_of_steps (int): number of time steps
 
         Returns:
-        - np.ndarray: Array of time values.
+        - np.ndarray: timesteps' labels
         """
         t_start = self.t_delay + int(self.t_smooth / 2)
         time = (
