@@ -394,6 +394,7 @@ def iterative_search(
     states_counter = 0
     env_0 = False
     while True:
+        print(f"* Iteration {iteration_id - 1}")
         state = gauss_fit_max(
             m_copy,
             cl_ob.par,
@@ -402,7 +403,7 @@ def iterative_search(
         )
 
         if state is None:
-            print("Iterations interrupted because fit does not converge. ")
+            print("* Iterations interrupted because fit does not converge. ")
             break
 
         m_next, counter, env_0 = find_stable_trj(
@@ -414,7 +415,7 @@ def iterative_search(
         states_counter += 1
         iteration_id += 1
         if counter <= 0.0:
-            print("Iterations interrupted because last state is empty. ")
+            print("* Iterations interrupted because last state is empty. ")
             break
 
         m_copy = m_next
