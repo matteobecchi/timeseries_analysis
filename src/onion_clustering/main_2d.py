@@ -17,6 +17,8 @@ from onion_clustering.classes import ClusteringObject2D
 from onion_clustering.first_classes import MultiData, Parameters, StateMulti
 from onion_clustering.functions import (
     custom_fit,
+    find_half_height_around_max,
+    find_minima_around_max,
     moving_average_2d,
     param_grid,
     read_input_data,
@@ -75,115 +77,52 @@ def gauss_fit_max(
     full_out: bool,
 ) -> Union[StateMulti, None]:
     """
-    Perform Gaussian fit and generate plots based on the provided data.
+    Selection of the optimal region and parameters in order to fit a state.
 
     Args:
-    - m_clean (np.ndarray): Processed array of cleaned data.
-    - m_limits (list[list[int]]): List containing minimum and maximum
-        values for each dimension.
-    - bins (Union[int, str]): Number of bins for histograms or 'auto'
-        for automatic binning.
-    - filename (str): Name of the output file to save the plot.
+    - m_clean (np.ndarray): the data points
+    - m_limits (np.ndarray): the min and max of the data points
+    - bins (Union[int, str]): the histogram binning
+    - filename (str): name of the output plot file
+    - full_out (bool): activates the full output printing
 
     Returns:
-    - State or None: State object for state identification or None
-        if fitting fails.
+    - state (StateMulti): object containing Gaussian fit parameters
+        (mu, sigma, area), or None if the fit fails.
 
-    This function performs the following steps:
-    1. Generates histograms based on the data and chosen binning strategy.
-    2. Smoothes the histograms.
-    3. Identifies the maximum values in the histograms.
-    4. Finds minima surrounding the maximum values.
-    5. Tries fitting between minima and checks goodness.
-    6. Determines the interval of half height.
-    7. Tries fitting between the half-height interval and checks goodness.
-    8. Chooses the best fit based on goodness and returns the state.
-
-    The function then generates plots of the distribution and fitted Gaussians
-    based on the dimensionality of the data. It saves the plot as an image
-    file and returns a State object for further analysis
-    or None if fitting fails.
+    - Computes the data histogram
+    - If the bins edges are longer than 40, smooths the histogram with gap = 3
+    - Finds the maximum
+    - Finds the interval between the two surriunding minima
+    - Tries to perform the Gaussian fit in it
+    - Finds the interval between the two half heigth points
+    - Tries to perform the Gaussian fit in it
+    - Compares the two fits and choose the one with higher goodness
+    - Create the State object
+    - Prints State's information
+    - Plots the histogram with the best fit
     """
-    print("* Gaussian fit...")
     flat_m = m_clean.reshape(
         (m_clean.shape[0] * m_clean.shape[1], m_clean.shape[2])
     )
-
-    ### 1. Histogram with 'auto' binning ###
     if bins == "auto":
         bins = max(int(np.power(m_clean.size, 1 / 3) * 2), 10)
     counts, edges = np.histogramdd(flat_m, bins=bins, density=True)
+
     gap = 1
     if np.all([e.size > 40 for e in edges]):
         gap = 3
-
-    ### 2. Smoothing with tau = 3 ###
     counts = moving_average_2d(counts, gap)
 
-    ### 3. Find the maximum ###
     def find_max_index(data: np.ndarray):
         max_val = data.max()
         max_indices = np.argwhere(data == max_val)
         return max_indices[0]
 
-    # max_val = counts.max()
     max_ind = find_max_index(counts)
-
-    ### 4. Find the minima surrounding it ###
-    def find_minima_around_max(
-        data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-    ):
-        """
-        Find minima surrounding the maximum value in the given data array.
-
-        Args:
-        - data (np.ndarray): Input data array.
-        - max_ind (tuple): Indices of the maximum value in the data.
-        - gap (int): Gap value to determine the search range
-            around the maximum.
-
-        Returns:
-        - list: List of indices representing the minima surrounding
-            the maximum in each dimension.
-        """
-        minima: List[int] = []
-
-        for dim in range(data.ndim):
-            min_id0 = max(max_ind[dim] - gap, 0)
-            min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
-
-            tmp_max1: List[int] = list(max_ind)
-            tmp_max2: List[int] = list(max_ind)
-
-            tmp_max1[dim] = min_id0
-            tmp_max2[dim] = min_id0 - 1
-            while (
-                min_id0 > 0 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
-            ):
-                tmp_max1[dim] -= 1
-                tmp_max2[dim] -= 1
-                min_id0 -= 1
-
-            tmp_max1 = list(max_ind)
-            tmp_max2 = list(max_ind)
-
-            tmp_max1[dim] = min_id1
-            tmp_max2[dim] = min_id1 + 1
-            while (
-                min_id1 < data.shape[dim] - 1
-                and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
-            ):
-                tmp_max1[dim] += 1
-                tmp_max2[dim] += 1
-                min_id1 += 1
-
-            minima.extend([min_id0, min_id1])
-
-        return minima
 
     minima = find_minima_around_max(counts, max_ind, gap)
 
-    ### 5. Try the fit between the minima and check its goodness ###
     popt_min: List[float] = []
     goodness_min = 0
     for dim in range(m_clean.shape[2]):
@@ -199,55 +138,8 @@ def gauss_fit_max(
             flag_min = False
             goodness_min -= 5
 
-    ### 6. Find the interval of half height ###
-    def find_half_height_around_max(
-        data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-    ):
-        """
-        Find half-heigth points surrounding the maximum value
-            in the given data array.
-
-        Args:
-        - data (np.ndarray): Input data array.
-        - max_ind (tuple): Indices of the maximum value in the data.
-        - gap (int): Gap value to determine the search range
-            around the maximum.
-
-        Returns:
-        - list: List of indices representing the minima surrounding
-            the maximum in each dimension.
-        """
-        max_val = data.max()
-        minima: List[int] = []
-
-        for dim in range(data.ndim):
-            half_id0 = max(max_ind[dim] - gap, 0)
-            half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
-
-            tmp_max: List[int] = list(max_ind)
-
-            tmp_max[dim] = half_id0
-            while half_id0 > 0 and data[tuple(tmp_max)] > max_val / 2:
-                tmp_max[dim] -= 1
-                half_id0 -= 1
-
-            tmp_max = list(max_ind)
-
-            tmp_max[dim] = half_id1
-            while (
-                half_id1 < data.shape[dim] - 1
-                and data[tuple(tmp_max)] > max_val / 2
-            ):
-                tmp_max[dim] += 1
-                half_id1 += 1
-
-            minima.extend([half_id0, half_id1])
-
-        return minima
-
     minima = find_half_height_around_max(counts, max_ind, gap)
 
-    ### 7. Try the fit between the minima and check its goodness ###
     popt_half: List[float] = []
     goodness_half = 0
     for dim in range(m_clean.shape[2]):
@@ -263,7 +155,6 @@ def gauss_fit_max(
             flag_half = False
             goodness_half -= 5
 
-    ### 8. Choose the best fit ###
     goodness = goodness_min
     if flag_min == 1 and flag_half == 0:
         popt = np.array(popt_min)
@@ -279,12 +170,10 @@ def gauss_fit_max(
     else:
         print("\tWARNING: this fit is not converging.")
         return None
-
     if len(popt) != m_clean.shape[2] * 3:
         print("\tWARNING: this fit is not converging.")
         return None
 
-    ### Find the tresholds for state identification
     mean, sigma, area = [], [], []
     for dim in range(m_clean.shape[2]):
         mean.append(popt[3 * dim])
@@ -293,7 +182,6 @@ def gauss_fit_max(
     state = StateMulti(np.array(mean), np.array(sigma), np.array(area))
     state.build_boundaries(NUMBER_OF_SIGMAS)
 
-    ### Plot the distribution and the fitted Gaussians
     if m_clean.shape[2] == 2:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
             print("\n", file=file)
@@ -334,7 +222,6 @@ def gauss_fit_max(
 
             fig.savefig(filename + ".png", dpi=600)
             plt.close(fig)
-
     elif m_clean.shape[2] == 3:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
             print("\n", file=file)
@@ -434,33 +321,39 @@ def gauss_fit_max(
 
 
 def find_stable_trj(
-    m_clean: np.ndarray,
-    tau_window: int,
+    cl_ob: ClusteringObject2D,
     state: StateMulti,
-    all_the_labels: np.ndarray,
-    offset: int,
+    tmp_labels: np.ndarray,
+    lim: int,
 ) -> Tuple[np.ndarray, float, bool]:
     """
-    Find stable windows in the trajectory.
+    Identification of windows contained in a certain state.
 
     Args:
-    - m_clean (np.ndarray): Cleaned trajectory data.
-    - tau_window (int): Length of the window for analysis.
-    - state (StateMulti): State information.
-    - all_the_labels (np.ndarray): All labels for the trajectory.
-    - offset (int): Offset for labeling stable windows.
+    - cl_ob (ClusteringObject2D): the clustering object
+    - state (StateMulti): the state
+    - tmp_labels (np.ndarray): contains the cluster labels of all the
+        signal windows
+    - lim (int): the algorithm iteration
 
-    Returns a Tuple of:
-    - np.ndarray: Array of non-stable windows.
-    - float: Fraction of stable windows.
-    - bool: Indicates one last state after finding stable windows.
+    Returns:
+    - m2_array (np.ndarray): array of still unclassified data points
+    - window_fraction (float): fraction of windows classified in this state
+    - env_0 (bool): indicates if there are still unclassified data points
+
+    - Initializes some useful variables
+    - Selects the data windows contained inside the state
+    - Updates tmp_labels with the newly classified data windows
+    - Calculates the fraction of stable windows found and prints it
+    - Creates a np.ndarray to store still unclassified windows
+    - Sets the value of env_0 to signal still unclassified data points
     """
-    print("* Finding stable windows...")
+    # number_of_windows = int(m_clean.shape[1] / tau_window)
+    number_of_windows = tmp_labels.shape[1]
+    m_clean = cl_ob.data.matrix
+    tau_window = cl_ob.par.tau_w
 
-    # Calculate the number of windows in the trajectory
-    number_of_windows = int(m_clean.shape[1] / tau_window)
-
-    mask_unclassified = all_the_labels < 0.5
+    mask_unclassified = tmp_labels < 0.5
     m_reshaped = m_clean[:, : number_of_windows * tau_window].reshape(
         m_clean.shape[0], number_of_windows, tau_window, m_clean.shape[2]
     )
@@ -470,59 +363,63 @@ def find_stable_trj(
     mask_dist = np.max(squared_distances, axis=2) <= 1.0
     mask = mask_unclassified & mask_dist
 
-    all_the_labels[mask] = offset + 1
+    tmp_labels[mask] = lim + 1
+
     counter = np.sum(mask)
-
-    # Store non-stable windows in a list, for the next iteration
-    m_new = []
-    mask_remaining = mask_unclassified & ~mask
-    for i, window in np.argwhere(mask_remaining):
-        r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
-        m_new.append(r_w)
-
-    # Calculate the fraction of stable windows found
-    fraction_of_points = counter / (all_the_labels.size)
-
-    # Print the fraction of stable windows
+    window_fraction = counter / (tmp_labels.size)
     with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
         print(
-            f"\tFraction of windows in state {offset + 1}"
-            f" = {fraction_of_points:.3}"
+            f"\tFraction of windows in state {lim + 1}"
+            f" = {window_fraction:.3}"
         )
         print(
-            f"\tFraction of windows in state {offset + 1}"
-            f" = {fraction_of_points:.3}",
+            f"\tFraction of windows in state {lim + 1}"
+            f" = {window_fraction:.3}",
             file=file,
         )
 
-    # Convert the list of non-stable windows to a NumPy array
-    m_new_arr = np.array(m_new)
-    one_last_state = True
-    if len(m_new_arr) == 0:
-        one_last_state = False
+    remaning_data = []
+    mask_remaining = mask_unclassified & ~mask
+    for i, window in np.argwhere(mask_remaining):
+        r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
+        remaning_data.append(r_w)
+    m2_arr = np.array(remaning_data)
 
-    # Return the array of non-stable windows, the fraction of stable windows,
-    # and the updated list_of_states
-    return m_new_arr, fraction_of_points, one_last_state
+    env_0 = True
+    if len(m2_arr) == 0:
+        env_0 = False
+
+    return m2_arr, window_fraction, env_0
 
 
 def iterative_search(
     cl_ob: ClusteringObject2D, name: str, full_out: bool
 ) -> Tuple[ClusteringObject2D, bool]:
     """
-    Perform an iterative search to identify stable windows in trajectory data.
+    Iterative search for stable windows in the trajectory.
 
     Args:
-    - name (str): Name for the output figures.
+    - cl_ob (ClusteringObject2D): the clustering object
+    - name (str): name for output figures
+    - full_out (bool): activates the full output printing
 
     Returns:
-    - cl_ob (ClusteringObject): updated with the clustering results.
-    - one_last_state (bool): Indicates if there's one last state remaining.
-    """
-    tau_w, bins = cl_ob.par.tau_w, cl_ob.par.bins
+    - cl_ob (ClusteringObject1D): updated with the clustering results
+    - env_0 (bool): indicates if there are unclassified data points
 
-    # Initialize an array to store labels for each window.
-    num_windows = int(cl_ob.data.num_of_steps / tau_w)
+    - Initializes some useful variables
+    - At each ieration:
+        - performs the Gaussian fit and identifies the new proposed state
+        - if no state is identified, break
+        - finds the windows contained inside the proposed state
+        - if no data points are remaining, break
+        - otherwise, repeats
+    - Updates the clusering object with the number of iterations
+    - Calls "relable_states_2d" to sort and clean the state list, and updates
+        the clustering object
+    """
+    bins = cl_ob.par.bins
+    num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
     tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
         int
     )
@@ -531,9 +428,8 @@ def iterative_search(
     m_copy = cl_ob.data.matrix
     iteration_id = 1
     states_counter = 0
-    one_last_state = False
+    env_0 = False
     while True:
-        ### Locate and fit maximum in the signal distribution
         state = gauss_fit_max(
             m_copy,
             np.array(cl_ob.data.range),
@@ -541,22 +437,20 @@ def iterative_search(
             "output_figures/" + name + "Fig1_" + str(iteration_id),
             full_out,
         )
+
         if state is None:
             print("Iterations interrupted because fit does not converge. ")
             break
 
-        ### Find the windows in which the trajectories are stable
-        m_new, counter, one_last_state = find_stable_trj(
-            cl_ob.data.matrix, tau_w, state, tmp_labels, states_counter
+        m_new, counter, env_0 = find_stable_trj(
+            cl_ob, state, tmp_labels, states_counter
         )
-        state.perc = counter
 
+        state.perc = counter
         if counter > 0.0:
             states_list.append(state)
-
         states_counter += 1
         iteration_id += 1
-        ### Exit the loop if no new stable windows are found
         if counter <= 0.0:
             print("Iterations interrupted because last state is empty. ")
             break
@@ -566,26 +460,36 @@ def iterative_search(
         m_copy = m_new
 
     cl_ob.iterations = len(states_list)
+
     all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
     cl_ob.data.labels = all_the_labels
     cl_ob.states = list_of_states
-    return cl_ob, one_last_state
+
+    return cl_ob, env_0
 
 
 def timeseries_analysis(
     cl_ob: ClusteringObject2D, tau_w: int, t_smooth: int, full_out: bool
 ) -> Tuple[int, float]:
     """
-    Perform time series analysis on the input data.
+    The clustering analysis to compute the dependence on time resolution.
 
     Args:
-    - cl_ob (ClusteringObject)
-    - tau_w (int): the time window for the analysis
+    - cl_ob (ClusteringObject1D): the clustering object
+    - tau_w (int): the time resolution for the analysis
     - t_smooth (int): the width of the moving average for the analysis
+    - full_out (bool): activates the full output printing
 
     Returns:
-    - Tuple (int, float): Number of identified states,
-        fraction of unclassified data.
+    - num_states (int): number of identified states
+    - fraction_0 (float): fraction of unclassified data points
+
+    - Creates a copy of the clustering object and of the parameters
+        on which the analysis will be performed
+    - Preprocesses the data with the selected parameters
+    - Performs the clustering with the iterative search and classification
+    - If no classification is found, cleans the memory and return
+    - Number of states and fraction of unclassified points are computed
     """
 
     print("* New analysis: ", tau_w, t_smooth)
@@ -596,39 +500,48 @@ def timeseries_analysis(
     tmp_cl_ob.par.t_smooth = t_smooth
 
     tmp_cl_ob.preparing_the_data()
-    tmp_cl_ob.plot_input_data(name + "Fig0")
+    if full_out:
+        tmp_cl_ob.plot_input_data(name + "Fig0")
 
     tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob, name, full_out)
 
     if len(tmp_cl_ob.states) == 0:
         print("* No possible classification was found. ")
-        # We need to free the memory otherwise it accumulates
         del tmp_cl_ob
         return 1, 1.0
 
     fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
     n_states = len(tmp_cl_ob.states)
-
     if one_last_state:
         n_states += 1
+    print(f"Number of states identified: {n_states}, [{fraction_0}]")
 
-    # We need to free the memory otherwise it accumulates
     del tmp_cl_ob
-
-    print(
-        "Number of states identified:", n_states, "[" + str(fraction_0) + "]\n"
-    )
     return n_states, fraction_0
 
 
 def full_output_analysis(
     cl_ob: ClusteringObject2D, full_out: bool
 ) -> ClusteringObject2D:
-    """Perform a comprehensive analysis on the input data."""
+    """
+    The complete clustering analysis with the input parameters.
 
+    Args:
+    - cl_ob (ClusteringObject2D): the clustering object
+    - full_out (bool): activates the full output printing
+
+    Returns:
+    - cl_ob (ClusteringObject2D): the upodated clustering object,
+        with the clustering resutls
+
+    - Preprocesses the data
+    - Performs the clustering with the iterative search and classification
+    - If no classification is found, return
+    """
     cl_ob.preparing_the_data()
 
     cl_ob, _ = iterative_search(cl_ob, "", full_out)
+
     if len(cl_ob.states) == 0:
         print("* No possible classification was found. ")
         return cl_ob
@@ -638,17 +551,21 @@ def full_output_analysis(
 
 def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     """
-    Performs Temporal Resolution Analysis (TRA) to explore parameter
-    space and analyze the dataset.
+    Explore parameter space and compute the dependence on time resolution.
 
     Args:
-    - cl_ob (ClusteringObject): Conteining now only the raw input data.
+    - cl_ob (ClusteringObject1D): the clustering object
+    - full_out (bool): activates the full output printing
+
+    - Generates the parameters' grid
+    - Performs and stores the clustering for all the parameters' combinations
+    - Prints the output to file
+    - Updates the clustering object with the analysis results
     """
     tau_window_list, t_smooth_list = param_grid(
         cl_ob.par, cl_ob.data.num_of_steps
     )
 
-    ### If the analysis hat to be performed anew ###
     number_of_states = []
     fraction_0 = []
     for tau_w in tau_window_list:
@@ -680,18 +597,20 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
 
-    cl_ob.plot_tra_figure()
-
 
 def main(full_output: bool = True) -> ClusteringObject2D:
     """
-    Returns the clustering object with the analysi.
+    Returns the clustering object with the analysis.
 
-    all_the_input_stuff() reads the data and the parameters
-    time_resolution_analysis() explore the parameter
-        (tau_window, t_smooth) space.
-    full_output_analysis() performs a detailed analysis
-        with the chosen parameters.
+    Args:
+    - full_output (bool): activates the full output printing
+
+    Returns:
+    - clustering_object (ClusteringObject2D): the final clustering object
+
+    - Reads the data and the parameters
+    - Explore the parameters (tau_window, t_smooth) space
+    - Performs a detailed analysis with the selected parameters
     """
     print("##############################################################")
     print("# If you publish results using onion-clustering, please cite #")
@@ -699,7 +618,9 @@ def main(full_output: bool = True) -> ClusteringObject2D:
     print("##############################################################")
 
     clustering_object = all_the_input_stuff()
+
     time_resolution_analysis(clustering_object, full_output)
+
     clustering_object = full_output_analysis(clustering_object, full_output)
 
     return clustering_object

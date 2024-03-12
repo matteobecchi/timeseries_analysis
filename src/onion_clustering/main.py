@@ -172,14 +172,15 @@ def gauss_fit_max(
     Args:
     - m_clean (np.ndarray): the data points
     - par (Parameters): object containing parameters for the analysis.
-    - filename (str): name of the output plot file.
+    - filename (str): name of the output plot file
+    - full_out (bool): activates the full output printing
 
     Returns:
     - state (StateUni): object containing Gaussian fit parameters
         (mu, sigma, area), or None if the fit fails.
 
     - Computes the data histogram
-    - If the bins are more thatn 50, smooths the histogram with gap = 3
+    - If the bins are more than 50, smooths the histogram with gap = 3
     - Finds the maximum
     - Finds the interval between the two surriunding minima
     - Tries to perform the Gaussian fit in it
