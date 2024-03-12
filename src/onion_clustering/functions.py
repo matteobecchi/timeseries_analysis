@@ -1,6 +1,7 @@
 """
 Should contains all the functions in common between the 2 codes.
 """
+
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt

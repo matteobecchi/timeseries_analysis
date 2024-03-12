@@ -1,6 +1,7 @@
 """
 Contains the classes used for storing parameters and system states.
 """
+
 import copy
 from typing import Union
 

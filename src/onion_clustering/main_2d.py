@@ -2,6 +2,7 @@
 Code for clustering of multivariate (2- or 3-dimensional) time-series data.
 See the documentation for all the details.
 """
+
 import copy
 import os
 import shutil
@@ -28,18 +29,24 @@ OUTPUT_FILE = "states_output.txt"
 
 def all_the_input_stuff() -> ClusteringObject2D:
     """
-    Reads input parameters and raw data from specified files and directories,
-    processes the raw data, and creates output files.
+    Data preprocessing for the analysis.
+
+    Returns:
+    - ClusteringObject2D
+
+    - Reads analysis parameters
+    - Reads input raw data
+    - Removes initial 't_delay' frames
+    - Creates blank files and directories for output
+    - Creates and returns the ClusteringObject2D for the analysis
     """
-    # Read input parameters from files.
-    data_directory = read_input_data()
     par = Parameters("input_parameters.txt")
     par.print_to_screen()
 
+    data_directory = read_input_data()
     data = MultiData(data_directory)
     data.remove_delay(par.t_delay)
 
-    ### Create files for output
     with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
         file.write("#")
     figures_folder = "output_figures"
