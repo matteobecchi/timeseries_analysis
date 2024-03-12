@@ -15,7 +15,16 @@ COLORMAP = "viridis"
 
 
 def read_from_xyz(data_file: str, col: int = 4):
-    """Read the input data from .xyz file."""
+    """
+    Read the input data from .xyz file.
+
+    Args:
+    - data_file (str): the path to the data file
+    - col (int): the column of the file with the data values
+
+    Returns:
+    - np.ndarray: the (N, T) array of values
+    """
     with open(data_file, "r", encoding="utf-8") as file:
         tmp_list = [line.strip().split() for line in file]
 
@@ -32,29 +41,36 @@ def read_from_xyz(data_file: str, col: int = 4):
         line += number_of_particles + 2
 
     out_array = np.array(out_list, dtype=float).T
+
     return out_array
 
 
 class StateUni:
     """
-    Represents a state as a Gaussian.
+    Represents a unidimensional state as a Gaussian.
+
+    Attributes:
+    - mean (float): mean of the Gaussian
+    - sigma (float): rescaled standard deviation of the Gaussian
+    - area (float): area below the Gaussian
+    - peak (float): height of the Gaussian peak
+    - perc (float): fraction of data points classified in this state
+    - th_inf (float): lower thrashold of the state
+    - th_sup (float): upper thrashold of the state
     """
 
     def __init__(self, mean: float, sigma: float, area: float):
-        self.mean = mean  # Mean of the Gaussian
-        self.sigma = sigma  # Variance of the Gaussian
-        self.area = area  # Area below the Gaussian
-        self.peak = (
-            area / sigma / np.sqrt(np.pi)
-        )  # Height of the Gaussian peak
-        self.perc = 0.0  # Fraction of data points classified in this state
-        self.th_inf = [mean - 2.0 * sigma, -1]  # Lower thrashold of the state
-        self.th_sup = [mean + 2.0 * sigma, -1]  # Upper thrashold of the state
+        self.mean = mean
+        self.sigma = sigma
+        self.area = area
+        self.peak = area / sigma / np.sqrt(np.pi)
+        self.perc = 0.0
+        self.th_inf = [mean - 2.0 * sigma, -1]
+        self.th_sup = [mean + 2.0 * sigma, -1]
 
     def build_boundaries(self, number_of_sigmas: float):
         """
-        Sets the thresholds for the classification of data windows
-        inside the state
+        Sets the thresholds to classify the data windows inside the state.
 
         Args:
         - number of sigmas (float)
@@ -65,20 +81,26 @@ class StateUni:
 
 class StateMulti:
     """
-    Represents a state as a factorized Gaussian.
+    Represents a multifimensional state as a factorized Gaussian.
+
+    Attributes:
+    - mean (np.ndarray): mean of the Gaussians
+    - sigma (np.ndarray): rescaled standard deviation of the Gaussians
+    - area (np.ndarray): area below the Gaussians
+    - perc (float): fraction of data points classified in this state
+    - axis: the thrasholds of the state
     """
 
     def __init__(self, mean: np.ndarray, sigma: np.ndarray, area: np.ndarray):
-        self.mean = mean  # Mean of the Gaussians
-        self.sigma = sigma  # Variance of the Gaussians
-        self.area = area  # Area below the Gaussians
-        self.perc = 0.0  # Fraction of data points classified in this state
-        self.axis = 2.0 * sigma  # Axes of the state
+        self.mean = mean
+        self.sigma = sigma
+        self.area = area
+        self.perc = 0.0
+        self.axis = 2.0 * sigma
 
     def build_boundaries(self, number_of_sigmas: float):
         """
-        Sets the thresholds for the classification of data windows
-        inside the state
+        Sets the thresholds to classify the data windows inside the state.
 
         Args:
         - number of sigmas (float)
@@ -88,7 +110,14 @@ class StateMulti:
 
 class UniData:
     """
-    The input signals of the analysis.
+    The input univariate signals to cluster.
+
+    Attributes:
+    - matrix (np.ndarray): the (N, T) array with the signals
+    - number_of_particles (int)
+    - num_of_steps (int)
+    - range (np.ndarray): min and max of the signals
+    - labels (np.ndarray): the clustering output
     """
 
     def __init__(self, data_path: str):
@@ -130,11 +159,11 @@ class UniData:
 
     def remove_delay(self, t_delay: int):
         """
-        Removes a specified time delay from the data.
+        Remove the first t_delay points from the trjs.
 
         Args:
-        - t_delay (int): Number of steps to remove from the
-        beginning of the data.
+        - t_delay (int): number of steps to remove from the beginning
+            of the trjs.
         """
         self.matrix = self.matrix[:, t_delay:]
         self.num_of_steps = self.matrix.shape[1]
@@ -181,7 +210,7 @@ class UniData:
         self.range = np.array([np.min(self.matrix), np.max(self.matrix)])
 
     def normalize(self):
-        """Normalizes the data between 0 and 1."""
+        """Normalizes linearly the data between 0 and 1."""
 
         data_min, data_max = self.range[0], self.range[1]
         self.matrix = (self.matrix - data_min) / (data_max - data_min)
@@ -190,6 +219,7 @@ class UniData:
     def create_copy(self):
         """
         Returns an independent copy of the UniData object.
+
         Changes to the copy will not affect the original object.
         """
         copy_data = copy.deepcopy(self)
@@ -197,49 +227,41 @@ class UniData:
 
     def plot_medoids(self):
         """
-        Computes and plots the average time sequence inside each environment.
+        Compute and plot the average signal sequence inside each state.
 
-        Notes:
-        - Computes cluster means and standard deviations for each cluster.
-        - Plots the average time sequence and standard
-            deviation for each cluster.
-        - Saves the figure as a PNG file in the 'output_figures' directory.
+        - Initializes some usieful variables
+        - If there are no unassigned window, we still need the "0" state
+            for consistency
+        - For each state, stores all the signal windows in that state, then
+            computes mean and standard deviation of the signals in that state
+        - Prints the output to file
+        - Plots the results to Fig4.png
         """
         tau_window = int(self.num_of_steps / self.labels.shape[1])
         all_the_labels = self.labels
-        # Initialize lists to store cluster means and standard deviations
         center_list = []
         std_list = []
 
-        # If there are no assigned window, we still need the "0" state
-        # for consistency:
         missing_zero = 0
         list_of_labels = np.unique(all_the_labels)
         if 0 not in list_of_labels:
             list_of_labels = np.insert(list_of_labels, 0, 0)
             missing_zero = 1
 
-        # Loop through unique labels (clusters)
         for ref_label in list_of_labels:
             tmp = []
-            # Iterate through molecules and their labels
             for i, mol in enumerate(all_the_labels):
                 for window, label in enumerate(mol):
-                    # Define time interval
                     time_0 = window * tau_window
                     time_1 = (window + 1) * tau_window
-                    # If the label matches the current cluster,
-                    # append the corresponding data to tmp
                     if label == ref_label:
                         tmp.append(self.matrix[i][time_0:time_1])
-
-            # Calculate mean and standard deviation for the current cluster
             if len(tmp) > 0:
                 center_list.append(np.mean(tmp, axis=0))
                 std_list.append(np.std(tmp, axis=0))
-
         center_arr = np.array(center_list)
         std_arr = np.array(std_list)
+
         np.savetxt(
             "medoid_center.txt",
             center_arr,
@@ -251,15 +273,12 @@ class UniData:
             header="Signal standard deviation for each ENV",
         )
 
-        # Create a color palette
         palette = []
         cmap = plt.get_cmap(COLORMAP, list_of_labels.size)
         palette.append(rgb2hex(cmap(0)))
         for i in range(1, cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
-
-        # Plot
         fig, axes = plt.subplots()
         time_seq = range(tau_window)
         for center_id, center in enumerate(center_list):
@@ -284,7 +303,6 @@ class UniData:
         axes.set_ylabel(r"Signal")
         axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         axes.legend()
-
         fig.savefig("output_figures/Fig4.png", dpi=600)
 
 
@@ -392,45 +410,46 @@ class MultiData:
 
     def plot_medoids(self):
         """
-        Plot the mean time sequence for clusters in the data.
+        Compute and plot the average signal sequence inside each state.
 
-        Returns:
-        - None: If the third dimension of input data is greater than 2.
+        - Checks if the data have 2 or 3 components (works only with D == 2)
+        - Initializes some usieful variables
+        - If there are no unassigned window, we still need the "0" state
+            for consistency
+        - For each state, stores all the signal windows in that state, then
+            computes mean of the signals in that state
+        - Prints the output to file
+        - Plots the results to Fig4.png
         """
         if self.dims > 2:
             print("plot_medoids() does not work with 3D data.")
             return
 
-        # Initialize lists to store cluster means and standard deviations
+        missing_zero = 0
+        list_of_labels = np.unique(self.labels)
+        if 0 not in list_of_labels:
+            list_of_labels = np.insert(list_of_labels, 0, 0)
+            missing_zero = 1
+
         tau_window = int(self.num_of_steps / self.labels.shape[1])
         center_list = []
 
-        # Loop through unique labels (clusters)
-        for ref_label in np.unique(self.labels):
+        for ref_label in list_of_labels:
             tmp = []
-            # Iterate through molecules and their labels
             for i, mol in enumerate(self.labels):
                 for j, label in enumerate(mol):
-                    # Define time interval
                     t_0 = j * tau_window
                     t_1 = (j + 1) * tau_window
-                    # If the label matches the current cluster,
-                    # append the corresponding data to tmp
                     if label == ref_label:
                         tmp.append(self.matrix[i][t_0:t_1])
-
-            # Calculate mean and standard deviation for the current cluster
             center_list.append(np.mean(tmp, axis=0))
 
-        # Create a color palette
         palette = []
         cmap = plt.get_cmap(COLORMAP, np.unique(self.labels).size)
         palette.append(rgb2hex(cmap(0)))
         for i in range(1, cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
-
-        # Plot
         fig, axes = plt.subplots()
         for id_c, center in enumerate(center_list):
             sig_x = center[:, 0]
@@ -438,16 +457,15 @@ class MultiData:
             axes.plot(
                 sig_x,
                 sig_y,
-                label="ENV" + str(id_c),
+                label="ENV" + str(id_c + missing_zero),
                 marker="o",
-                c=palette[id_c],
+                c=palette[id_c + missing_zero],
             )
         fig.suptitle("Average time sequence inside each environments")
         axes.set_xlabel(r"Signal 1")
         axes.set_ylabel(r"Signal 2")
         axes.xaxis.set_major_locator(MaxNLocator(integer=True))
         axes.legend()
-
         fig.savefig("output_figures/Fig4.png", dpi=600)
 
 
