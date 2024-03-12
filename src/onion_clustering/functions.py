@@ -404,17 +404,20 @@ def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
     Finds the intersection between two Gaussians.
 
     Args:
-    - st_0, st_1 (StateUni): the two states we are computing the threshold
+    - st_0, st_1 (StateUni): the two states we are computing the intersection
         between
 
     Returns:
     - th_val (float): the value of the threshold
     - th_type (int): the type of the threshold (1 or 2)
 
-    If the intersection exists, the threshold is type 1. If there are 2
-    intersections, the one with higher value is chosen.
-    If no intersection exists, the threshold is type 2. Its value will be
-    the average between the two means, weighted with the two sigmas.
+    - Computes the coefficient of the equation we want to solve:
+        ax^2 + bx + c = 0
+    - If a == 0, return the only intersection (true intersection, type 1)
+    - If a != 0 and delta >= 0, return the intersection with the higer value
+        (true intersection, type 1)
+    - If there are no real intersection, return the weighted middle point
+        (fake intersection, type 2)
     """
     coeff_a = st_1.sigma**2 - st_0.sigma**2
     coeff_b = -2 * (st_0.mean * st_1.sigma**2 - st_1.mean * st_0.sigma**2)
