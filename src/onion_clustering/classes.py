@@ -26,7 +26,16 @@ COLORMAP = "viridis"
 
 
 class ClusteringObject:
-    """This class contains input, output and methods for plotting."""
+    """
+    This class contains input, output and methods for plotting.
+
+    Attributes:
+    - par (Parameters): the parameters of the analysis
+    - data (np.ndarray): the data points
+    - iterations (int): the number of iterations the algorithm performed
+    - number_of_states (np.ndarray): for every pair of tau_w and t_smooth
+    - fraction_0 (np.ndarray): for every pair of tau_w and t_smooth
+    """
 
     def __init__(self, par: Parameters, data: Union[UniData, MultiData]):
         self.par = par
@@ -44,14 +53,19 @@ class ClusteringObject:
         raise NotImplementedError
 
     def plot_state_populations(self):
-        """Plots the populations of states over time."""
+        """
+        Plot the populations of states over time.
 
+        - Initializes some useful variables
+        - If all the points are classified, we still need the "0" state
+            for consistency
+        - Computes the population of each state at each time
+        - Plots the results to Fig5.png
+        """
         print("* Printing populations vs time...")
         num_part = self.data.labels.shape[0]
 
         unique_labels = np.unique(self.data.labels)
-        # If there are no assigned window, we still need the "0" state
-        # for consistency:
         if 0 not in unique_labels:
             unique_labels = np.insert(unique_labels, 0, 0)
 
@@ -60,19 +74,16 @@ class ClusteringObject:
             population = np.sum(self.data.labels == label, axis=0)
             list_of_populations.append(population / num_part)
 
-        # Generate the color palette.
         palette = []
         n_states = unique_labels.size
         cmap = plt.get_cmap(COLORMAP, n_states)
         for i in range(cmap.N):
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
-
         fig, axes = plt.subplots()
         t_steps = self.data.labels.shape[1]
         time = self.par.print_time(t_steps)
         for label, pop in enumerate(list_of_populations):
-            # pop_full = np.repeat(pop, self.par.tau_w)
             axes.plot(
                 time, pop, label="ENV" + str(label), color=palette[label]
             )
