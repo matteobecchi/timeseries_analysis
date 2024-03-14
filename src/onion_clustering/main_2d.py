@@ -456,8 +456,10 @@ def iterative_search(
             print("* Iterations interrupted because last state is empty. ")
             break
         if m_new.size == 0:
-            print("* Iterations interrupted because all data "
-                "points assigned. ")
+            print(
+                "* Iterations interrupted because all data "
+                "points assigned. "
+            )
             break
         m_copy = m_new
 

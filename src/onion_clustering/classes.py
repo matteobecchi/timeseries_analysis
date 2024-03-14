@@ -95,31 +95,33 @@ class ClusteringObject:
 
     def sankey(self, tmp_frame_list: list[int]):
         """
-        Computes and plots a Sankey diagram at the desired frames.
+        Computes and plots the Sankey diagram at the desired frames.
 
         Args:
-        - tmp_frame_list (list[int]): List of frame indices.
+        - tmp_frame_list (list[int]): list of frame indices
+
+        - Initializes some useful variables
+        - If there are no assigned window, we still need the "0" state
+            for consistency
+        - Create arrays to store the source, target, and value data
+            for the Sankey diagram
+        - 
         """
         print("* Computing and plotting the Sankey diagram...")
 
         all_the_labels = self.data.labels
         frame_list = np.array(tmp_frame_list)
         unique_labels = np.unique(all_the_labels)
-        # If there are no assigned window, we still need the "0" state
-        # for consistency:
+
         if 0 not in unique_labels:
             unique_labels = np.insert(unique_labels, 0, 0)
         n_states = unique_labels.size
 
-        # Create arrays to store the source, target, and value data
-        # for the Sankey diagram.
         source = np.empty((frame_list.size - 1) * n_states**2)
         target = np.empty((frame_list.size - 1) * n_states**2)
         value = np.empty((frame_list.size - 1) * n_states**2)
 
-        # Initialize a counter variable.
         count = 0
-
         tmp_label1 = []
         tmp_label2 = []
 
@@ -953,8 +955,8 @@ class ClusteringObject2D(ClusteringObject):
         all_the_labels = self.create_all_the_labels()
 
         # Get the signal of the example particle
-        signal_x = m_clean[self.par.example_id].T[0][: all_the_labels.shape[1]]
-        signal_y = m_clean[self.par.example_id].T[1][: all_the_labels.shape[1]]
+        sig_x = m_clean[self.par.example_id].T[0][: all_the_labels.shape[1]]
+        sig_y = m_clean[self.par.example_id].T[1][: all_the_labels.shape[1]]
 
         fig, ax = plt.subplots(figsize=(6, 6))
 
@@ -968,11 +970,11 @@ class ClusteringObject2D(ClusteringObject):
             ),
         )
         color = all_the_labels[self.par.example_id]
-        ax.plot(signal_x, signal_y, c="black", lw=0.1)
+        ax.plot(sig_x, sig_y, c="black", lw=0.1)
 
         ax.scatter(
-            signal_x,
-            signal_y,
+            sig_x,
+            sig_y,
             c=color,
             cmap=cmap,
             vmin=np.min(np.unique(all_the_labels)),

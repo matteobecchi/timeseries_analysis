@@ -21,6 +21,20 @@ readme = "README.md"
 
 [project.urls]
 github = "https://github.com/matteobecchi/timeseries_analysis/"
+documentation = "https://timeseries_analysis.readthedocs.io/en/latest/"
+
+[project.optional-dependencies]
+dev = [
+  "mypy",
+  "pytest",
+  "pytest-cov",
+  "sphinx",
+  "sphinx-copybutton",
+  "build",
+  "twine",
+  "furo",
+  "numba",
+]
 
 [tool.setuptools_scm]
 #write_to = "src/onion_clustering/__version__.py"
