@@ -34,7 +34,7 @@ def all_the_input_stuff() -> ClusteringObject2D:
     Data preprocessing for the analysis.
 
     Returns:
-    - ClusteringObject2D
+        ClusteringObject2D
 
     - Reads analysis parameters
     - Reads input raw data
@@ -80,15 +80,15 @@ def gauss_fit_max(
     Selection of the optimal region and parameters in order to fit a state.
 
     Args:
-    - m_clean (np.ndarray): the data points
-    - m_limits (np.ndarray): the min and max of the data points
-    - bins (Union[int, str]): the histogram binning
-    - filename (str): name of the output plot file
-    - full_out (bool): activates the full output printing
+        m_clean (np.ndarray): the data points
+        m_limits (np.ndarray): the min and max of the data points
+        bins (Union[int, str]): the histogram binning
+        filename (str): name of the output plot file
+        full_out (bool): activates the full output printing
 
     Returns:
-    - state (StateMulti): object containing Gaussian fit parameters
-    (mu, sigma, area), or None if the fit fails.
+        state (StateMulti): object containing Gaussian fit parameters
+            (mu, sigma, area), or None if the fit fails.
 
     - Computes the data histogram
     - If the bins edges are longer than 40, smooths the histogram with gap = 3
@@ -101,7 +101,6 @@ def gauss_fit_max(
     - Create the State object
     - Prints State's information
     - Plots the histogram with the best fit
-
     """
     flat_m = m_clean.reshape(
         (m_clean.shape[0] * m_clean.shape[1], m_clean.shape[2])
@@ -331,16 +330,16 @@ def find_stable_trj(
     Identification of windows contained in a certain state.
 
     Args:
-    - cl_ob (ClusteringObject2D): the clustering object
-    - state (StateMulti): the state
-    - tmp_labels (np.ndarray): contains the cluster labels of all the
-    signal windows
-    - lim (int): the algorithm iteration
+        cl_ob (ClusteringObject2D): the clustering object
+        state (StateMulti): the state
+        tmp_labels (np.ndarray): contains the cluster labels of all the
+            signal windows
+        lim (int): the algorithm iteration
 
     Returns:
-    - m2_array (np.ndarray): array of still unclassified data points
-    - window_fraction (float): fraction of windows classified in this state
-    - env_0 (bool): indicates if there are still unclassified data points
+        m2_array (np.ndarray): array of still unclassified data points
+        window_fraction (float): fraction of windows classified in this state
+        env_0 (bool): indicates if there are still unclassified data points
 
     - Initializes some useful variables
     - Selects the data windows contained inside the state
@@ -400,13 +399,13 @@ def iterative_search(
     Iterative search for stable windows in the trajectory.
 
     Args:
-    - cl_ob (ClusteringObject2D): the clustering object
-    - name (str): name for output figures
-    - full_out (bool): activates the full output printing
+        cl_ob (ClusteringObject2D): the clustering object
+        name (str): name for output figures
+        full_out (bool): activates the full output printing
 
     Returns:
-    - cl_ob (ClusteringObject1D): updated with the clustering results
-    - env_0 (bool): indicates if there are unclassified data points
+        cl_ob (ClusteringObject1D): updated with the clustering results
+        env_0 (bool): indicates if there are unclassified data points
 
     - Initializes some useful variables
     - At each ieration:

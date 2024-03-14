@@ -33,7 +33,7 @@ def all_the_input_stuff() -> ClusteringObject1D:
     Data preprocessing for the analysis.
 
     Returns:
-    - ClusteringObject1D
+        ClusteringObject1D
 
     - Reads analysis parameters
     - Reads input raw data
@@ -79,26 +79,25 @@ def perform_gauss_fit(
     Gaussian fit on the data histogram.
 
     Args:
-    - param (List[int]): a list of the parameters for the fit:
-    initial index,
-    final index,
-    index of the max,
-    amount of data points,
-    gap value for histogram smoothing
-    - data (List[np.ndarray]): a list of the data for the fit
-    histogram binning,
-    histogram counts
-    - int_type (str): the type of the fitting interval ('max' or 'half')
+        param (List[int]): a list of the parameters for the fit:
+            initial index,
+            final index,
+            index of the max,
+            amount of data points,
+            gap value for histogram smoothing
+        data (List[np.ndarray]): a list of the data for the fit
+            histogram binning,
+            histogram counts
+        int_type (str): the type of the fitting interval ('max' or 'half')
 
     Returns:
-    - A boolean value for the fit convergence
-    - goodness (int): the fit quality (max is 5)
-    - popt (np.ndarray): the optimal gaussians fit parameters
+        A boolean value for the fit convergence
+        goodness (int): the fit quality (max is 5)
+        popt (np.ndarray): the optimal gaussians fit parameters
 
     - Trys to perform the fit with the specified parameters
     - Computes the fit quality by checking if some requirements are satisfied
     - If the fit fails, returns (False, 5, np.empty(3))
-
     """
     id0, id1, max_ind, n_data, gap = param
     bins, counts = data
@@ -171,14 +170,14 @@ def gauss_fit_max(
     Selection of the optimal interval and parameters in order to fit a state.
 
     Args:
-    - m_clean (np.ndarray): the data points
-    - par (Parameters): object containing parameters for the analysis.
-    - filename (str): name of the output plot file
-    - full_out (bool): activates the full output printing
+        m_clean (np.ndarray): the data points
+        par (Parameters): object containing parameters for the analysis.
+        filename (str): name of the output plot file
+        full_out (bool): activates the full output printing
 
     Returns:
-    - state (StateUni): object containing Gaussian fit parameters
-    (mu, sigma, area), or None if the fit fails.
+        state (StateUni): object containing Gaussian fit parameters
+            (mu, sigma, area), or None if the fit fails.
 
     - Computes the data histogram
     - If the bins are more than 50, smooths the histogram with gap = 3
@@ -191,7 +190,6 @@ def gauss_fit_max(
     - Create the State object
     - Prints State's information
     - Plots the histogram with the best fit
-
     """
     flat_m = m_clean.flatten()
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
@@ -299,16 +297,16 @@ def find_stable_trj(
     Identification of windows contained in a certain state.
 
     Args:
-    - cl_ob (ClusteringObject1D): the clustering object
-    - state (StateUni): the state
-    - tmp_labels (np.ndarray): contains the cluster labels of all the
-    signal windows
-    - lim (int): the algorithm iteration
+        cl_ob (ClusteringObject1D): the clustering object
+        state (StateUni): the state
+        tmp_labels (np.ndarray): contains the cluster labels of all the
+            signal windows
+        lim (int): the algorithm iteration
 
     Returns:
-    - m2_array (np.ndarray): array of still unclassified data points
-    - window_fraction (float): fraction of windows classified in this state
-    - env_0 (bool): indicates if there are still unclassified data points
+        m2_array (np.ndarray): array of still unclassified data points
+        window_fraction (float): fraction of windows classified in this state
+        env_0 (bool): indicates if there are still unclassified data points
 
     - Initializes some useful variables
     - Selects the data windows contained inside the state
@@ -316,7 +314,6 @@ def find_stable_trj(
     - Calculates the fraction of stable windows found and prints it
     - Creates a np.ndarray to store still unclassified windows
     - Sets the value of env_0 to signal still unclassified data points
-
     """
     number_of_windows = tmp_labels.shape[1]
     m_clean = cl_ob.data.matrix
@@ -366,14 +363,14 @@ def iterative_search(
     Iterative search for stable windows in the trajectory.
 
     Args:
-    - cl_ob (ClusteringObject1D): the clustering object
-    - name (str): name for output figures
-    - full_out (bool): activates the full output printing
+        cl_ob (ClusteringObject1D): the clustering object
+        name (str): name for output figures
+        full_out (bool): activates the full output printing
 
     Returns:
-    - cl_ob (ClusteringObject1D): updated with the clustering results
-    - atl (np.ndarray): temporary array of labels
-    - env_0 (bool): indicates if there are unclassified data points
+        cl_ob (ClusteringObject1D): updated with the clustering results
+        atl (np.ndarray): temporary array of labels
+        env_0 (bool): indicates if there are unclassified data points
 
     - Initializes some useful variables
     - At each ieration:
@@ -384,7 +381,7 @@ def iterative_search(
         - otherwise, repeats
     - Updates the clusering object with the number of iterations
     - Calls "relable_states" to sort and clean the state list, and updates
-        the clustering object
+    the clustering object
     """
     num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
     tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
@@ -438,17 +435,16 @@ def timeseries_analysis(
     The clustering analysis to compute the dependence on time resolution.
 
     Args:
-    - cl_ob (ClusteringObject1D): the clustering object
-    - tau_w (int): the time resolution for the analysis
-    - t_smooth (int): the width of the moving average for the analysis
-    - full_out (bool): activates the full output printing
+        cl_ob (ClusteringObject1D): the clustering object
+        tau_w (int): the time resolution for the analysis
+        t_smooth (int): the width of the moving average for the analysis
+        full_out (bool): activates the full output printing
 
     Returns:
-    - num_states (int): number of identified states
-    - fraction_0 (float): fraction of unclassified data points
+        num_states (int): number of identified states
+        fraction_0 (float): fraction of unclassified data points
 
     - Creates a copy of the clustering object and of the parameters
-        on which the analysis will be performed
     - Preprocesses the data with the selected parameters
     - Performs the clustering with the iterative search and classification
     - If no classification is found, cleans the memory and return
@@ -496,18 +492,17 @@ def full_output_analysis(
     The complete clustering analysis with the input parameters.
 
     Args:
-    - cl_ob (ClusteringObject1D): the clustering object
-    - full_out (bool): activates the full output printing
+        cl_ob (ClusteringObject1D): the clustering object
+        full_out (bool): activates the full output printing
 
     Returns:
-    - cl_ob (ClusteringObject1D): the upodated clustering object,
-    with the clustering resutls
+        cl_ob (ClusteringObject1D): the upodated clustering object,
+            with the clustering resutls
 
     - Preprocesses the data
     - Performs the clustering with the iterative search and classification
     - If no classification is found, return
     - Otherwise, final states are identified by "set_final_states"
-
     """
     cl_ob.preparing_the_data()
 
@@ -529,8 +524,8 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
     Explore parameter space and compute the dependence on time resolution.
 
     Args:
-    - cl_ob (ClusteringObject1D): the clustering object
-    - full_out (bool): activates the full output printing
+        cl_ob (ClusteringObject1D): the clustering object
+        full_out (bool): activates the full output printing
 
     - Generates the parameters' grid
     - Performs and stores the clustering for all the parameters' combinations
@@ -578,10 +573,10 @@ def main(full_output: bool = True) -> ClusteringObject1D:
     Returns the clustering object with the analysis.
 
     Args:
-    - full_output (bool): activates the full output printing
+        full_output (bool): activates the full output printing
 
     Returns:
-    - clustering_object (ClusteringObject1D): the final clustering object
+        clustering_object (ClusteringObject1D): the final clustering object
 
     - Reads the data and the parameters
     - Explore the parameters (tau_window, t_smooth) space

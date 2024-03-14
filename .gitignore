@@ -2,3 +2,4 @@ src/onion_clustering/__pycache__
 test/__pycache__
 .coverage
 docs/build
+docs/source/_autosummary

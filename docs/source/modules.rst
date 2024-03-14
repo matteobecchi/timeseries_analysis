@@ -3,7 +3,7 @@ Modules
 
 .. autosummary::
   :toctree: _autosummary
-  :template: module.rst
+  :template: modules.rst
   :recursive:
 
-  dynsight
+  onion_clustering

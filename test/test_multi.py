@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from onion_clustering import main_2d
+from onion_clustering.onion_clustering import Onion2D
 
 
 # Define a fixture to set up the test environment
@@ -19,7 +19,8 @@ def setup_test_environment(tmpdir):
 # Define the actual test
 def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
-    PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/synthetic_2D/3D_synthetic_data.npy"
+    FILE = "synthetic_2D/3D_synthetic_data.npy"
+    PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/" + FILE
     TAU_WINDOW = 10  # time resolution of the analysis
     T_CONV = 200  # convert frames in time units (default 1)
     T_UNITS = "dt"  # the time units (default 'frames')
@@ -43,7 +44,7 @@ def test_output_files(setup_test_environment):
         print("bins\t" + str(BINS), file=file)
 
     # Call your code to generate the output files
-    tmp = main_2d.main()
+    tmp = Onion2D().output
 
     # Test the output
     tmp.plot_tra_figure()
@@ -66,7 +67,8 @@ def test_output_files(setup_test_environment):
     actual_output_path_2 = "number_of_states.txt"
     actual_output_path_3 = "fraction_0.txt"
 
-    # Use filecmp to compare the contents of the expected and actual output directories
+    # Use filecmp to compare the contents of the expected
+    # and actual output directories
     with (
         open(expected_output_path_1, "r") as expected_file,
         open(actual_output_path_1, "r") as actual_file,

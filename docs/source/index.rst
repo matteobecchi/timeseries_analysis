@@ -1,19 +1,11 @@
-.. dynsight documentation master file, created by
-   sphinx-quickstart on Thu Oct 19 15:55:32 2023.
+.. onion-clustering documentation master file.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 .. toctree::
    :hidden:
-   :caption: dynsight
+   :caption: onion-clustering
    :maxdepth: 2
-
-   SOAPify <soapify>
-   timeSOAP <time_soap>
-   LENS <lens>
-   onion clustering <onion>
-   data processing <data_processing>
-   HDF5er <hdf5er>
 
 .. toctree::
   :hidden:
@@ -26,33 +18,19 @@
 Introduction
 ============
 
-| GitHub: https://www.github.com/GMPavanLab/dynsight
+| GitHub: https://github.com/matteobecchi/timeseries_analysis
 
 
-:mod:`.dynsight` is a Python library aimed at simplifying the analysis of Molecular
-Dynamics simulations.
-
-
-
-Previously in `cpctools`_.
-
-.. _`cpctools`: https://github.com/GMPavanLab/cpctools
+:mod:`.onion-clustering` is a Python library for single-point unsuperivesd clustering of time-series data.
 
 
 Installation
 ------------
 
-To get :mod:`.dynsight`, you can install it with pip::
+To get :mod:`.onion-clustering`, you can install it with pip::
 
-  $ pip install dynsight
+  $ pip install onion-clustering
 
-Dependencies
-............
-
-The main dependancies are for SOAP analysis:
-
-* `cpctools <https://github.com/GMPavanLab/cpctools>`_
-* `dscribe (1.2.0 - 1.2.2) <https://singroup.github.io/dscribe/latest/>`_
 
 Developer Setup
 ...............
@@ -79,26 +57,14 @@ To be written.
 Examples
 --------
 
-There are simplified examples available in the
-`examples <https://github.com/GMPavanLab/dynsight/tree/main/examples>`_
-directory of this repository.
-
-There are also examples available in the ``cpctools`` repository
-`here <https://github.com/GMPavanLab/cpctools/tree/main/Examples>`_.
+To be written.
 
 
 
 Acknowledgements
 ----------------
 
-We developed this code when working in the Pavan group,
-https://www.gmpavanlab.com/, whose members often provide very valuable
-feedback, which we gratefully acknowledge.
-
-Much of the original code in ``cpctools`` was written by Daniele Rapetti (Iximiel).
-
-The work was funded by the European Union and ERC under projects DYNAPOL and the
-NextGenerationEU project, CAGEX.
+Thanks to Andrew Tarzia for all the help with the code debugging, formatting and documentation, and to Domiziano Doria, Chiara Lionello and Simone Martino for the beta-testing. 
 
 Indices and tables
 ------------------

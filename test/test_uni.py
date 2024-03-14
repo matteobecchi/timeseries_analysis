@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from onion_clustering import main
+from onion_clustering.onion_clustering import Onion1D
 
 
 # Define a fixture to set up the test environment
@@ -44,7 +44,7 @@ def test_output_files(setup_test_environment):
         print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
 
     # Call your code to generate the output files
-    tmp = main.main()
+    tmp = Onion1D().output
 
     # Test the output
     tmp.plot_tra_figure()
