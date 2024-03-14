@@ -41,6 +41,7 @@ def moving_average(data: np.ndarray, window: int) -> np.ndarray:
 
     - If the array is 1D, applies the moving average
     - If the array is 2D, applies the moving average on the axis=1
+
     """
     weights = np.ones(window) / window
     if data.ndim == 1:
@@ -61,13 +62,14 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
     Args:
     - data (np.ndarray): the 2D input array to be smoothed
     - side (int): the side length of the square moving average window
-        (must be an odd number)
+    (must be an odd number)
 
     Returns:
     - np.ndarray: the smoothed array
 
     - Checks if the side is an odd number
     - Averages over the sqare centered in each element
+
     """
     if side % 2 == 0:
         raise ValueError("L must be an odd number.")
@@ -109,7 +111,7 @@ def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
 
     Args:
     - par (Parameters): an instance of the Parameters class containing
-        parameter details
+    parameter details
     - trj_len (int): length of the trajectory data
 
     Returns:
@@ -119,6 +121,7 @@ def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
     - If no max_tau_w is specified by the user, uses the maximum possible
     - Creates the log-spaced list of values for tau_windows (no duplicates)
     - Creates the lin-spaced list of values for t_smooth
+
     """
     if par.max_tau_w == -1:
         par.max_tau_w = trj_len - par.max_t_smooth
@@ -171,11 +174,11 @@ def find_minima_around_max(
     - data (np.ndarray): input data array
     - max_ind (tuple): indices of the maximum value in the data
     - gap (int): gap value to determine the search range
-        around the maximum
+    around the maximum
 
     Returns:
     - list [int]: list of indices representing the minima surrounding
-        the maximum in each dimension
+    the maximum in each dimension
 
     The precise details of this function have to be described.
     """
@@ -223,11 +226,11 @@ def find_half_height_around_max(
     - data (np.ndarray): input data array
     - max_ind (tuple): indices of the maximum value in the data
     - gap (int): gap value to determine the search range
-        around the maximum
+    around the maximum
 
     Returns:
     - list [int]: list of indices representing the minima surrounding
-        the maximum in each dimension
+    the maximum in each dimension
 
     The precise details of this function have to be described.
     """
@@ -280,23 +283,23 @@ def custom_fit(
     - counts (np.ndarray): array containing histogram counts
     - gap (int): minimum allowed gap size for fitting intervals
     - m_limits (list[list[int]]): list of min and max of the data along each
-        dimension.
+    dimension.
 
     Returns:
     - flag (int): flag indicating the success (1) or failure (0) of
-        the fitting process
+    the fitting process
     - goodness (int): goodness value representing the fitting quality
-        (5 is the maximum).
+    (5 is the maximum).
     - popt (list[float]): optimal values for the parameters
-        (mu, sigma, area) of the fitted Gaussian
+    (mu, sigma, area) of the fitted Gaussian
 
     - Initializes flag and goodness variables
     - Selects the data on which the fit will be performed
     - Compute initial guess for the params
     - Tries the fit. If it converges:
-        - Computes the fit quality by checking if some requirements
-            are satisfied
+    - Computes the fit quality by checking some requirements
     - If the fit fails, returns (0, 5, np.empty(3))
+
     """
     flag = 1
     goodness = 5
@@ -364,20 +367,21 @@ def relabel_states(
 
     Args:
     - all_the_labels (np.ndarray): array containing labels assigned
-        to each window in the trajectory
+    to each window in the trajectory
     - states_list (list[StateUni]): list of StateUni objects representing
-        different states
+    different states
 
     Returns:
     - all_the_labels (np.ndarray): updated labels array with relabeled
-        states
+    states
     - relevant_states (list[StateUni]): updated list of non-empty states,
-        ordered by mean values
+    ordered by mean values
 
     - Removes states with zero relevance
     - Sorts states according to their mean value
     - Creates a dictionary to map old state labels to new ones
     - Relabels the data in all_the_labels according to the new states_list
+
     """
     relevant_states = [state for state in states_list if state.perc != 0.0]
 
@@ -405,19 +409,17 @@ def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
 
     Args:
     - st_0, st_1 (StateUni): the two states we are computing the intersection
-        between
+    between
 
     Returns:
     - th_val (float): the value of the threshold
     - th_type (int): the type of the threshold (1 or 2)
 
-    - Computes the coefficient of the equation we want to solve:
-        ax^2 + bx + c = 0
+    - Computes the coefficient of the equation ax^2 + bx + c = 0
     - If a == 0, return the only intersection (true intersection, type 1)
     - If a != 0 and delta >= 0, return the intersection with the higer value
-        (true intersection, type 1)
     - If there are no real intersection, return the weighted middle point
-        (fake intersection, type 2)
+
     """
     coeff_a = st_1.sigma**2 - st_0.sigma**2
     coeff_b = -2 * (st_0.mean * st_1.sigma**2 - st_1.mean * st_0.sigma**2)
@@ -457,14 +459,15 @@ def set_final_states(
 
     Args:
     - list_of_states (list[StateUni]): List of StateUni objects representing
-        potential states.
+    potential states
     - all_the_labels (np.ndarray): 2D NumPy array containing labels for each
-        data point.
+    data point
     - m_range (list[float]): Range of values in the data.
 
     Returns:
-    - tuple: A tuple containing the final list of states
-    (list[StateUni]) and the newly labeled data (np.ndarray).
+    - list[StateUni]: the final list of states
+    - np.ndarray: the new data labels
+
     """
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
@@ -598,15 +601,15 @@ def relabel_states_2d(
 
     Args:
     - all_the_labels (np.ndarray): An ndarray containing labels associated
-        with each state.
+    with each state
     - states_list (list[StateMulti]): A list of StateMulti objects
-        representing states to be evaluated.
+    representing states to be evaluated
 
     Returns:
-    - tuple[np.ndarray, list[StateMulti]]: A tuple containing:
-        - Updated ndarray of labels reflecting the changes in state indices.
-        - Modified list of StateMulti objects after merging and relabeling
-        states.
+    - Updated ndarray of labels reflecting the changes in state indices
+    - Modified list of StateMulti objects after merging and relabeling
+    states
+
     """
 
     ### Step 1: Remove states with zero relevance

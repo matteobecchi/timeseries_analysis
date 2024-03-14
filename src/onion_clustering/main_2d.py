@@ -88,7 +88,7 @@ def gauss_fit_max(
 
     Returns:
     - state (StateMulti): object containing Gaussian fit parameters
-        (mu, sigma, area), or None if the fit fails.
+    (mu, sigma, area), or None if the fit fails.
 
     - Computes the data histogram
     - If the bins edges are longer than 40, smooths the histogram with gap = 3
@@ -101,6 +101,7 @@ def gauss_fit_max(
     - Create the State object
     - Prints State's information
     - Plots the histogram with the best fit
+
     """
     flat_m = m_clean.reshape(
         (m_clean.shape[0] * m_clean.shape[1], m_clean.shape[2])
@@ -333,7 +334,7 @@ def find_stable_trj(
     - cl_ob (ClusteringObject2D): the clustering object
     - state (StateMulti): the state
     - tmp_labels (np.ndarray): contains the cluster labels of all the
-        signal windows
+    signal windows
     - lim (int): the algorithm iteration
 
     Returns:
@@ -347,8 +348,8 @@ def find_stable_trj(
     - Calculates the fraction of stable windows found and prints it
     - Creates a np.ndarray to store still unclassified windows
     - Sets the value of env_0 to signal still unclassified data points
+
     """
-    # number_of_windows = int(m_clean.shape[1] / tau_window)
     number_of_windows = tmp_labels.shape[1]
     m_clean = cl_ob.data.matrix
     tau_window = cl_ob.par.tau_w
@@ -536,11 +537,12 @@ def full_output_analysis(
 
     Returns:
     - cl_ob (ClusteringObject2D): the upodated clustering object,
-        with the clustering resutls
+    with the clustering resutls
 
     - Preprocesses the data
     - Performs the clustering with the iterative search and classification
     - If no classification is found, return
+
     """
     cl_ob.preparing_the_data()
 

@@ -163,7 +163,7 @@ class UniData:
 
         Args:
         - t_delay (int): number of steps to remove from the beginning
-            of the trjs
+        of the trjs
         """
         self.matrix = self.matrix[:, t_delay:]
         self.num_of_steps = self.matrix.shape[1]
@@ -230,12 +230,12 @@ class UniData:
         Compute and plot the average signal sequence inside each state.
 
         - Initializes some usieful variables
-        - If there are no unassigned window, we still need the "0" state
-            for consistency
-        - For each state, stores all the signal windows in that state, then
-            computes mean and standard deviation of the signals in that state
+        - Check if we need to add the "0" state for consistency
+        - For each state, stores all the signal windows in that state, and
+        - Computes mean and standard deviation of the signals in that state
         - Prints the output to file
         - Plots the results to Fig4.png
+
         """
         tau_window = int(self.num_of_steps / self.labels.shape[1])
         all_the_labels = self.labels
@@ -361,7 +361,7 @@ class MultiData:
 
         Args:
         - t_delay (int): number of steps to remove from the beginning
-            of the trjs
+        of the trjs
         """
         self.matrix = self.matrix[:, t_delay:, :]
         self.num_of_steps = self.matrix.shape[1]
@@ -415,12 +415,12 @@ class MultiData:
 
         - Checks if the data have 2 or 3 components (works only with D == 2)
         - Initializes some usieful variables
-        - If there are no unassigned window, we still need the "0" state
-            for consistency
-        - For each state, stores all the signal windows in that state, then
-            computes mean of the signals in that state
+        - Check if we need to add the "0" state for consistency
+        - For each state, stores all the signal windows in that state, and
+        - Computes mean of the signals in that state
         - Prints the output to file
         - Plots the results to Fig4.png
+
         """
         if self.dims > 2:
             print("plot_medoids() does not work with 3D data.")

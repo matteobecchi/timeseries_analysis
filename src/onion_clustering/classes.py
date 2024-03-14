@@ -35,6 +35,7 @@ class ClusteringObject:
     - iterations (int): the number of iterations the algorithm performed
     - number_of_states (np.ndarray): for every pair of tau_w and t_smooth
     - fraction_0 (np.ndarray): for every pair of tau_w and t_smooth
+
     """
 
     def __init__(self, par: Parameters, data: Union[UniData, MultiData]):
@@ -61,6 +62,7 @@ class ClusteringObject:
             for consistency
         - Computes the population of each state at each time
         - Plots the results to Fig5.png
+
         """
         print("* Printing populations vs time...")
         num_part = self.data.labels.shape[0]
@@ -105,7 +107,7 @@ class ClusteringObject:
             for consistency
         - Create arrays to store the source, target, and value data
             for the Sankey diagram
-        - 
+
         """
         print("* Computing and plotting the Sankey diagram...")
 
@@ -197,8 +199,9 @@ class ClusteringObject:
         Assigns labels to individual frames by repeating the existing labels.
 
         Returns:
-        - np.ndarray: An updated ndarray with labels assigned
-            to individual frames by repeating the existing labels.
+        - np.ndarray: an updated ndarray with labels assigned
+        to individual frames by repeating the existing labels
+
         """
         all_the_labels = np.repeat(self.data.labels, self.par.tau_w, axis=1)
         return all_the_labels
@@ -218,6 +221,7 @@ class ClusteringObject:
 
         Args:
         - trj_file (str): Path to the original XYZ trajectory file.
+
         """
         if os.path.exists(trj_file):
             print("* Loading trajectory.xyz...")
@@ -587,8 +591,9 @@ class ClusteringObject2D(ClusteringObject):
 
         This function creates plots for input data:
         - For 2D data: Creates histograms and individual trajectories
-            (side-by-side).
+        (side-by-side).
         - For 3D data: Creates a 3D plot showing the trajectories.
+
         """
         bin_selection = []
         counts_selection = []
@@ -698,6 +703,7 @@ class ClusteringObject2D(ClusteringObject):
         - Normalizes the data to the range [0, 1] (commented out in the code).
         - Calculates the number of windows for analysis based on parameters.
         - Prints informative messages about trajectory details.
+
         """
         tau_window, t_smooth = self.par.tau_w, self.par.t_smooth
         t_conv, t_units = self.par.t_conv, self.par.t_units

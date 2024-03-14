@@ -80,14 +80,14 @@ def perform_gauss_fit(
 
     Args:
     - param (List[int]): a list of the parameters for the fit:
-        initial index,
-        final index,
-        index of the max,
-        amount of data points,
-        gap value for histogram smoothing
+    initial index,
+    final index,
+    index of the max,
+    amount of data points,
+    gap value for histogram smoothing
     - data (List[np.ndarray]): a list of the data for the fit
-        histogram binning,
-        histogram counts
+    histogram binning,
+    histogram counts
     - int_type (str): the type of the fitting interval ('max' or 'half')
 
     Returns:
@@ -98,6 +98,7 @@ def perform_gauss_fit(
     - Trys to perform the fit with the specified parameters
     - Computes the fit quality by checking if some requirements are satisfied
     - If the fit fails, returns (False, 5, np.empty(3))
+
     """
     id0, id1, max_ind, n_data, gap = param
     bins, counts = data
@@ -177,7 +178,7 @@ def gauss_fit_max(
 
     Returns:
     - state (StateUni): object containing Gaussian fit parameters
-        (mu, sigma, area), or None if the fit fails.
+    (mu, sigma, area), or None if the fit fails.
 
     - Computes the data histogram
     - If the bins are more than 50, smooths the histogram with gap = 3
@@ -190,6 +191,7 @@ def gauss_fit_max(
     - Create the State object
     - Prints State's information
     - Plots the histogram with the best fit
+
     """
     flat_m = m_clean.flatten()
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
@@ -300,7 +302,7 @@ def find_stable_trj(
     - cl_ob (ClusteringObject1D): the clustering object
     - state (StateUni): the state
     - tmp_labels (np.ndarray): contains the cluster labels of all the
-        signal windows
+    signal windows
     - lim (int): the algorithm iteration
 
     Returns:
@@ -314,6 +316,7 @@ def find_stable_trj(
     - Calculates the fraction of stable windows found and prints it
     - Creates a np.ndarray to store still unclassified windows
     - Sets the value of env_0 to signal still unclassified data points
+
     """
     number_of_windows = tmp_labels.shape[1]
     m_clean = cl_ob.data.matrix
@@ -498,12 +501,13 @@ def full_output_analysis(
 
     Returns:
     - cl_ob (ClusteringObject1D): the upodated clustering object,
-        with the clustering resutls
+    with the clustering resutls
 
     - Preprocesses the data
     - Performs the clustering with the iterative search and classification
     - If no classification is found, return
     - Otherwise, final states are identified by "set_final_states"
+
     """
     cl_ob.preparing_the_data()
 
