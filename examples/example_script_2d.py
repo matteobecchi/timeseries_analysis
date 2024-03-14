@@ -6,7 +6,7 @@ import os
 import shutil
 from pathlib import Path
 
-from onion_clustering import main_2d
+from onion_clustering.onion_clustering import Onion2D
 
 ##############################################################################
 ### Set all the analysis parameters ###
@@ -62,7 +62,7 @@ try:
             print("bins\t" + str(BINS), file=file)
 
     ### Run the code ###
-    cl_ob = main_2d.main()
+    cl_ob = Onion2D().output
 
     ### Plot the output figures in output_figures/ ###
     # Plots number of states and fraction_0 as a function of tau_window

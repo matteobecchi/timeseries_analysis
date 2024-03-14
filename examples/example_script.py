@@ -6,7 +6,7 @@ import os
 import shutil
 from pathlib import Path
 
-from onion_clustering import main
+from onion_clustering.onion_clustering import Onion1D
 
 ##############################################################################
 ### Set all the analysis parameters ###
@@ -62,7 +62,7 @@ try:
             print("bins\t" + str(BINS), file=file)
 
     ### Perform the clustering analysis ###
-    cl_ob = main.main()
+    cl_ob = Onion1D().output
 
     ### Plot the output figures in output_figures/ ###
 
