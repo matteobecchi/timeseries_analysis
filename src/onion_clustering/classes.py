@@ -2,7 +2,6 @@
 Contains the classes used for storing the clustering data.
 """
 
-import os
 from typing import List, Union
 
 import matplotlib.pyplot as plt
@@ -44,13 +43,10 @@ class ClusteringObject:
         self.iterations = -1
         self.number_of_states: np.ndarray
         self.fraction_0: np.ndarray
+        self.tau_window_list: List[int]
 
     def plot_input_data(self, filename: str):
         """Plots input data for visualization."""
-        raise NotImplementedError
-
-    def preparing_the_data(self):
-        """Processes raw data for analysis."""
         raise NotImplementedError
 
     def plot_state_populations(self):
@@ -185,12 +181,7 @@ class ClusteringObject:
         fig = go.Figure(sankey_data)
 
         # Add the title with the time information.
-        fig.update_layout(
-            title="Frames: "
-            + str(frame_list * self.par.t_conv)
-            + " "
-            + self.par.t_units
-        )
+        fig.update_layout(title=f"Frames: {frame_list}")
 
         fig.write_image("output_figures/Fig6.png", scale=5.0)
 
@@ -213,52 +204,6 @@ class ClusteringObject:
     def plot_one_trajectory(self):
         """Plots the colored trajectory of an example particle."""
         raise NotImplementedError
-
-    def print_colored_trj_from_xyz(self, trj_file: str):
-        """
-        Creates a new XYZ file ('colored_trj.xyz') by coloring
-        the original trajectory based on cluster labels.
-
-        Args:
-        - trj_file (str): Path to the original XYZ trajectory file.
-
-        """
-        if os.path.exists(trj_file):
-            print("* Loading trajectory.xyz...")
-            with open(trj_file, "r", encoding="utf-8") as in_file:
-                tmp = [line.strip().split() for line in in_file]
-
-            all_the_labels = self.create_all_the_labels()
-            num_of_particles = all_the_labels.shape[0]
-            total_time = all_the_labels.shape[1]
-            nlines = (num_of_particles + 2) * total_time
-
-            frames_to_remove = int(self.par.t_smooth / 2) + self.par.t_delay
-            print("\t Removing the first", frames_to_remove, "frames...")
-            tmp = tmp[frames_to_remove * (num_of_particles + 2) :]
-
-            frames_to_remove = int(
-                (len(tmp) - nlines) / (num_of_particles + 2)
-            )
-            print("\t Removing the last", frames_to_remove, "frames...")
-            tmp = tmp[:nlines]
-
-            with open("colored_trj.xyz", "w+", encoding="utf-8") as out_file:
-                i = 0
-                for j in range(total_time):
-                    print(tmp[i][0], file=out_file)
-                    print("Properties=species:S:1:pos:R:3", file=out_file)
-                    for k in range(num_of_particles):
-                        print(
-                            all_the_labels[k][j],
-                            tmp[i + 2 + k][1],
-                            tmp[i + 2 + k][2],
-                            tmp[i + 2 + k][3],
-                            file=out_file,
-                        )
-                    i += num_of_particles + 2
-        else:
-            print("No " + trj_file + " found for coloring the trajectory.")
 
     def print_labels(self):
         """
@@ -347,7 +292,7 @@ class ClusteringObject:
 class ClusteringObject1D(ClusteringObject):
     """This class contains input, output and methods for plotting."""
 
-    states: List[StateUni] = []
+    state_list: List[StateUni] = []
 
     def plot_input_data(self, filename: str):
         """Plots input data for visualization."""
@@ -373,58 +318,19 @@ class ClusteringObject1D(ClusteringObject):
         axes[1].stairs(counts, bins, fill=True, orientation="horizontal")
 
         # Plot the individual trajectories in the first subplot (left side)
-        time = self.par.print_time(m_clean.shape[1])
         step = 10 if m_clean.size > 1000000 else 1
         for mol in m_clean[::step]:
             axes[0].plot(
-                time, mol, c="xkcd:black", lw=0.1, alpha=0.5, rasterized=True
+                mol, c="xkcd:black", lw=0.1, alpha=0.5, rasterized=True
             )
 
         # Set labels and titles for the plots
         axes[0].set_ylabel("Signal")
-        axes[0].set_xlabel(r"Simulation time $t$ " + self.par.t_units)
+        axes[0].set_xlabel(r"Simulation time $t$ [frame]")
         axes[1].set_xticklabels([])
 
         fig.savefig("output_figures/Fig0.png", dpi=600)
         plt.close(fig)
-
-    def preparing_the_data(self):
-        """Processes raw data for analysis."""
-
-        tau_window, t_smooth = self.par.tau_w, self.par.t_smooth
-        t_conv, t_units = self.par.t_conv, self.par.t_units
-
-        # Apply filtering on the data
-        self.data.smooth_mov_av(t_smooth)  # Smoothing using moving average
-
-        # Normalize the data to the range [0, 1]. Usually not needed. ###
-        # self.data.normalize()
-
-        # Calculate the number of windows for the analysis.
-        num_windows = int(self.data.num_of_steps / tau_window)
-
-        # Print informative messages about trajectory details.
-        print(
-            "\tTrajectory has "
-            + str(self.data.num_of_particles)
-            + " particles. "
-        )
-        print(
-            "\tTrajectory of length "
-            + str(self.data.num_of_steps)
-            + " frames ("
-            + str(self.data.num_of_steps * t_conv),
-            t_units + ")",
-        )
-        print(
-            "\tUsing "
-            + str(num_windows)
-            + " windows of length "
-            + str(tau_window)
-            + " frames ("
-            + str(tau_window * t_conv),
-            t_units + ")",
-        )
 
     def plot_cumulative_figure(self):
         """Plots clustering output with Gaussians and threshols."""
@@ -583,7 +489,7 @@ class ClusteringObject1D(ClusteringObject):
 class ClusteringObject2D(ClusteringObject):
     """This class contains input, output and methods for plotting."""
 
-    states: List[StateMulti] = []
+    state_list: List[StateMulti] = []
 
     def plot_input_data(self, filename: str):
         """

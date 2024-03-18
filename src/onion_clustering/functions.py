@@ -11,6 +11,8 @@ import scipy.signal
 
 from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
+OUTPUT_FILE = "onion_clustering_log.txt"
+
 
 def read_input_data() -> str:
     """
@@ -105,7 +107,7 @@ def plot_histo(axes: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     axes.set_ylabel(r"Probability distribution")
 
 
-def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
+def param_grid(par: Parameters, trj_len: int) -> List[int]:
     """
     Generate the (tau_window, t_smooth) grid.
 
@@ -124,7 +126,7 @@ def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
 
     """
     if par.max_tau_w == -1:
-        par.max_tau_w = trj_len - par.max_t_smooth
+        par.max_tau_w = trj_len
 
     tmp = np.geomspace(
         par.min_tau_w, par.max_tau_w, num=par.num_tau_w, dtype=int
@@ -133,14 +135,8 @@ def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
     for tau_w in tmp:
         if tau_w not in tau_window:
             tau_window.append(tau_w)
-    print("* Tau_w used:", tau_window)
 
-    t_smooth = list(
-        range(par.min_t_smooth, par.max_t_smooth + 1, par.step_t_smooth)
-    )
-    print("* t_smooth used:", t_smooth)
-
-    return tau_window, t_smooth
+    return tau_window
 
 
 def gaussian(
@@ -573,19 +569,18 @@ def set_final_states(
         all_the_labels[mask] -= 1
 
     # Step 3: Write the final states and final thresholds to text files.
-    # The data is saved in two separate files:
-    # 'final_states.txt' and 'final_thresholds.txt'.
-    with open("final_states.txt", "w", encoding="utf-8") as file:
-        print("# Mu \t Sigma \t A \t state_fraction", file=file)
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("FINAL STATES AND THRESHOLDS:", file=dump)
+        print("# Mu \t Sigma \t A \t state_fraction", file=dump)
         for state in updated_states:
-            print(state.mean, state.sigma, state.area, state.perc, file=file)
-    with open("final_thresholds.txt", "w", encoding="utf-8") as file:
+            print(state.mean, state.sigma, state.area, state.perc, file=dump)
+        print("\n", file=dump)
         for state in updated_states:
-            print(state.th_inf[0], state.th_inf[1], file=file)
+            print(state.th_inf[0], state.th_inf[1], file=dump)
         print(
             updated_states[-1].th_sup[0],
             updated_states[-1].th_sup[1],
-            file=file,
+            file=dump,
         )
 
     # Step 5: Return the 'updated_states' as the output of the function.
@@ -709,8 +704,9 @@ def relabel_states_2d(
         state.perc = num_of_points / all_the_labels.size
 
     ### Step 4: print informations on the final states
-    with open("final_states.txt", "w", encoding="utf-8") as file:
-        print("#center_coords, semiaxis, fraction_of_data", file=file)
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("FINAL STATES:", file=dump)
+        print("#center_coords, semiaxis, fraction_of_data", file=dump)
         for state in updated_states:
             centers = "[" + str(state.mean[0]) + ", "
             for tmp in state.mean[1:-1]:
@@ -720,6 +716,6 @@ def relabel_states_2d(
             for tmp in state.axis[1:-1]:
                 axis += str(tmp) + ", "
             axis += str(state.axis[-1]) + "]"
-            print(centers, axis, state.perc, file=file)
+            print(centers, axis, state.perc, file=dump)
 
     return all_the_labels, updated_states

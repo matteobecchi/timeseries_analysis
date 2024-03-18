@@ -1,7 +1,8 @@
 import os
 
+import numpy as np
 import pytest
-from onion_clustering.onion_clustering import Onion2D
+from onion_clustering.onion_multi import onion_multi
 
 
 # Define a fixture to set up the test environment
@@ -22,65 +23,33 @@ def test_output_files(setup_test_environment):
     FILE = "synthetic_2D/3D_synthetic_data.npy"
     PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/" + FILE
     TAU_WINDOW = 10  # time resolution of the analysis
-    T_CONV = 200  # convert frames in time units (default 1)
-    T_UNITS = "dt"  # the time units (default 'frames')
     NUM_TAU_W = 2  # number of tau_window tested (default 20)
     MAX_TAU_W = 10  # max value of tau_window tested (default auto)
-    MAX_T_SMOOTH = 2  # max value of t_smooth tested (default 5)
     BINS = 50  # number of histogram bins (default auto)
 
-    ### Create the 'data_directory.txt' file ###
-    with open("data_directory.txt", "w+", encoding="utf-8") as file:
-        print(PATH_TO_INPUT_DATA, file=file)
-
-    ### Create the 'input_parameter.txt' file ###
-    with open("input_parameters.txt", "w+", encoding="utf-8") as file:
-        print("tau_window\t" + str(TAU_WINDOW), file=file)
-        print("t_conv\t" + str(T_CONV), file=file)
-        print("t_units\t" + T_UNITS, file=file)
-        print("num_tau_w\t" + str(NUM_TAU_W), file=file)
-        print("max_tau_w\t" + str(MAX_TAU_W), file=file)
-        print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
-        print("bins\t" + str(BINS), file=file)
+    input_data = np.load(PATH_TO_INPUT_DATA)
 
     # Call your code to generate the output files
-    tmp = Onion2D().output
+    _, labels, time_res_analysis = onion_multi(
+        input_data,
+        tau_window=TAU_WINDOW,
+        num_tau_w=NUM_TAU_W,
+        max_tau_w=MAX_TAU_W,
+        bins=BINS,
+    )
 
-    # Test the output
-    tmp.plot_tra_figure()
-    tmp.plot_input_data("Fig0")
-    tmp.plot_cumulative_figure()
-    tmp.plot_one_trajectory()
-    tmp.data.plot_medoids()
-    tmp.plot_state_populations()
-    tmp.sankey([0, 10, 20, 30, 40])
-    tmp.print_labels()
-
-    # Define the paths to the expected and actual output files
+    # Define the paths to the expected output files
     original_dir = (
         "/Users/mattebecchi/00_signal_analysis/timeseries_analysis/test/"
     )
-    expected_output_path_1 = original_dir + "output_multi/final_states.txt"
-    expected_output_path_2 = original_dir + "output_multi/number_of_states.txt"
-    expected_output_path_3 = original_dir + "output_multi/fraction_0.txt"
-    actual_output_path_1 = "final_states.txt"
-    actual_output_path_2 = "number_of_states.txt"
-    actual_output_path_3 = "fraction_0.txt"
+    expected_output_path_1 = original_dir + "output_multi/labels.npy"
+    expected_output_path_2 = (
+        original_dir + "output_multi/time_res_analysis.txt"
+    )
 
-    # Use filecmp to compare the contents of the expected
-    # and actual output directories
-    with (
-        open(expected_output_path_1, "r") as expected_file,
-        open(actual_output_path_1, "r") as actual_file,
-    ):
-        assert expected_file.read() == actual_file.read()
-    with (
-        open(expected_output_path_2, "r") as expected_file,
-        open(actual_output_path_2, "r") as actual_file,
-    ):
-        assert expected_file.read() == actual_file.read()
-    with (
-        open(expected_output_path_3, "r") as expected_file,
-        open(actual_output_path_3, "r") as actual_file,
-    ):
-        assert expected_file.read() == actual_file.read()
+    # Compare the contents of the expected and actual output
+    expected_output_1 = np.load(expected_output_path_1)
+    assert np.allclose(expected_output_1, labels)
+
+    expected_output_2 = np.loadtxt(expected_output_path_2)
+    assert np.allclose(expected_output_2, time_res_analysis)

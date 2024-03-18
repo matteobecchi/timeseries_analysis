@@ -4,14 +4,9 @@ See the documentation for all the details.
 """
 
 import copy
-import os
-import shutil
 from typing import List, Tuple, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.image import NonUniformImage
-from matplotlib.patches import Ellipse
 
 from onion_clustering.classes import ClusteringObject2D
 from onion_clustering.first_classes import MultiData, Parameters, StateMulti
@@ -21,15 +16,21 @@ from onion_clustering.functions import (
     find_minima_around_max,
     moving_average_2d,
     param_grid,
-    read_input_data,
     relabel_states_2d,
 )
 
 NUMBER_OF_SIGMAS = 2.0
-OUTPUT_FILE = "states_output.txt"
+OUTPUT_FILE = "onion_clustering_log.txt"
 
 
-def all_the_input_stuff() -> ClusteringObject2D:
+def all_the_input_stuff(
+    matrix,
+    tau_window,
+    bins,
+    num_tau_w,
+    min_tau_w,
+    max_tau_w,
+) -> ClusteringObject2D:
     """
     Data preprocessing for the analysis.
 
@@ -42,28 +43,11 @@ def all_the_input_stuff() -> ClusteringObject2D:
     - Creates blank files and directories for output
     - Creates and returns the ClusteringObject2D for the analysis
     """
-    par = Parameters("input_parameters.txt")
-    par.print_to_screen()
+    with open(OUTPUT_FILE, "w+", encoding="utf-8") as dump:
+        print("\n", file=dump)
 
-    data_directory = read_input_data()
-    data = MultiData(data_directory)
-    data.remove_delay(par.t_delay)
-
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
-        file.write("#")
-    figures_folder = "output_figures"
-    if not os.path.exists(figures_folder):
-        os.makedirs(figures_folder)
-    for filename in os.listdir(figures_folder):
-        file_path = os.path.join(figures_folder, filename)
-        try:
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except OSError as exc_msg:
-            print(f"Failed to delete {file_path}. Reason: {exc_msg}")
-
+    par = Parameters(tau_window, bins, num_tau_w, min_tau_w, max_tau_w)
+    data = MultiData(matrix)
     clustering_object = ClusteringObject2D(par, data)
 
     return clustering_object
@@ -73,8 +57,6 @@ def gauss_fit_max(
     m_clean: np.ndarray,
     m_limits: np.ndarray,
     bins: Union[int, str],
-    filename: str,
-    full_out: bool,
 ) -> Union[StateMulti, None]:
     """
     Selection of the optimal region and parameters in order to fit a state.
@@ -168,10 +150,12 @@ def gauss_fit_max(
             popt = np.array(popt_half)
             goodness = goodness_half
     else:
-        print("\tWARNING: this fit is not converging.")
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\tWARNING: this fit is not converging.", file=dump)
         return None
     if len(popt) != m_clean.shape[2] * 3:
-        print("\tWARNING: this fit is not converging.")
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\tWARNING: this fit is not converging.", file=dump)
         return None
 
     mean, sigma, area = [], [], []
@@ -183,139 +167,25 @@ def gauss_fit_max(
     state.build_boundaries(NUMBER_OF_SIGMAS)
 
     if m_clean.shape[2] == 2:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
-            print("\n", file=file)
-            print(
-                f"\tmu = [{popt[0]:.4f}, {popt[3]:.4f}],"
-                f" sigma = [{popt[1]:.4f}, {popt[4]:.4f}]"
-            )
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\n", file=dump)
             print(
                 f"\tmu = [{popt[0]:.4f}, {popt[3]:.4f}],"
                 f" sigma = [{popt[1]:.4f}, {popt[4]:.4f}],"
                 f" area = {popt[2]:.4f}, {popt[5]:.4f}",
-                file=file,
+                file=dump,
             )
-            print("\tFit goodness = " + str(goodness), file=file)
-
-        if full_out:
-            fig, ax = plt.subplots(figsize=(6, 6))
-            img = NonUniformImage(ax, interpolation="nearest")
-            xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-            ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-            img.set_data(xcenters, ycenters, counts.T)
-            ax.add_image(img)
-            ax.scatter(mean[0], mean[1], s=8.0, c="red")
-            circle1 = Ellipse(
-                tuple(mean), sigma[0], sigma[1], color="r", fill=False
-            )
-            circle2 = Ellipse(
-                tuple(mean),
-                state.axis[0],
-                state.axis[1],
-                color="r",
-                fill=False,
-            )
-            ax.add_patch(circle1)
-            ax.add_patch(circle2)
-            ax.set_xlim(m_limits[0][0], m_limits[0][1])
-            ax.set_ylim(m_limits[1][0], m_limits[1][1])
-
-            fig.savefig(filename + ".png", dpi=600)
-            plt.close(fig)
+            print("\tFit goodness = " + str(goodness), file=dump)
     elif m_clean.shape[2] == 3:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
-            print("\n", file=file)
-            print(
-                f"\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], "
-                f"sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], "
-                f"area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}"
-            )
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\n", file=dump)
             print(
                 f"\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], "
                 f"sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], "
                 f"area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}",
-                file=file,
+                file=dump,
             )
-            print("\tFit goodness = " + str(goodness), file=file)
-
-        if full_out:
-            fig, ax = plt.subplots(2, 2, figsize=(6, 6))
-            xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-            ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-            zcenters = (edges[2][:-1] + edges[2][1:]) / 2
-
-            img = NonUniformImage(ax[0][0], interpolation="nearest")
-            img.set_data(xcenters, ycenters, np.sum(counts, axis=0))
-            ax[0][0].add_image(img)
-            ax[0][0].scatter(mean[0], mean[1], s=8.0, c="red")
-            circle1 = Ellipse(
-                tuple([mean[0], mean[1]]),
-                sigma[0],
-                sigma[1],
-                color="r",
-                fill=False,
-            )
-            circle2 = Ellipse(
-                tuple([mean[0], mean[1]]),
-                state.axis[0],
-                state.axis[1],
-                color="r",
-                fill=False,
-            )
-            ax[0][0].add_patch(circle1)
-            ax[0][0].add_patch(circle2)
-
-            img = NonUniformImage(ax[0][1], interpolation="nearest")
-            img.set_data(zcenters, ycenters, np.sum(counts, axis=1))
-            ax[0][1].add_image(img)
-            ax[0][1].scatter(mean[2], mean[1], s=8.0, c="red")
-            circle1 = Ellipse(
-                tuple([mean[2], mean[1]]),
-                sigma[2],
-                sigma[1],
-                color="r",
-                fill=False,
-            )
-            circle2 = Ellipse(
-                tuple([mean[2], mean[1]]),
-                state.axis[2],
-                state.axis[1],
-                color="r",
-                fill=False,
-            )
-            ax[0][1].add_patch(circle1)
-            ax[0][1].add_patch(circle2)
-
-            img = NonUniformImage(ax[1][0], interpolation="nearest")
-            img.set_data(xcenters, zcenters, np.sum(counts, axis=2))
-            ax[1][0].add_image(img)
-            ax[1][0].scatter(mean[0], mean[2], s=8.0, c="red")
-            circle1 = Ellipse(
-                tuple([mean[0], mean[2]]),
-                sigma[0],
-                sigma[2],
-                color="r",
-                fill=False,
-            )
-            circle2 = Ellipse(
-                tuple([mean[0], mean[2]]),
-                state.axis[0],
-                state.axis[2],
-                color="r",
-                fill=False,
-            )
-            ax[1][0].add_patch(circle1)
-            ax[1][0].add_patch(circle2)
-
-            ax[0][0].set_xlim(m_limits[0][0], m_limits[0][1])
-            ax[0][0].set_ylim(m_limits[1][0], m_limits[1][1])
-            ax[0][1].set_xlim(m_limits[2][0], m_limits[2][1])
-            ax[0][1].set_ylim(m_limits[1][0], m_limits[1][1])
-            ax[1][0].set_xlim(m_limits[0][0], m_limits[0][1])
-            ax[1][0].set_ylim(m_limits[2][0], m_limits[2][1])
-
-            fig.savefig(filename + ".png", dpi=600)
-            plt.close(fig)
+            print("\tFit goodness = " + str(goodness), file=dump)
 
     return state
 
@@ -367,15 +237,11 @@ def find_stable_trj(
 
     counter = np.sum(mask)
     window_fraction = counter / (tmp_labels.size)
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
-        print(
-            f"\tFraction of windows in state {lim + 1}"
-            f" = {window_fraction:.3}"
-        )
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
             f"\tFraction of windows in state {lim + 1}"
             f" = {window_fraction:.3}",
-            file=file,
+            file=dump,
         )
 
     remaning_data = []
@@ -393,7 +259,7 @@ def find_stable_trj(
 
 
 def iterative_search(
-    cl_ob: ClusteringObject2D, name: str, full_out: bool
+    cl_ob: ClusteringObject2D,
 ) -> Tuple[ClusteringObject2D, bool]:
     """
     Iterative search for stable windows in the trajectory.
@@ -430,14 +296,9 @@ def iterative_search(
     states_counter = 0
     env_0 = False
     while True:
-        print(f"* Iteration {iteration_id - 1}")
-        state = gauss_fit_max(
-            m_copy,
-            np.array(cl_ob.data.range),
-            bins,
-            "output_figures/" + name + "Fig1_" + str(iteration_id),
-            full_out,
-        )
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(f"* Iteration {iteration_id - 1}", file=dump)
+        state = gauss_fit_max(m_copy, np.array(cl_ob.data.range), bins)
 
         if state is None:
             print("* Iterations interrupted because fit does not converge. ")
@@ -453,13 +314,19 @@ def iterative_search(
         states_counter += 1
         iteration_id += 1
         if counter <= 0.0:
-            print("* Iterations interrupted because last state is empty. ")
+            with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+                print(
+                    "* Iterations interrupted because last state " "is empty.",
+                    file=dump,
+                )
             break
         if m_new.size == 0:
-            print(
-                "* Iterations interrupted because all data "
-                "points assigned. "
-            )
+            with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+                print(
+                    "* Iterations interrupted because all data "
+                    "points assigned.",
+                    file=dump,
+                )
             break
         m_copy = m_new
 
@@ -467,13 +334,13 @@ def iterative_search(
 
     all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
     cl_ob.data.labels = all_the_labels
-    cl_ob.states = list_of_states
+    cl_ob.state_list = list_of_states
 
     return cl_ob, env_0
 
 
 def timeseries_analysis(
-    cl_ob: ClusteringObject2D, tau_w: int, t_smooth: int, full_out: bool
+    cl_ob: ClusteringObject2D, tau_w: int
 ) -> Tuple[int, float]:
     """
     The clustering analysis to compute the dependence on time resolution.
@@ -496,37 +363,35 @@ def timeseries_analysis(
     - Number of states and fraction of unclassified points are computed
     """
 
-    print("* New analysis: ", tau_w, t_smooth)
-    name = str(t_smooth) + "_" + str(tau_w) + "_"
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("* New analysis: ", tau_w, file=dump)
 
     tmp_cl_ob = copy.deepcopy(cl_ob)
     tmp_cl_ob.par.tau_w = tau_w
-    tmp_cl_ob.par.t_smooth = t_smooth
 
-    tmp_cl_ob.preparing_the_data()
-    if full_out:
-        tmp_cl_ob.plot_input_data(name + "Fig0")
+    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob)
 
-    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob, name, full_out)
-
-    if len(tmp_cl_ob.states) == 0:
-        print("* No possible classification was found. ")
+    if len(tmp_cl_ob.state_list) == 0:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("* No possible classification was found.", file=dump)
         del tmp_cl_ob
         return 1, 1.0
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
-    n_states = len(tmp_cl_ob.states)
+    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.state_list])
+    n_states = len(tmp_cl_ob.state_list)
     if one_last_state:
         n_states += 1
-    print(f"Number of states identified: {n_states}, [{fraction_0}]")
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print(
+            f"Number of states identified: {n_states}, [{fraction_0}]",
+            file=dump,
+        )
 
     del tmp_cl_ob
     return n_states, fraction_0
 
 
-def full_output_analysis(
-    cl_ob: ClusteringObject2D, full_out: bool
-) -> ClusteringObject2D:
+def full_output_analysis(cl_ob: ClusteringObject2D):
     """
     The complete clustering analysis with the input parameters.
 
@@ -543,18 +408,14 @@ def full_output_analysis(
     - If no classification is found, return
 
     """
-    cl_ob.preparing_the_data()
+    cl_ob, _ = iterative_search(cl_ob)
 
-    cl_ob, _ = iterative_search(cl_ob, "", full_out)
-
-    if len(cl_ob.states) == 0:
-        print("* No possible classification was found. ")
-        return cl_ob
-
-    return cl_ob
+    if len(cl_ob.state_list) == 0:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("* No possible classification was found.", file=dump)
 
 
-def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
+def time_resolution_analysis(cl_ob: ClusteringObject2D):
     """
     Explore parameter space and compute the dependence on time resolution.
 
@@ -567,43 +428,30 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     - Prints the output to file
     - Updates the clustering object with the analysis results
     """
-    tau_window_list, t_smooth_list = param_grid(
-        cl_ob.par, cl_ob.data.num_of_steps
-    )
+    tau_window_list = param_grid(cl_ob.par, cl_ob.data.num_of_steps)
+    cl_ob.tau_window_list = tau_window_list
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("* Tau_w used:", tau_window_list, file=dump)
 
     number_of_states = []
     fraction_0 = []
     for tau_w in tau_window_list:
-        tmp = [tau_w]
-        tmp1 = [tau_w]
-        for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
-            tmp.append(n_s)
-            tmp1.append(f_0)
-        number_of_states.append(tmp)
-        fraction_0.append(tmp1)
-    number_of_states_arr = np.array(number_of_states)
-    fraction_0_arr = np.array(fraction_0)
+        n_s, f_0 = timeseries_analysis(cl_ob, tau_w)
+        number_of_states.append(n_s)
+        fraction_0.append(f_0)
 
-    np.savetxt(
-        "number_of_states.txt",
-        number_of_states,
-        fmt="%i",
-        delimiter="\t",
-        header="tau_window\t number_of_states for different t_smooth",
-    )
-    np.savetxt(
-        "fraction_0.txt",
-        fraction_0,
-        delimiter=" ",
-        header="tau_window\t fraction in ENV0 for different t_smooth",
-    )
-
-    cl_ob.number_of_states = number_of_states_arr
-    cl_ob.fraction_0 = fraction_0_arr
+    cl_ob.number_of_states = np.array(number_of_states)
+    cl_ob.fraction_0 = np.array(fraction_0)
 
 
-def main(full_output: bool = True) -> ClusteringObject2D:
+def main(
+    matrix,
+    tau_window,
+    bins,
+    num_tau_w,
+    min_tau_w,
+    max_tau_w,
+) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysis.
 
@@ -622,14 +470,12 @@ def main(full_output: bool = True) -> ClusteringObject2D:
     print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
     print("##############################################################")
 
-    clustering_object = all_the_input_stuff()
+    clustering_object = all_the_input_stuff(
+        matrix, tau_window, bins, num_tau_w, min_tau_w, max_tau_w
+    )
 
-    time_resolution_analysis(clustering_object, full_output)
+    time_resolution_analysis(clustering_object)
 
-    clustering_object = full_output_analysis(clustering_object, full_output)
+    full_output_analysis(clustering_object)
 
     return clustering_object
-
-
-if __name__ == "__main__":
-    main()

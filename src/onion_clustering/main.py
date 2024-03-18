@@ -4,11 +4,8 @@ See the documentation for all the details.
 """
 
 import copy
-import os
-import shutil
 from typing import List, Tuple, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
 
@@ -18,17 +15,22 @@ from onion_clustering.functions import (
     gaussian,
     moving_average,
     param_grid,
-    plot_histo,
-    read_input_data,
     relabel_states,
     set_final_states,
 )
 
 NUMBER_OF_SIGMAS = 2.0
-OUTPUT_FILE = "states_output.txt"
+OUTPUT_FILE = "onion_clustering_log.txt"
 
 
-def all_the_input_stuff() -> ClusteringObject1D:
+def all_the_input_stuff(
+    matrix,
+    tau_window,
+    bins,
+    num_tau_w,
+    min_tau_w,
+    max_tau_w,
+) -> ClusteringObject1D:
     """
     Data preprocessing for the analysis.
 
@@ -41,32 +43,11 @@ def all_the_input_stuff() -> ClusteringObject1D:
     - Creates blank files and directories for output
     - Creates and returns the ClusteringObject1D for the analysis
     """
-    par = Parameters("input_parameters.txt")
-    par.print_to_screen()
+    with open(OUTPUT_FILE, "w+", encoding="utf-8") as dump:
+        print("\n", file=dump)
 
-    data_directory = read_input_data()
-    if isinstance(data_directory, str):
-        data = UniData(data_directory)
-    else:
-        print("\tERROR: data_directory.txt is missing or wrongly formatted. ")
-
-    data.remove_delay(par.t_delay)
-
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
-        print("#", file=file)
-    figures_folder = "output_figures"
-    if not os.path.exists(figures_folder):
-        os.makedirs(figures_folder)
-    for filename in os.listdir(figures_folder):
-        file_path = os.path.join(figures_folder, filename)
-        try:
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except OSError as ex_msg:
-            print(f"Failed to delete {file_path}. Reason: {ex_msg}")
-
+    par = Parameters(tau_window, bins, num_tau_w, min_tau_w, max_tau_w)
+    data = UniData(matrix)
     clustering_object = ClusteringObject1D(par, data)
 
     return clustering_object
@@ -135,7 +116,8 @@ def perform_gauss_fit(
             goodness -= 1
         return True, goodness, popt
     except RuntimeError:
-        print("\t" + int_type + " fit: Runtime error. ")
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\t" + int_type + " fit: Runtime error. ", file=dump)
         return (
             False,
             goodness,
@@ -144,7 +126,8 @@ def perform_gauss_fit(
             ),
         )
     except TypeError:
-        print("\t" + int_type + " fit: TypeError.")
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\t" + int_type + " fit: TypeError.", file=dump)
         return (
             False,
             goodness,
@@ -153,7 +136,8 @@ def perform_gauss_fit(
             ),
         )
     except ValueError:
-        print("\t" + int_type + " fit: ValueError.")
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\t" + int_type + " fit: ValueError.", file=dump)
         return (
             False,
             goodness,
@@ -164,7 +148,7 @@ def perform_gauss_fit(
 
 
 def gauss_fit_max(
-    m_clean: np.ndarray, par: Parameters, filename: str, full_out: bool
+    m_clean: np.ndarray, par: Parameters
 ) -> Union[StateUni, None]:
     """
     Selection of the optimal interval and parameters in order to fit a state.
@@ -172,8 +156,6 @@ def gauss_fit_max(
     Args:
         m_clean (np.ndarray): the data points
         par (Parameters): object containing parameters for the analysis.
-        filename (str): name of the output plot file
-        full_out (bool): activates the full output printing
 
     Returns:
         state (StateUni): object containing Gaussian fit parameters
@@ -200,10 +182,12 @@ def gauss_fit_max(
     counts = moving_average(counts, gap)
     bins = moving_average(bins, gap)
     if (counts == 0.0).any():
-        print(
-            "\tWARNING: there are empty bins. "
-            "Consider reducing the number of bins."
-        )
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(
+                "\tWARNING: there are empty bins. "
+                "Consider reducing the number of bins.",
+                file=dump,
+            )
 
     max_val = counts.max()
     max_ind = counts.argmax()
@@ -247,42 +231,21 @@ def gauss_fit_max(
             popt = popt_half
             goodness = goodness_half
     else:
-        print("\tWARNING: this fit is not converging.")
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\tWARNING: this fit is not converging.", file=dump)
         return None
 
     state = StateUni(popt[0], popt[1], popt[2])
     state.build_boundaries(NUMBER_OF_SIGMAS)
 
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
-        print("\n", file=file)
-        print(
-            f"\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},"
-            f" area = {state.area:.4f}"
-        )
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("\n", file=dump)
         print(
             f"\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},"
             f" area = {state.area:.4f}",
-            file=file,
+            file=dump,
         )
-        print("\tFit goodness = " + str(goodness), file=file)
-
-    if full_out:
-        y_spread = np.max(m_clean) - np.min(m_clean)
-        y_lim = [
-            np.min(m_clean) - 0.025 * y_spread,
-            np.max(m_clean) + 0.025 * y_spread,
-        ]
-        fig, axes = plt.subplots()
-        plot_histo(axes, counts, bins)
-        axes.set_xlim(y_lim)
-        tmp_popt = [state.mean, state.sigma, state.area / flat_m.size]
-        axes.plot(
-            np.linspace(bins[0], bins[-1], 1000),
-            gaussian(np.linspace(bins[0], bins[-1], 1000), *tmp_popt),
-        )
-
-        fig.savefig(filename + ".png", dpi=600)
-        plt.close(fig)
+        print("\tFit goodness = " + str(goodness), file=dump)
 
     return state
 
@@ -331,15 +294,11 @@ def find_stable_trj(
 
     counter = np.sum(mask)
     window_fraction = counter / (tmp_labels.size)
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
-        print(
-            f"\tFraction of windows in state {lim + 1}"
-            f" = {window_fraction:.3}"
-        )
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
             f"\tFraction of windows in state {lim + 1}"
             f" = {window_fraction:.3}",
-            file=file,
+            file=dump,
         )
 
     remaning_data = []
@@ -357,15 +316,13 @@ def find_stable_trj(
 
 
 def iterative_search(
-    cl_ob: ClusteringObject1D, name: str, full_out: bool
+    cl_ob: ClusteringObject1D,
 ) -> Tuple[ClusteringObject1D, np.ndarray, bool]:
     """
     Iterative search for stable windows in the trajectory.
 
     Args:
         cl_ob (ClusteringObject1D): the clustering object
-        name (str): name for output figures
-        full_out (bool): activates the full output printing
 
     Returns:
         cl_ob (ClusteringObject1D): updated with the clustering results
@@ -394,16 +351,17 @@ def iterative_search(
     states_counter = 0
     env_0 = False
     while True:
-        print(f"* Iteration {iteration_id - 1}")
-        state = gauss_fit_max(
-            m_copy,
-            cl_ob.par,
-            "output_figures/" + name + "Fig1_" + str(iteration_id),
-            full_out,
-        )
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(f"* Iteration {iteration_id - 1}", file=dump)
+        state = gauss_fit_max(m_copy, cl_ob.par)
 
         if state is None:
-            print("* Iterations interrupted because fit does not converge. ")
+            with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+                print(
+                    "* Iterations interrupted because "
+                    "fit does not converge.",
+                    file=dump,
+                )
             break
 
         m_next, counter, env_0 = find_stable_trj(
@@ -415,7 +373,11 @@ def iterative_search(
         states_counter += 1
         iteration_id += 1
         if counter <= 0.0:
-            print("* Iterations interrupted because last state is empty. ")
+            with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+                print(
+                    "* Iterations interrupted because last state " "is empty.",
+                    file=dump,
+                )
             break
 
         m_copy = m_next
@@ -423,13 +385,13 @@ def iterative_search(
     cl_ob.iterations = len(states_list)
 
     atl, lis = relabel_states(tmp_labels, states_list)
-    cl_ob.states = lis
+    cl_ob.state_list = lis
 
     return cl_ob, atl, env_0
 
 
 def timeseries_analysis(
-    cl_ob: ClusteringObject1D, tau_w: int, t_smooth: int, full_out: bool
+    cl_ob: ClusteringObject1D, tau_w: int
 ) -> Tuple[int, float]:
     """
     The clustering analysis to compute the dependence on time resolution.
@@ -437,8 +399,6 @@ def timeseries_analysis(
     Args:
         cl_ob (ClusteringObject1D): the clustering object
         tau_w (int): the time resolution for the analysis
-        t_smooth (int): the width of the moving average for the analysis
-        full_out (bool): activates the full output printing
 
     Returns:
         num_states (int): number of identified states
@@ -451,133 +411,111 @@ def timeseries_analysis(
     - Otherwise, final states are identified by "set_final_states"
     - Number of states and fraction of unclassified points are computed
     """
-    print("* New analysis: ", tau_w, t_smooth)
-    name = str(t_smooth) + "_" + str(tau_w) + "_"
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("* New analysis: ", tau_w, file=dump)
 
     tmp_cl_ob = copy.deepcopy(cl_ob)
     tmp_cl_ob.par.tau_w = tau_w
-    tmp_cl_ob.par.t_smooth = t_smooth
 
-    tmp_cl_ob.preparing_the_data()
-    if full_out:
-        tmp_cl_ob.plot_input_data(name + "Fig0")
+    tmp_cl_ob, tmp_labels, env_0 = iterative_search(tmp_cl_ob)
 
-    tmp_cl_ob, tmp_labels, one_last_state = iterative_search(
-        tmp_cl_ob, name, full_out
-    )
-
-    if len(tmp_cl_ob.states) == 0:
-        print("* No possible classification was found. ")
+    if len(tmp_cl_ob.state_list) == 0:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("* No possible classification was found.", file=dump)
         del tmp_cl_ob
         return 1, 1.0
 
-    tmp_cl_ob.states, tmp_cl_ob.data.labels = set_final_states(
-        tmp_cl_ob.states, tmp_labels, tmp_cl_ob.data.range
+    tmp_cl_ob.state_list, tmp_cl_ob.data.labels = set_final_states(
+        tmp_cl_ob.state_list, tmp_labels, tmp_cl_ob.data.range
     )
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
-    n_states = len(tmp_cl_ob.states)
-    if one_last_state:
+    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.state_list])
+    n_states = len(tmp_cl_ob.state_list)
+    if env_0:
         n_states += 1
-    print(f"Number of states identified: {n_states}, [{fraction_0}]")
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print(
+            f"Number of states identified: {n_states}, [{fraction_0}]",
+            file=dump,
+        )
 
     del tmp_cl_ob
     return n_states, fraction_0
 
 
-def full_output_analysis(
-    cl_ob: ClusteringObject1D, full_out: bool
-) -> ClusteringObject1D:
+def full_output_analysis(cl_ob: ClusteringObject1D):
     """
     The complete clustering analysis with the input parameters.
 
     Args:
         cl_ob (ClusteringObject1D): the clustering object
-        full_out (bool): activates the full output printing
-
-    Returns:
-        cl_ob (ClusteringObject1D): the upodated clustering object,
-            with the clustering resutls
 
     - Preprocesses the data
     - Performs the clustering with the iterative search and classification
     - If no classification is found, return
     - Otherwise, final states are identified by "set_final_states"
     """
-    cl_ob.preparing_the_data()
+    cl_ob, tmp_labels, _ = iterative_search(cl_ob)
 
-    cl_ob, tmp_labels, _ = iterative_search(cl_ob, "", full_out)
+    if len(cl_ob.state_list) == 0:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("* No possible classification was found.", file=dump)
 
-    if len(cl_ob.states) == 0:
-        print("* No possible classification was found. ")
-        return cl_ob
-
-    cl_ob.states, cl_ob.data.labels = set_final_states(
-        cl_ob.states, tmp_labels, cl_ob.data.range
+    cl_ob.state_list, cl_ob.data.labels = set_final_states(
+        cl_ob.state_list, tmp_labels, cl_ob.data.range
     )
+    cl_ob.data.labels = cl_ob.create_all_the_labels()
 
-    return cl_ob
 
-
-def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
+def time_resolution_analysis(cl_ob: ClusteringObject1D):
     """
     Explore parameter space and compute the dependence on time resolution.
 
     Args:
         cl_ob (ClusteringObject1D): the clustering object
-        full_out (bool): activates the full output printing
 
     - Generates the parameters' grid
     - Performs and stores the clustering for all the parameters' combinations
     - Prints the output to file
     - Updates the clustering object with the analysis results
     """
-    tau_window_list, t_smooth_list = param_grid(
-        cl_ob.par, cl_ob.data.num_of_steps
-    )
+    tau_window_list = param_grid(cl_ob.par, cl_ob.data.num_of_steps)
+    cl_ob.tau_window_list = tau_window_list
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print("* Tau_w used:", tau_window_list, file=dump)
 
     number_of_states = []
     fraction_0 = []
     for tau_w in tau_window_list:
-        tmp = [tau_w]
-        tmp1 = [tau_w]
-        for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
-            tmp.append(n_s)
-            tmp1.append(f_0)
-        number_of_states.append(tmp)
-        fraction_0.append(tmp1)
-    number_of_states_arr = np.array(number_of_states)
-    fraction_0_arr = np.array(fraction_0)
+        n_s, f_0 = timeseries_analysis(cl_ob, tau_w)
+        number_of_states.append(n_s)
+        fraction_0.append(f_0)
 
-    np.savetxt(
-        "number_of_states.txt",
-        number_of_states,
-        fmt="%i",
-        delimiter="\t",
-        header="tau_window\t number_of_states for different t_smooth",
-    )
-    np.savetxt(
-        "fraction_0.txt",
-        fraction_0,
-        delimiter=" ",
-        header="tau_window\t fraction in ENV0 for different t_smooth",
-    )
-
-    cl_ob.number_of_states = number_of_states_arr
-    cl_ob.fraction_0 = fraction_0_arr
+    cl_ob.number_of_states = np.array(number_of_states)
+    cl_ob.fraction_0 = np.array(fraction_0)
 
 
-def main(full_output: bool = True) -> ClusteringObject1D:
+def main(
+    matrix,
+    tau_window,
+    bins,
+    num_tau_w,
+    min_tau_w,
+    max_tau_w,
+) -> ClusteringObject1D:
     """
     Returns the clustering object with the analysis.
 
-    Args:
-        full_output (bool): activates the full output printing
+    Parameters
+    ----------
+    To write
 
-    Returns:
-        clustering_object (ClusteringObject1D): the final clustering object
+    Returns
+    -------
+    clustering_object (ClusteringObject1D): the final clustering object
 
+    Notes
+    -----
     - Reads the data and the parameters
     - Explore the parameters (tau_window, t_smooth) space
     - Performs a detailed analysis with the selected parameters
@@ -587,14 +525,12 @@ def main(full_output: bool = True) -> ClusteringObject1D:
     print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
     print("##############################################################")
 
-    clustering_object = all_the_input_stuff()
+    clustering_object = all_the_input_stuff(
+        matrix, tau_window, bins, num_tau_w, min_tau_w, max_tau_w
+    )
 
-    time_resolution_analysis(clustering_object, full_output)
+    time_resolution_analysis(clustering_object)
 
-    clustering_object = full_output_analysis(clustering_object, full_output)
+    full_output_analysis(clustering_object)
 
     return clustering_object
-
-
-if __name__ == "__main__":
-    main()

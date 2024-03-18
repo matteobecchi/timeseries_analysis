@@ -1,9 +1,11 @@
 """onion-clustering package."""
 
 from onion_clustering import (
-    onion_clustering,
+    onion_multi,
+    onion_uni,
 )
 
 __all__ = [
-    "onion_clustering",
+    "onion_uni",
+    "onion_multi",
 ]
