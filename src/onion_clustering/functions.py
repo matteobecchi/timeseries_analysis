@@ -570,11 +570,11 @@ def set_final_states(
 
     # Step 3: Write the final states and final thresholds to text files.
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("FINAL STATES AND THRESHOLDS:", file=dump)
+        print("* FINAL STATES AND THRESHOLDS:", file=dump)
         print("# Mu \t Sigma \t A \t state_fraction", file=dump)
         for state in updated_states:
             print(state.mean, state.sigma, state.area, state.perc, file=dump)
-        print("\n", file=dump)
+        print("# threshold type", file=dump)
         for state in updated_states:
             print(state.th_inf[0], state.th_inf[1], file=dump)
         print(
@@ -705,8 +705,8 @@ def relabel_states_2d(
 
     ### Step 4: print informations on the final states
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("FINAL STATES:", file=dump)
-        print("#center_coords, semiaxis, fraction_of_data", file=dump)
+        print("- FINAL STATES:", file=dump)
+        print("# center_coords, semiaxis, fraction_of_data", file=dump)
         for state in updated_states:
             centers = "[" + str(state.mean[0]) + ", "
             for tmp in state.mean[1:-1]:

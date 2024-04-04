@@ -40,12 +40,8 @@ def all_the_input_stuff(
     - Reads analysis parameters
     - Reads input raw data
     - Removes initial 't_delay' frames
-    - Creates blank files and directories for output
     - Creates and returns the ClusteringObject1D for the analysis
     """
-    with open(OUTPUT_FILE, "w+", encoding="utf-8") as dump:
-        print("\n", file=dump)
-
     par = Parameters(tau_window, bins, num_tau_w, min_tau_w, max_tau_w)
     data = UniData(matrix)
     clustering_object = ClusteringObject1D(par, data)
@@ -239,7 +235,6 @@ def gauss_fit_max(
     state.build_boundaries(NUMBER_OF_SIGMAS)
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("\n", file=dump)
         print(
             f"\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},"
             f" area = {state.area:.4f}",
@@ -352,13 +347,13 @@ def iterative_search(
     env_0 = False
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print(f"* Iteration {iteration_id - 1}", file=dump)
+            print(f"_ Iteration {iteration_id - 1}", file=dump)
         state = gauss_fit_max(m_copy, cl_ob.par)
 
         if state is None:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "* Iterations interrupted because "
+                    "_ Iterations interrupted because "
                     "fit does not converge.",
                     file=dump,
                 )
@@ -375,7 +370,7 @@ def iterative_search(
         if counter <= 0.0:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "* Iterations interrupted because last state " "is empty.",
+                    "- Iterations interrupted because last state " "is empty.",
                     file=dump,
                 )
             break
@@ -412,7 +407,7 @@ def timeseries_analysis(
     - Number of states and fraction of unclassified points are computed
     """
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("* New analysis: ", tau_w, file=dump)
+        print(f"* tau_window = {tau_w}", file=dump)
 
     tmp_cl_ob = copy.deepcopy(cl_ob)
     tmp_cl_ob.par.tau_w = tau_w
@@ -435,7 +430,7 @@ def timeseries_analysis(
         n_states += 1
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
-            f"Number of states identified: {n_states}, [{fraction_0}]",
+            f"* Number of states identified: {n_states}, [{fraction_0}]\n",
             file=dump,
         )
 
@@ -455,6 +450,10 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
     - If no classification is found, return
     - Otherwise, final states are identified by "set_final_states"
     """
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print(
+            f"* Complete analysis, tau_window = {cl_ob.par.tau_w}\n", file=dump
+        )
     cl_ob, tmp_labels, _ = iterative_search(cl_ob)
 
     if len(cl_ob.state_list) == 0:
@@ -481,8 +480,8 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D):
     """
     tau_window_list = param_grid(cl_ob.par, cl_ob.data.num_of_steps)
     cl_ob.tau_window_list = tau_window_list
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("* Tau_w used:", tau_window_list, file=dump)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as dump:
+        print("* Tau_w used:", tau_window_list, "\n", file=dump)
 
     number_of_states = []
     fraction_0 = []

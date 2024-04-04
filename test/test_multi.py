@@ -20,7 +20,7 @@ def setup_test_environment(tmpdir):
 # Define the actual test
 def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
-    FILE = "synthetic_2D/3D_synthetic_data.npy"
+    FILE = "data/synthetic_2D/3D_synthetic_data.npy"
     PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/" + FILE
     TAU_WINDOW = 10  # time resolution of the analysis
     NUM_TAU_W = 2  # number of tau_window tested (default 20)

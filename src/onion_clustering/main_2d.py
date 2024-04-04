@@ -40,12 +40,8 @@ def all_the_input_stuff(
     - Reads analysis parameters
     - Reads input raw data
     - Removes initial 't_delay' frames
-    - Creates blank files and directories for output
     - Creates and returns the ClusteringObject2D for the analysis
     """
-    with open(OUTPUT_FILE, "w+", encoding="utf-8") as dump:
-        print("\n", file=dump)
-
     par = Parameters(tau_window, bins, num_tau_w, min_tau_w, max_tau_w)
     data = MultiData(matrix)
     clustering_object = ClusteringObject2D(par, data)
@@ -168,7 +164,6 @@ def gauss_fit_max(
 
     if m_clean.shape[2] == 2:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\n", file=dump)
             print(
                 f"\tmu = [{popt[0]:.4f}, {popt[3]:.4f}],"
                 f" sigma = [{popt[1]:.4f}, {popt[4]:.4f}],"
@@ -178,7 +173,6 @@ def gauss_fit_max(
             print("\tFit goodness = " + str(goodness), file=dump)
     elif m_clean.shape[2] == 3:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\n", file=dump)
             print(
                 f"\tmu = [{popt[0]:.4f}, {popt[3]:.4f}, {popt[6]:.4f}], "
                 f"sigma = [{popt[1]:.4f}, {popt[4]:.4f}, {popt[7]:.4f}], "
@@ -297,7 +291,7 @@ def iterative_search(
     env_0 = False
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print(f"* Iteration {iteration_id - 1}", file=dump)
+            print(f"- Iteration {iteration_id - 1}", file=dump)
         state = gauss_fit_max(m_copy, np.array(cl_ob.data.range), bins)
 
         if state is None:
@@ -316,14 +310,14 @@ def iterative_search(
         if counter <= 0.0:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "* Iterations interrupted because last state " "is empty.",
+                    "- Iterations interrupted because last state " "is empty.",
                     file=dump,
                 )
             break
         if m_new.size == 0:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "* Iterations interrupted because all data "
+                    "- Iterations interrupted because all data "
                     "points assigned.",
                     file=dump,
                 )
@@ -364,7 +358,7 @@ def timeseries_analysis(
     """
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("* New analysis: ", tau_w, file=dump)
+        print(f"* tau_window = {tau_w}\n", file=dump)
 
     tmp_cl_ob = copy.deepcopy(cl_ob)
     tmp_cl_ob.par.tau_w = tau_w
@@ -373,7 +367,7 @@ def timeseries_analysis(
 
     if len(tmp_cl_ob.state_list) == 0:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("* No possible classification was found.", file=dump)
+            print("* No possible classification was found.\n", file=dump)
         del tmp_cl_ob
         return 1, 1.0
 
@@ -383,7 +377,7 @@ def timeseries_analysis(
         n_states += 1
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
-            f"Number of states identified: {n_states}, [{fraction_0}]",
+            f"- Number of states identified: {n_states}, [{fraction_0}]\n",
             file=dump,
         )
 
@@ -408,6 +402,11 @@ def full_output_analysis(cl_ob: ClusteringObject2D):
     - If no classification is found, return
 
     """
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print(
+            f"* Complete analysis, tau_window = {cl_ob.par.tau_w}\n", file=dump
+        )
+
     cl_ob, _ = iterative_search(cl_ob)
 
     if len(cl_ob.state_list) == 0:
@@ -430,8 +429,8 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
     """
     tau_window_list = param_grid(cl_ob.par, cl_ob.data.num_of_steps)
     cl_ob.tau_window_list = tau_window_list
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("* Tau_w used:", tau_window_list, file=dump)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as dump:
+        print("* Tau_w used:", tau_window_list, "\n", file=dump)
 
     number_of_states = []
     fraction_0 = []
