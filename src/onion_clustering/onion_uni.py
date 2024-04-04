@@ -41,7 +41,7 @@ def onion_uni(
     max_tau_w : int = -1
         the maximum value of `tau_window` on wchich the analysis is perfomed.
         If -1 (the default), the total trajectory length is used. You can set
-        it to 0 to turn off the analysis at different values of `tau_window`.
+        it to 0 to turn off the analysis for different values of `tau_window`.
 
     num_tau_w : int = 20
         number of different values of `tau_window` on which the analysis
@@ -123,7 +123,7 @@ class OnionUni:
     max_tau_w : int = -1
         The maximum value of `tau_window` on wchich the analysis is perfomed.
         If -1 (the default), the total trajectory length is used. You can set
-        it to 0 to turn off the analysis at different values of `tau_window`.
+        it to 0 to turn off the analysis for different values of `tau_window`.
 
     num_tau_w : int = 20
         Number of different values of `tau_window` on which the analysis

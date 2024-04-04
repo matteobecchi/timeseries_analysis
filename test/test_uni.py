@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pytest
-from onion_clustering.onion_uni import onion_uni
+from onion_clustering.onion_uni import OnionUni, onion_uni
 
 
 # Define a fixture to set up the test environment
@@ -29,6 +29,11 @@ def test_output_files(setup_test_environment):
     input_data = np.load(PATH_TO_INPUT_DATA)
 
     # Call your code to generate the output files
+    tmp = OnionUni(
+        tau_window=TAU_WINDOW, max_tau_w=MAX_TAU_W, num_tau_w=NUM_TAU_W
+    )
+    tmp.fit_predict(input_data)
+
     _, labels, time_res_analysis = onion_uni(
         input_data,
         tau_window=TAU_WINDOW,
