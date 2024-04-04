@@ -24,7 +24,7 @@ The algorithm output consists in
 * an array of shape *(num_tau_w, 3)* with the number of states and the fraction of unclassified data points for every choice of the time resolution. 
 
 ## Multivariate time-series version
-The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D data. The input array must have shape `(D, N, T)` where _D_ is the number of components. You can find an example of usage in `examples/example_script_multi.py`
+The multivariate time-series version of the algorithm works in a similar fashion, taking as input 2D or 3D data. The input array must have shape `(D, N, T)` where _D_ is the number of components. You can find an example of usage in `examples/example_script_multi.py`
 
 ## Required Python 3 packages
 `matplotlib`, `numpy`, `plotly`, `scipy`. 
