@@ -7,7 +7,7 @@ A one-dimensional time-series, computed on *N* particles for *T* frames, in the 
 ## Usage
 Install the package using `pip install onion_clustering`. 
 
-The `examples/` folder contains an example of usage. Download the example files as reported in the script `examples/example_script_uni.py` and then run it with `python3 example_script_uni.py`. 
+The `examples/` folder contains an example of usage. From this folder, download the example files as reported in the script `example_script_uni.py` and then run it with `python3 example_script_uni.py`. 
 
 ## input_parameters
 * `tau_window` (int): the length of the time window (in number of frames). 
