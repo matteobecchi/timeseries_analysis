@@ -68,10 +68,11 @@ def onion_uni(
     is given for the selected value of `tau_window`.
     Only the number of states and the fraction of unclassified data points are
     returned for the list of time resolutions analysed. This is a tool to
-    select the best value of `tau_window`.
+    help inform the choice of `tau_window`.
 
     References
     ----------
+    https://arxiv.org/abs/2402.07786
 
     Examples
     --------
@@ -149,10 +150,11 @@ class OnionUni:
     is given for the selected value of `tau_window`.
     Only the number of states and the fraction of unclassified data points are
     returned for the list of time resolutions analysed. This is a tool to
-    select the best value of `tau_window`.
+    help inform the choice of `tau_window`.
 
     References
     ----------
+    https://arxiv.org/abs/2402.07786
 
     Examples
     --------
