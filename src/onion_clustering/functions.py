@@ -4,7 +4,6 @@ Should contains all the functions in common between the 2 codes.
 
 from typing import List, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 import scipy.signal
@@ -12,22 +11,6 @@ import scipy.signal
 from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
 OUTPUT_FILE = "onion_clustering_log.txt"
-
-
-def read_input_data() -> str:
-    """
-    Read the path to the input data location.
-    """
-    try:
-        data_dir = np.loadtxt("data_directory.txt", dtype=str)
-    except OSError as msg_exc:
-        print(f"\t Reading data_directory.txt: {msg_exc}")
-    except ValueError as msg_exc:
-        print(f"\t Reading data_directory.txt: {msg_exc}")
-
-    print("* Reading data from", data_dir)
-
-    return str(data_dir)
 
 
 def moving_average(data: np.ndarray, window: int) -> np.ndarray:
@@ -91,20 +74,6 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
             result[index] = subarray.mean()
 
     return result
-
-
-def plot_histo(axes: plt.Axes, counts: np.ndarray, bins: np.ndarray):
-    """
-    Plots a histogram on the specified matplotlib axes.
-
-    Args:
-    - axes (plt.Axes): the matplotlib axes to plot on
-    - counts (np.ndarray): the count of occurrences
-    - bins (np.ndarray): the bin edges defining the intervals
-    """
-    axes.stairs(counts, bins, fill=True)
-    axes.set_xlabel(r"Normalized signal")
-    axes.set_ylabel(r"Probability distribution")
 
 
 def param_grid(par: Parameters, trj_len: int) -> List[int]:
