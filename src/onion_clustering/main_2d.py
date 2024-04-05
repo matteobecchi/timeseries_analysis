@@ -26,10 +26,8 @@ OUTPUT_FILE = "onion_clustering_log.txt"
 def all_the_input_stuff(
     matrix,
     tau_window,
+    tau_window_list,
     bins,
-    num_tau_w,
-    min_tau_w,
-    max_tau_w,
 ) -> ClusteringObject2D:
     """
     Data preprocessing for the analysis.
@@ -42,7 +40,7 @@ def all_the_input_stuff(
     - Removes initial 't_delay' frames
     - Creates and returns the ClusteringObject2D for the analysis
     """
-    par = Parameters(tau_window, bins, num_tau_w, min_tau_w, max_tau_w)
+    par = Parameters(tau_window, tau_window_list, bins)
     data = MultiData(matrix)
     clustering_object = ClusteringObject2D(par, data)
 
@@ -427,7 +425,11 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
     - Prints the output to file
     - Updates the clustering object with the analysis results
     """
-    tau_window_list = param_grid(cl_ob.par, cl_ob.data.num_of_steps)
+    if cl_ob.par.tau_w_list is None:
+        tau_window_list = param_grid(cl_ob.data.num_of_steps)
+    else:
+        tau_window_list = cl_ob.par.tau_w_list
+
     cl_ob.tau_window_list = tau_window_list
     with open(OUTPUT_FILE, "w", encoding="utf-8") as dump:
         print("* Tau_w used:", tau_window_list, "\n", file=dump)
@@ -446,16 +448,11 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
 def main(
     matrix,
     tau_window,
+    tau_window_list,
     bins,
-    num_tau_w,
-    min_tau_w,
-    max_tau_w,
 ) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysis.
-
-    Args:
-    - full_output (bool): activates the full output printing
 
     Returns:
     - clustering_object (ClusteringObject2D): the final clustering object
@@ -470,7 +467,7 @@ def main(
     print("##############################################################")
 
     clustering_object = all_the_input_stuff(
-        matrix, tau_window, bins, num_tau_w, min_tau_w, max_tau_w
+        matrix, tau_window, tau_window_list, bins
     )
 
     time_resolution_analysis(clustering_object)

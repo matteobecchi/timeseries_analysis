@@ -1,6 +1,6 @@
 """onion-clustering for multivariate time-series."""
 
-from typing import Union
+from typing import List, Union
 
 import numpy as np
 
@@ -10,10 +10,8 @@ from onion_clustering.main_2d import main as onion_inner
 def onion_multi(
     X,
     tau_window,
+    tau_window_list: Union[List[int], None] = None,
     bins: Union[str, int] = "auto",
-    min_tau_w=2,
-    max_tau_w=-1,
-    num_tau_w=20,
 ):
     """Perform onion clustering from data array.
 
@@ -26,27 +24,17 @@ def onion_multi(
         The time resolution for the clustering, corresponding to the lwngth
         of the windows in which the time-series are segmented.
 
+    tau_window_list : List[int]
+        The list of time resolutions at which the fast analysis will
+        be performed. If None (default), use a logspaced list between 2 and
+        the entire trajectory length.
+
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
         Can be an integer value, or "auto".
         If "auto", the default of numpy.histogram_bin_edges is used
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
-
-    min_tau_w : int = 2
-        The minimum value of `tau_window` on wchich the analysis is perfomed.
-        Using min_tau_w = 1, time-correlation in the data is ignored, and the
-        algorithm is equivalent to an iterative greedy Gaussian mixture.
-
-    max_tau_w : int = -1
-        the maximum value of `tau_window` on wchich the analysis is perfomed.
-        If -1 (the default), the total trajectory length is used. You can set
-        it to 0 to turn off the analysis for different values of `tau_window`.
-
-    num_tau_w : int = 20
-        number of different values of `tau_window` on which the analysis
-        is performed. The values are set logaritmically spaced between
-        `min_tau_w` and `max_tau_w`.
 
     Returns
     -------
@@ -84,16 +72,12 @@ def onion_multi(
 
     est = OnionMulti(
         tau_window=tau_window,
+        tau_window_list=tau_window_list,
         bins=bins,
-        min_tau_w=min_tau_w,
-        max_tau_w=max_tau_w,
-        num_tau_w=num_tau_w,
     )
     est.fit(X)
 
-    time_res_analysis = est.time_res_analysis_
-
-    return est.state_list_, est.labels_, time_res_analysis
+    return est.state_list_, est.labels_, est.time_res_analysis_
 
 
 class OnionMulti:
@@ -108,27 +92,17 @@ class OnionMulti:
         The time resolution for the clustering, corresponding to the lwngth
         of the windows in which the time-series are segmented.
 
+    tau_window_list : List[int]
+        The list of time resolutions at which the fast analysis will
+        be performed. If None (default), use a logspaced list between 2 and
+        the entire trajectory length.
+
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
         Can be an integer value, or "auto".
         If "auto", the default of numpy.histogram_bin_edges is used
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
-
-    min_tau_w : int = 2
-        The minimum value of `tau_window` on wchich the analysis is perfomed.
-        Using min_tau_w = 1, time-correlation in the data is ignored, and the
-        algorithm is equivalent to an iterative greedy Gaussian mixture.
-
-    max_tau_w : int = -1
-        The maximum value of `tau_window` on wchich the analysis is perfomed.
-        If -1 (the default), the total trajectory length is used. You can set
-        it to 0 to turn off the analysis for different values of `tau_window`.
-
-    num_tau_w : int = 20
-        Number of different values of `tau_window` on which the analysis
-        is performed. The values are set logaritmically spaced between
-        `min_tau_w` and `max_tau_w`.
 
     Attributes
     ----------
@@ -167,16 +141,12 @@ class OnionMulti:
     def __init__(
         self,
         tau_window,
+        tau_window_list=None,
         bins: Union[str, int] = "auto",
-        min_tau_w=2,
-        max_tau_w=-1,
-        num_tau_w=20,
     ):
         self.tau_window = tau_window
+        self.tau_window_list = tau_window_list
         self.bins = bins
-        self.num_tau_w = num_tau_w
-        self.min_tau_w = min_tau_w
-        self.max_tau_w = max_tau_w
 
     def fit(self, X):
         """Perform onion clustering from data array.
@@ -194,10 +164,8 @@ class OnionMulti:
         cl_ob = onion_inner(
             X,
             self.tau_window,
+            self.tau_window_list,
             self.bins,
-            self.num_tau_w,
-            self.min_tau_w,
-            self.max_tau_w,
         )
 
         self.state_list_ = cl_ob.state_list

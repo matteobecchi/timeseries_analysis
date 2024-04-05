@@ -147,9 +147,7 @@ class Parameters:
     max_tau_w (int): maximum time resolution to use
     """
 
-    def __init__(self, tau_window, bins, num_tau_w, min_tau_w, max_tau_w):
+    def __init__(self, tau_window, tau_w_list, bins):
         self.tau_w = tau_window
+        self.tau_w_list = tau_w_list
         self.bins = bins
-        self.num_tau_w = num_tau_w
-        self.min_tau_w = min_tau_w
-        self.max_tau_w = max_tau_w

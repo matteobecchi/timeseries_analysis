@@ -23,8 +23,7 @@ def test_output_files(setup_test_environment):
     FILE = "data/synthetic_2D/3D_synthetic_data.npy"
     PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/" + FILE
     TAU_WINDOW = 10  # time resolution of the analysis
-    NUM_TAU_W = 2  # number of tau_window tested (default 20)
-    MAX_TAU_W = 10  # max value of tau_window tested (default auto)
+    TAU_WINDOW_LIST = [2, 10]
     BINS = 50  # number of histogram bins (default auto)
 
     input_data = np.load(PATH_TO_INPUT_DATA)
@@ -32,8 +31,7 @@ def test_output_files(setup_test_environment):
     # Call your code to generate the output files
     tmp = OnionMulti(
         tau_window=TAU_WINDOW,
-        max_tau_w=MAX_TAU_W,
-        num_tau_w=NUM_TAU_W,
+        tau_window_list=TAU_WINDOW_LIST,
         bins=BINS,
     )
     tmp.fit_predict(input_data)
@@ -41,8 +39,7 @@ def test_output_files(setup_test_environment):
     _, labels, time_res_analysis = onion_multi(
         input_data,
         tau_window=TAU_WINDOW,
-        num_tau_w=NUM_TAU_W,
-        max_tau_w=MAX_TAU_W,
+        tau_window_list=TAU_WINDOW_LIST,
         bins=BINS,
     )
 

@@ -23,22 +23,21 @@ def test_output_files(setup_test_environment):
     FILE = "water_coex_100ps_1nm_LENS.npy"
     PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/" + FILE
     TAU_WINDOW = 10  # time resolution of the analysis
-    NUM_TAU_W = 2
-    MAX_TAU_W = 10
+    TAU_WINDOW_LIST = [2, 10]
 
     input_data = np.load(PATH_TO_INPUT_DATA)
 
     # Call your code to generate the output files
     tmp = OnionUni(
-        tau_window=TAU_WINDOW, max_tau_w=MAX_TAU_W, num_tau_w=NUM_TAU_W
+        tau_window=TAU_WINDOW,
+        tau_window_list=TAU_WINDOW_LIST,
     )
     tmp.fit_predict(input_data)
 
     _, labels, time_res_analysis = onion_uni(
         input_data,
         tau_window=TAU_WINDOW,
-        num_tau_w=NUM_TAU_W,
-        max_tau_w=MAX_TAU_W,
+        tau_window_list=TAU_WINDOW_LIST,
     )
 
     # Define the paths to the expected output files

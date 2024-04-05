@@ -29,7 +29,7 @@ MIN_TAU_W = 2  # min number of tau_window tested (default 2)
 input_data = np.load(PATH_TO_INPUT_DATA)[:, 1:]
 
 state_list, labels, time_res_analysis = onion_uni(
-    input_data, tau_window=TAU_WINDOW, num_tau_w=NUM_TAU_W, min_tau_w=MIN_TAU_W
+    input_data, tau_window=TAU_WINDOW
 )
 
 ### These functions are examples of how to visualize the results

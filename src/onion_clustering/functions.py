@@ -8,7 +8,7 @@ import numpy as np
 import scipy.optimize
 import scipy.signal
 
-from onion_clustering.first_classes import Parameters, StateMulti, StateUni
+from onion_clustering.first_classes import StateMulti, StateUni
 
 OUTPUT_FILE = "onion_clustering_log.txt"
 
@@ -76,30 +76,19 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
     return result
 
 
-def param_grid(par: Parameters, trj_len: int) -> List[int]:
+def param_grid(trj_len: int) -> List[int]:
     """
     Generate the (tau_window, t_smooth) grid.
 
     Args:
-    - par (Parameters): an instance of the Parameters class containing
-    parameter details
     - trj_len (int): length of the trajectory data
 
     Returns:
     - tau_window (List[int]): a list of tau_window values
-    - t_smooth (List[int]): a list of t_smooth values
 
-    - If no max_tau_w is specified by the user, uses the maximum possible
     - Creates the log-spaced list of values for tau_windows (no duplicates)
-    - Creates the lin-spaced list of values for t_smooth
-
     """
-    if par.max_tau_w == -1:
-        par.max_tau_w = trj_len
-
-    tmp = np.geomspace(
-        par.min_tau_w, par.max_tau_w, num=par.num_tau_w, dtype=int
-    )
+    tmp = np.geomspace(2, trj_len, num=20, dtype=int)
     tau_window = []
     for tau_w in tmp:
         if tau_w not in tau_window:
