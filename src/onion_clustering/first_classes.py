@@ -4,12 +4,7 @@ Contains the classes used for storing parameters and system states.
 
 import copy
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import rgb2hex
-from matplotlib.ticker import MaxNLocator
-
-COLORMAP = "viridis"
 
 
 class StateUni:
@@ -111,86 +106,6 @@ class UniData:
         copy_data = copy.deepcopy(self)
         return copy_data
 
-    def plot_medoids(self):
-        """
-        Compute and plot the average signal sequence inside each state.
-
-        - Initializes some usieful variables
-        - Check if we need to add the "0" state for consistency
-        - For each state, stores all the signal windows in that state, and
-        - Computes mean and standard deviation of the signals in that state
-        - Prints the output to file
-        - Plots the results to Fig4.png
-
-        """
-        tau_window = int(self.num_of_steps / self.labels.shape[1])
-        all_the_labels = self.labels
-        center_list = []
-        std_list = []
-
-        missing_zero = 0
-        list_of_labels = np.unique(all_the_labels)
-        if 0 not in list_of_labels:
-            list_of_labels = np.insert(list_of_labels, 0, 0)
-            missing_zero = 1
-
-        for ref_label in list_of_labels:
-            tmp = []
-            for i, mol in enumerate(all_the_labels):
-                for window, label in enumerate(mol):
-                    time_0 = window * tau_window
-                    time_1 = (window + 1) * tau_window
-                    if label == ref_label:
-                        tmp.append(self.matrix[i][time_0:time_1])
-            if len(tmp) > 0:
-                center_list.append(np.mean(tmp, axis=0))
-                std_list.append(np.std(tmp, axis=0))
-        center_arr = np.array(center_list)
-        std_arr = np.array(std_list)
-
-        np.savetxt(
-            "medoid_center.txt",
-            center_arr,
-            header="Signal average for each ENV",
-        )
-        np.savetxt(
-            "medoid_stddev.txt",
-            std_arr,
-            header="Signal standard deviation for each ENV",
-        )
-
-        palette = []
-        cmap = plt.get_cmap(COLORMAP, list_of_labels.size)
-        palette.append(rgb2hex(cmap(0)))
-        for i in range(1, cmap.N):
-            rgba = cmap(i)
-            palette.append(rgb2hex(rgba))
-        fig, axes = plt.subplots()
-        time_seq = range(tau_window)
-        for center_id, center in enumerate(center_list):
-            err_inf = center - std_list[center_id]
-            err_sup = center + std_list[center_id]
-            axes.fill_between(
-                time_seq,
-                err_inf,
-                err_sup,
-                alpha=0.25,
-                color=palette[center_id + missing_zero],
-            )
-            axes.plot(
-                time_seq,
-                center,
-                label="ENV" + str(center_id + missing_zero),
-                marker="o",
-                c=palette[center_id + missing_zero],
-            )
-        fig.suptitle("Average time sequence inside each environments")
-        axes.set_xlabel(r"Time $t$ [frames]")
-        axes.set_ylabel(r"Signal")
-        axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-        axes.legend()
-        fig.savefig("output_figures/Fig4.png", dpi=600)
-
 
 class MultiData:
     """
@@ -274,66 +189,6 @@ class MultiData:
         """
         copy_data = copy.deepcopy(self)
         return copy_data
-
-    def plot_medoids(self):
-        """
-        Compute and plot the average signal sequence inside each state.
-
-        - Checks if the data have 2 or 3 components (works only with D == 2)
-        - Initializes some usieful variables
-        - Check if we need to add the "0" state for consistency
-        - For each state, stores all the signal windows in that state, and
-        - Computes mean of the signals in that state
-        - Prints the output to file
-        - Plots the results to Fig4.png
-
-        """
-        if self.dims > 2:
-            print("plot_medoids() does not work with 3D data.")
-            return
-
-        missing_zero = 0
-        list_of_labels = np.unique(self.labels)
-        if 0 not in list_of_labels:
-            list_of_labels = np.insert(list_of_labels, 0, 0)
-            missing_zero = 1
-
-        tau_window = int(self.num_of_steps / self.labels.shape[1])
-        center_list = []
-
-        for ref_label in list_of_labels:
-            tmp = []
-            for i, mol in enumerate(self.labels):
-                for j, label in enumerate(mol):
-                    t_0 = j * tau_window
-                    t_1 = (j + 1) * tau_window
-                    if label == ref_label:
-                        tmp.append(self.matrix[i][t_0:t_1])
-            center_list.append(np.mean(tmp, axis=0))
-
-        palette = []
-        cmap = plt.get_cmap(COLORMAP, np.unique(self.labels).size)
-        palette.append(rgb2hex(cmap(0)))
-        for i in range(1, cmap.N):
-            rgba = cmap(i)
-            palette.append(rgb2hex(rgba))
-        fig, axes = plt.subplots()
-        for id_c, center in enumerate(center_list):
-            sig_x = center[:, 0]
-            sig_y = center[:, 1]
-            axes.plot(
-                sig_x,
-                sig_y,
-                label="ENV" + str(id_c + missing_zero),
-                marker="o",
-                c=palette[id_c + missing_zero],
-            )
-        fig.suptitle("Average time sequence inside each environments")
-        axes.set_xlabel(r"Signal 1")
-        axes.set_ylabel(r"Signal 2")
-        axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-        axes.legend()
-        fig.savefig("output_figures/Fig4.png", dpi=600)
 
 
 class Parameters:

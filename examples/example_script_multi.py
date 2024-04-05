@@ -4,7 +4,14 @@ Example script for running onion_clustering_2d
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import MaxNLocator
+from example_plots import (
+    plot_medoids_multi,
+    plot_one_trj_multi,
+    plot_output_multi,
+    plot_sankey,
+    plot_state_populations,
+    plot_time_res_analysis,
+)
 from onion_clustering.onion_multi import onion_multi
 
 ##############################################################################
@@ -20,22 +27,18 @@ MIN_TAU_W = 2  # min number of tau_window tested (default 2)
 ##############################################################################
 
 input_data = np.load(PATH_TO_INPUT_DATA)
+print(input_data.shape)
 
 state_list, labels, time_res_analysis = onion_multi(
     input_data, tau_window=TAU_WINDOW, num_tau_w=NUM_TAU_W, min_tau_w=MIN_TAU_W
 )
 
-### Plot the number of states and fraction of unclassified data points
-### as a function of the time resolution
-fig, axes = plt.subplots()
-axes.plot(time_res_analysis[:, 0], time_res_analysis[:, 1], marker="o")
-axes.set_xlabel(r"Time resolution $\Delta t$ [frame]")
-axes.set_ylabel(r"# environments", weight="bold", c="#1f77b4")
-axes.set_xscale("log")
-axes.yaxis.set_major_locator(MaxNLocator(integer=True))
-axesr = axes.twinx()
-axesr.plot(
-    time_res_analysis[:, 0], time_res_analysis[:, 2], marker="o", c="#ff7f0e"
-)
-axesr.set_ylabel("Population of env 0", weight="bold", c="#ff7f0e")
+### These functions are examples of how to visualize the results
+plot_time_res_analysis("Fig1.png", time_res_analysis)
+plot_output_multi("Fig2.png", input_data, state_list, labels, TAU_WINDOW)
+plot_one_trj_multi("Fig3.png", 0, TAU_WINDOW, input_data, labels)
+plot_medoids_multi("Fig4.png", TAU_WINDOW, input_data, labels)
+plot_state_populations("Fig5.png", labels)
+plot_sankey("Fig6.png", labels, [100, 200, 300, 400])
+
 plt.show()
