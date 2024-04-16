@@ -4,11 +4,11 @@ from typing import List, Union
 
 import numpy as np
 
-from onion_clustering.main import main as onion_inner
+from onion_clustering._internal.main import main as onion_inner
 
 
 def onion_uni(
-    X,
+    matrix,
     tau_window,
     tau_window_list: Union[List[int], None] = None,
     bins: Union[str, int] = "auto",
@@ -17,7 +17,7 @@ def onion_uni(
 
     Parameters
     ----------
-    X : ndarray of shape (n_particles, n_frames)
+    matrix : ndarray of shape (n_particles, n_frames)
         The values of the signal for each particle at each frame.
 
     tau_window : int
@@ -66,8 +66,8 @@ def onion_uni(
     --------
 
     >>> from sklearn.something import onion_uni
-    >>> X = array_with_timeseries_data
-    >>> state_list, labels = onion_uni(X, tau_window=10)
+    >>> matrix = array_with_timeseries_data
+    >>> state_list, labels = onion_uni(matrix, tau_window=10)
     """
 
     est = OnionUni(
@@ -75,7 +75,7 @@ def onion_uni(
         tau_window_list=tau_window_list,
         bins=bins,
     )
-    est.fit(X)
+    est.fit(matrix)
 
     return est.state_list_, est.labels_, est.time_res_analysis_
 
@@ -85,11 +85,11 @@ class OnionUni:
 
     Parameters
     ----------
-    X : ndarray of shape (n_particles, n_frames)
+    matrix : ndarray of shape (n_particles, n_frames)
         The values of the signal for each particle at each frame.
 
     tau_window : int
-        The time resolution for the clustering, corresponding to the lwngth
+        The time resolution for the clustering, corresponding to the length
         of the windows in which the time-series are segmented.
 
     tau_window_list : List[int]
@@ -134,8 +134,8 @@ class OnionUni:
     --------
 
     >>> from sklearn.something import OnionUni
-    >>> X = array_with_timeseries_data
-    >>> clustering = OnionUni(X, tau_window=10).fit(X)
+    >>> matrix = array_with_timeseries_data
+    >>> clustering = OnionUni(matrix, tau_window=10).fit(matrix)
     """
 
     def __init__(
@@ -148,12 +148,12 @@ class OnionUni:
         self.tau_window_list = tau_window_list
         self.bins = bins
 
-    def fit(self, X):
+    def fit(self, matrix):
         """Perform onion clustering from data array.
 
         Parameters
         ----------
-        X : ndarray of shape (n_particles, n_frames)
+        matrix : ndarray of shape (n_particles, n_frames)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -162,7 +162,7 @@ class OnionUni:
             Returns a fitted instance of self.
         """
         cl_ob = onion_inner(
-            X,
+            matrix,
             self.tau_window,
             self.tau_window_list,
             self.bins,
@@ -174,12 +174,12 @@ class OnionUni:
             [cl_ob.tau_window_list, cl_ob.number_of_states, cl_ob.fraction_0]
         ).T
 
-    def fit_predict(self, X):
+    def fit_predict(self, matrix):
         """Compute clusters from a data matrix and predict labels.
 
         Parameters
         ----------
-        X : ndarray of shape (n_particles, n_frames)
+        matrix : ndarray of shape (n_particles, n_frames)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -187,5 +187,5 @@ class OnionUni:
         labels_ : ndarray of shape (n_samples,)
             Cluster labels. Unclassified points are given the label 0.
         """
-        self.fit(X)
+        self.fit(matrix)
         return self.labels_

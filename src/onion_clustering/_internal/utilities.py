@@ -2,8 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from matplotlib.patches import Ellipse
-
-from onion_clustering.first_classes import StateMulti
+from onion_clustering._internal.first_classes import StateMulti
 
 
 def butter_lowpass_filter(x: np.ndarray, cutoff: float, fs: float, order: int):

@@ -8,10 +8,13 @@ from typing import List, Tuple, Union
 
 import numpy as np
 import scipy.signal
-
-from onion_clustering.classes import ClusteringObject1D
-from onion_clustering.first_classes import Parameters, StateUni, UniData
-from onion_clustering.functions import (
+from onion_clustering._internal.classes import ClusteringObject1D
+from onion_clustering._internal.first_classes import (
+    Parameters,
+    StateUni,
+    UniData,
+)
+from onion_clustering._internal.functions import (
     gaussian,
     moving_average,
     param_grid,
@@ -32,12 +35,38 @@ def all_the_input_stuff(
     """
     Data preprocessing for the analysis.
 
-    Returns:
-        ClusteringObject1D
+    Parameters
+    ----------
+
+    matrix : ndarray of shape (n_particles, n_frames)
+        The values of the signal for each particle at each frame.
+
+    tau_window : int
+        The time resolution for the clustering, corresponding to the length
+        of the windows in which the time-series are segmented.
+
+    tau_window_list : List[int]
+        The list of time resolutions at which the fast analysis will
+        be performed. If None (default), use a logspaced list between 2 and
+        the entire trajectory length.
+
+    bins: Union[str, int] = "auto"
+        The number of bins used for the construction of the histograms.
+        Can be an integer value, or "auto".
+        If "auto", the default of numpy.histogram_bin_edges is used
+        (see https://numpy.org/doc/stable/reference/generated/
+        numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
+
+    Returns
+    -------
+
+    clustering_object : ClusteringObject1D
+
+    Notes
+    -----
 
     - Reads analysis parameters
-    - Reads input raw data
-    - Removes initial 't_delay' frames
+    - Reads input data
     - Creates and returns the ClusteringObject1D for the analysis
     """
     par = Parameters(tau_window, tau_window_list, bins)
@@ -53,22 +82,38 @@ def perform_gauss_fit(
     """
     Gaussian fit on the data histogram.
 
-    Args:
-        param (List[int]): a list of the parameters for the fit:
+    Parameters
+    ----------
+
+    param : List[int]
+        A list of the parameters for the fit:
             initial index,
             final index,
             index of the max,
             amount of data points,
             gap value for histogram smoothing
-        data (List[np.ndarray]): a list of the data for the fit
+
+    data : List[np.ndarray]
+        A list of the data for the fit:
             histogram binning,
             histogram counts
-        int_type (str): the type of the fitting interval ('max' or 'half')
 
-    Returns:
-        A boolean value for the fit convergence
-        goodness (int): the fit quality (max is 5)
-        popt (np.ndarray): the optimal gaussians fit parameters
+    int_type : str
+        The type of the fitting interval ('max' or 'half').
+
+    Returns
+    -------
+
+    A boolean value for the fit convergence.
+
+    goodness : int
+        The fit quality (max is 5).
+
+    popt : ndarray of shape (3,)
+        The optimal gaussians fit parameters.
+
+    Notes
+    -----
 
     - Trys to perform the fit with the specified parameters
     - Computes the fit quality by checking if some requirements are satisfied
@@ -147,13 +192,24 @@ def gauss_fit_max(
     """
     Selection of the optimal interval and parameters in order to fit a state.
 
-    Args:
-        m_clean (np.ndarray): the data points
-        par (Parameters): object containing parameters for the analysis.
+    Parameters
+    ----------
 
-    Returns:
-        state (StateUni): object containing Gaussian fit parameters
-            (mu, sigma, area), or None if the fit fails.
+    m_clean : ndarray
+        The data points.
+
+    par : Parameters
+        Object containing parameters for the analysis.
+
+    Returns
+    -------
+
+    state : StateUni
+        Object containing Gaussian fit parameters (mu, sigma, area),
+        or None if the fit fails.
+
+    Notes
+    -----
 
     - Computes the data histogram
     - If the bins are more than 50, smooths the histogram with gap = 3
@@ -164,8 +220,7 @@ def gauss_fit_max(
     - Tries to perform the Gaussian fit in it
     - Compares the two fits and choose the one with higher goodness
     - Create the State object
-    - Prints State's information
-    - Plots the histogram with the best fit
+    - Prints State's information to file
     """
     flat_m = m_clean.flatten()
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
@@ -252,17 +307,35 @@ def find_stable_trj(
     """
     Identification of windows contained in a certain state.
 
-    Args:
-        cl_ob (ClusteringObject1D): the clustering object
-        state (StateUni): the state
-        tmp_labels (np.ndarray): contains the cluster labels of all the
-            signal windows
-        lim (int): the algorithm iteration
+    Parameters
+    ----------
 
-    Returns:
-        m2_array (np.ndarray): array of still unclassified data points
-        window_fraction (float): fraction of windows classified in this state
-        env_0 (bool): indicates if there are still unclassified data points
+    cl_ob : ClusteringObject1D
+        The clustering object.
+
+    state : StateUni
+        The state we want to put windows in.
+
+    tmp_labels : ndarray of shape (n_particles, n_windows)
+        Contains the cluster labels of all the signal windows.
+
+    lim : int
+        The algorithm iteration.
+
+    Returns
+    -------
+
+    m2_array : ndarray
+        Array of still unclassified data points.
+
+    window_fraction : float
+        Fraction of windows classified in this state.
+
+    env_0 : bool
+        Indicates if there are still unclassified data points.
+
+    Notes
+    -----
 
     - Initializes some useful variables
     - Selects the data windows contained inside the state
@@ -271,6 +344,7 @@ def find_stable_trj(
     - Creates a np.ndarray to store still unclassified windows
     - Sets the value of env_0 to signal still unclassified data points
     """
+
     number_of_windows = tmp_labels.shape[1]
     m_clean = cl_ob.data.matrix
     tau_window = cl_ob.par.tau_w
@@ -314,13 +388,26 @@ def iterative_search(
     """
     Iterative search for stable windows in the trajectory.
 
-    Args:
-        cl_ob (ClusteringObject1D): the clustering object
+    Parameters
+    ----------
 
-    Returns:
-        cl_ob (ClusteringObject1D): updated with the clustering results
-        atl (np.ndarray): temporary array of labels
-        env_0 (bool): indicates if there are unclassified data points
+    cl_ob : ClusteringObject1D)
+        The clustering object.
+
+    Returns
+    -------
+
+    cl_ob : ClusteringObject1D
+        Updated with the clustering results.
+
+    atl : ndarray
+        Temporary array of labels.
+
+    env_0 : bool
+        Indicates if there are unclassified data points.
+
+    Notes
+    -----
 
     - Initializes some useful variables
     - At each ieration:
@@ -333,6 +420,7 @@ def iterative_search(
     - Calls "relable_states" to sort and clean the state list, and updates
     the clustering object
     """
+
     num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
     tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
         int
@@ -389,16 +477,28 @@ def timeseries_analysis(
     """
     The clustering analysis to compute the dependence on time resolution.
 
-    Args:
-        cl_ob (ClusteringObject1D): the clustering object
-        tau_w (int): the time resolution for the analysis
+    Parameters
+    ----------
 
-    Returns:
-        num_states (int): number of identified states
-        fraction_0 (float): fraction of unclassified data points
+    cl_ob : ClusteringObject1D
+        The clustering object.
+
+    tau_w : int
+        The time resolution for the analysis.
+
+    Returns
+    -------
+
+    n_states : int
+        Number of identified states.
+
+    fraction_0 : float
+        Fraction of unclassified data points.
+
+    Notes
+    -----
 
     - Creates a copy of the clustering object and of the parameters
-    - Preprocesses the data with the selected parameters
     - Performs the clustering with the iterative search and classification
     - If no classification is found, cleans the memory and return
     - Otherwise, final states are identified by "set_final_states"
@@ -440,14 +540,20 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
     """
     The complete clustering analysis with the input parameters.
 
-    Args:
-        cl_ob (ClusteringObject1D): the clustering object
+    Parameters
+    ----------
 
-    - Preprocesses the data
+    cl_ob : ClusteringObject1D
+        The clustering object.
+
+    Notes
+    -----
+
     - Performs the clustering with the iterative search and classification
     - If no classification is found, return
     - Otherwise, final states are identified by "set_final_states"
     """
+
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
             f"* Complete analysis, tau_window = {cl_ob.par.tau_w}\n", file=dump
@@ -468,12 +574,17 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D):
     """
     Explore parameter space and compute the dependence on time resolution.
 
-    Args:
-        cl_ob (ClusteringObject1D): the clustering object
+    Parameters
+    ----------
+
+    cl_ob : ClusteringObject1D
+        The clustering object.
+
+    Notes
+    -----
 
     - Generates the parameters' grid
     - Performs and stores the clustering for all the parameters' combinations
-    - Prints the output to file
     - Updates the clustering object with the analysis results
     """
     if cl_ob.par.tau_w_list is None:
@@ -507,18 +618,37 @@ def main(
 
     Parameters
     ----------
-    To write
+    matrix : ndarray of shape (n_particles, n_frames)
+        The values of the signal for each particle at each frame.
+
+    tau_window : int
+        The time resolution for the clustering, corresponding to the length
+        of the windows in which the time-series are segmented.
+
+    tau_window_list : List[int]
+        The list of time resolutions at which the fast analysis will
+        be performed. If None (default), use a logspaced list between 2 and
+        the entire trajectory length.
+
+    bins: Union[str, int] = "auto"
+        The number of bins used for the construction of the histograms.
+        Can be an integer value, or "auto".
+        If "auto", the default of numpy.histogram_bin_edges is used
+        (see https://numpy.org/doc/stable/reference/generated/
+        numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
 
     Returns
     -------
-    clustering_object (ClusteringObject1D): the final clustering object
+    clustering_object : ClusteringObject1D
+        The final clustering object.
 
     Notes
     -----
     - Reads the data and the parameters
-    - Explore the parameters (tau_window, t_smooth) space
-    - Performs a detailed analysis with the selected parameters
+    - Performs the quick analysis for all the values in tau_window_list
+    - Performs a detailed analysis with the selected tau_window
     """
+
     print("##############################################################")
     print("# If you publish results using onion-clustering, please cite #")
     print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
