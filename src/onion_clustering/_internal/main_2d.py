@@ -569,11 +569,6 @@ def main(
     - Performs the quick analysis for all the values in tau_window_list
     - Performs a detailed analysis with the selected parameters
     """
-    print("##############################################################")
-    print("# If you publish results using onion-clustering, please cite #")
-    print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
-    print("##############################################################")
-
     clustering_object = all_the_input_stuff(
         matrix, tau_window, tau_window_list, bins
     )
