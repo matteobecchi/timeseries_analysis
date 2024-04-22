@@ -445,6 +445,7 @@ def set_final_states(
     for pair in best_merge:
         relabel_dic[pair[0]] = pair[1]
     if_env0 = np.any(np.unique(all_the_labels) == 0)
+
     relabel_map = np.zeros(max(np.unique(all_the_labels) + 1), dtype=int)
     for i, _ in enumerate(relabel_map):
         relabel_map[i] = i
