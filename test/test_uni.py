@@ -69,15 +69,18 @@ def test_output_files(setup_test_environment):
 
     # Use filecmp to compare the contents of the expected
     # and actual output directories
-    with open(expected_output_path_1, "r") as expected_file, open(
-        actual_output_path_1, "r"
-    ) as actual_file:
+    with (
+        open(expected_output_path_1, "r") as expected_file,
+        open(actual_output_path_1, "r") as actual_file,
+    ):
         assert expected_file.read() == actual_file.read()
-    with open(expected_output_path_2, "r") as expected_file, open(
-        actual_output_path_2, "r"
-    ) as actual_file:
+    with (
+        open(expected_output_path_2, "r") as expected_file,
+        open(actual_output_path_2, "r") as actual_file,
+    ):
         assert expected_file.read() == actual_file.read()
-    with open(expected_output_path_3, "r") as expected_file, open(
-        actual_output_path_3, "r"
-    ) as actual_file:
+    with (
+        open(expected_output_path_3, "r") as expected_file,
+        open(actual_output_path_3, "r") as actual_file,
+    ):
         assert expected_file.read() == actual_file.read()

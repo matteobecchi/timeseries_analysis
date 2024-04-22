@@ -1,6 +1,7 @@
 """
 Contains the classes used for storing the clustering data.
 """
+
 import os
 from typing import List, Union
 

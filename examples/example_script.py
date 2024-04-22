@@ -1,6 +1,7 @@
 """
 Example script for running onion_clustering
 """
+
 import os
 import shutil
 from pathlib import Path

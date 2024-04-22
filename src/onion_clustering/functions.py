@@ -1,6 +1,7 @@
 """
 Should contains all the functions in common between the 2 codes.
 """
+
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
@@ -458,7 +459,7 @@ def set_final_states(
 
     final_map = np.zeros(max(np.unique(all_the_labels)) + 1, dtype=int)
     for i, el in enumerate(np.unique(all_the_labels)):
-        final_map[el] = i + 1*(1 - if_env0)
+        final_map[el] = i + 1 * (1 - if_env0)
     for i, particle in enumerate(all_the_labels):
         for j, el in enumerate(particle):
             all_the_labels[i][j] = final_map[el]
