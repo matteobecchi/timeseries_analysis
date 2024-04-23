@@ -1,13 +1,13 @@
 # timeseries_analysis
 Code for unsupervised clustering of time-series data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
 
-## Input data
-A one-dimensional time-series, computed on *N* particles for *T* frames, in the format of a ndarray of shape *(N, T)*.
-
 ## Usage
 Install the package using `pip install onion_clustering`. 
 
 The `examples/` folder contains an example of usage. From this folder, download the example files as reported in the script `example_script_uni.py` and then run it with `python3 example_script_uni.py`. 
+
+## Input data
+A one-dimensional time-series, computed on *N* particles for *T* frames, in the format of a ndarray of shape *(N, T)*.
 
 ## Parameters
 * `tau_window` (int): the length of the time window (in number of frames). 
