@@ -2,7 +2,7 @@
 Code for unsupervised clustering of time-series data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
 
 ## Input data
-A one-dimensional time-series, computed on *N* particles for *T* frames, in the format of a numpy.ndarray of shape *(N, T)*.
+A one-dimensional time-series, computed on *N* particles for *T* frames, in the format of a ndarray of shape *(N, T)*.
 
 ## Usage
 Install the package using `pip install onion_clustering`. 
@@ -11,7 +11,7 @@ The `examples/` folder contains an example of usage. From this folder, download 
 
 ## input_parameters
 * `tau_window` (int): the length of the time window (in number of frames). 
-* `tau_window_list` (List[int]): the list of time_windows for which the number of states and the fraction of unclassified states will be measured.
+* `tau_window_list` (List[int], optional): the list of time_windows for which the number of states and the fraction of unclassified states will be measured.
 * `bins` (int, optional): the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
 
 ## Output
