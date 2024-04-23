@@ -19,18 +19,19 @@ from onion_clustering.onion_multi import onion_multi
 # Use git clone git@github.com:matteobecchi/onion_example_files.git
 # to download example datasets
 PATH_TO_INPUT_DATA = "onion_example_files/data/multivariate_time-series.npy"
-TAU_WINDOW = 10  # time resolution of the analysis
+TAU_WINDOW = 10
 
 ### Optional parametrers ###
-NUM_TAU_W = 20  # number of values of tau_window tested (default 20)
-MIN_TAU_W = 2  # min number of tau_window tested (default 2)
+TAU_WINDOW_LIST = [5, 10, 15, 20]
+BINS = 25
 ##############################################################################
 
 input_data = np.load(PATH_TO_INPUT_DATA)
-print(input_data.shape)
 
 state_list, labels, time_res_analysis = onion_multi(
-    input_data, tau_window=TAU_WINDOW
+    input_data,
+    tau_window=TAU_WINDOW,
+    tau_window_list=TAU_WINDOW_LIST,
 )
 
 ### These functions are examples of how to visualize the results
