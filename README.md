@@ -11,17 +11,15 @@ The `examples/` folder contains an example of usage. From this folder, download 
 
 ## input_parameters
 * `tau_window` (int): the length of the time window (in number of frames). 
+* `tau_window_list` (List[int]): the list of time_windows for which the number of states and the fraction of unclassified states will be measured.
 * `bins` (int, optional): the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
-* `min_tau_w` (int, optional): the smaller tau_window value tested. It has to be larger that 1. Default is 2. 
-* `max_tau_w` (int, optional): the larger tau_window value tested. It has to be larger that 2. Default is the largest possible window. 
-* `num_tau_w` (int, optional): the number of different tau_window values tested. Default is 20. 
 
 ## Output
-The algorithm will attempt to perform the clustering on the input data, using different `tau_window` (logarithmically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). 
+The algorithm will attempt to perform the clustering on the input data, using different `tau_window` (geometrically spaced between 2 frames and the entire trajectory length, unless differently specified in the input parameters). 
 The algorithm output consists in
 * the list of Gaussian states characterizing the clusters;
 * an array of shape *(N, T)* with the integer labels of the data points (unclassified data points are labelled with 0);
-* an array of shape *(num_tau_w, 3)* with the number of states and the fraction of unclassified data points for every choice of the time resolution. 
+* an array of shape *(len(tau_window_list), 2)* with the number of states and the fraction of unclassified data points for every choice of the time resolution. 
 
 ## Multivariate time-series version
 The multivariate time-series version of the algorithm works in a similar fashion, taking as input 2D or 3D data. The input array must have shape *(D, N, T)* where _D_ is the number of components. You can find an example of usage in `examples/example_script_multi.py`
