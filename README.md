@@ -9,7 +9,7 @@ Install the package using `pip install onion_clustering`.
 
 The `examples/` folder contains an example of usage. From this folder, download the example files as reported in the script `example_script_uni.py` and then run it with `python3 example_script_uni.py`. 
 
-## input_parameters
+## Parameters
 * `tau_window` (int): the length of the time window (in number of frames). 
 * `tau_window_list` (List[int], optional): the list of time_windows for which the number of states and the fraction of unclassified states will be measured.
 * `bins` (int, optional): the number of bins used to compute histograms. This should be used only if all the fits fail with the automatic binning. 
