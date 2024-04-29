@@ -30,23 +30,9 @@ def moving_average(data: np.ndarray, window: int) -> np.ndarray:
 
     np.ndarray
         The smoothed array.
-
-    Notes
-    -----
-
-    If the array is 1D, applies the moving average. If the array is 2D,
-    applies the moving average on the axis=1.
     """
     weights = np.ones(window) / window
-    if data.ndim == 1:
-        return np.convolve(data, weights, mode="valid")
-    if data.ndim >= 2:
-        return np.apply_along_axis(
-            lambda x: np.convolve(x, weights, mode="valid"), axis=1, arr=data
-        )
-    raise ValueError(
-        "Invalid array dimension. Only 1D and 2D arrays are supported."
-    )
+    return np.convolve(data, weights, mode="valid")
 
 
 def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
