@@ -108,7 +108,6 @@ def perform_gauss_fit(
             full_output=True,
         )
         if popt[1] < 0:
-            print("FOUND A NEGATIVE SIGMA, CHANGING IT.")
             popt[1] *= -1
             popt[2] *= -1
         gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
@@ -177,7 +176,7 @@ def gauss_fit_max(
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     gap = 1
     if bins.size > 50:
-        gap = 3
+        gap = 10
 
     ### 2. Smoothing with tau = 3 ###
     counts = moving_average(counts, gap)
