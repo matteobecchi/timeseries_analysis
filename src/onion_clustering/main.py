@@ -24,7 +24,7 @@ from onion_clustering.functions import (
     set_final_states,
 )
 
-NUMBER_OF_SIGMAS = 2.0
+NUMBER_OF_SIGMAS = 1.5
 OUTPUT_FILE = "states_output.txt"
 
 
@@ -465,9 +465,6 @@ def timeseries_analysis(
 
     fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
     n_states = len(tmp_cl_ob.states)
-
-    # if one_last_state:
-    #     n_states += 1
 
     # We need to free the memory otherwise it accumulates
     del tmp_cl_ob
