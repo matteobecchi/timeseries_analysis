@@ -175,7 +175,7 @@ def gauss_fit_max(
     ### 1. Histogram ###
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     gap = 1
-    if bins.size > 50:
+    if bins.size > 99:
         gap = int(bins.size*0.02)
     print(f"\tNumber of bins = {bins.size}")
 
@@ -378,6 +378,9 @@ def iterative_search(
     tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
         int
     )
+
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
+        print(f"tau_window = {cl_ob.par.tau_w}")
 
     states_list = []
     m_copy = cl_ob.data.matrix
