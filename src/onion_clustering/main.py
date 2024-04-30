@@ -223,9 +223,14 @@ def gauss_fit_max(
 
     ### Avoid that the ENV0 is fitted in a very large Gaussian
     data_range = np.max(m_clean) - np.min(m_clean)
-    if popt_min[1] > data_range / 2:
+    print(popt_min[1], data_range)
+    print(popt_half[1], data_range)
+    if popt_min[1] > data_range / 4:
+        print("AAAAAAHHHH SUCCEDONO COSE!")
+        print(popt_min[1], data_range)
         flag_min = False
-    if popt_half[1] > data_range / 2:
+    if popt_half[1] > data_range / 4:
+        print("AAAAAAHHHH SUCCEDONO COSE!")
         flag_half = False
 
     ### 8. Choose the best fit ###
