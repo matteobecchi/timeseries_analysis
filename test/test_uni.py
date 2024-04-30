@@ -44,7 +44,7 @@ def test_output_files(setup_test_environment):
         print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
 
     # Call your code to generate the output files
-    tmp = main.main()
+    tmp = main.main(False)
 
     # Test the output
     tmp.plot_tra_figure()

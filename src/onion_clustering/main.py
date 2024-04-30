@@ -176,8 +176,8 @@ def gauss_fit_max(
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     gap = 1
     if bins.size > 50:
-        gap = int(bins.size*0.05)
-    print(f"BINNING INFO: bins = {bins.size}")
+        gap = int(bins.size*0.02)
+    print(f"\tNumber of bins = {bins.size}")
 
     ### 2. Smoothing with tau = 3 ###
     counts = moving_average(counts, gap)
@@ -222,16 +222,13 @@ def gauss_fit_max(
         fit_param, fit_data, "Half"
     )
 
-    ### Avoid that the ENV0 is fitted in a very large Gaussian
+    ### 7.bis Avoid that the ENV0 is fitted in a very large Gaussian ###
     data_range = np.max(m_clean) - np.min(m_clean)
-    print(popt_min[1], data_range)
-    print(popt_half[1], data_range)
     if popt_min[1] > data_range / 4:
-        print("AAAAAAHHHH SUCCEDONO COSE!")
-        print(popt_min[1], data_range)
+        print("\tWARNING: sigma is too large, fit discarded.")
         flag_min = False
     if popt_half[1] > data_range / 4:
-        print("AAAAAAHHHH SUCCEDONO COSE!")
+        print("\tWARNING: sigma is too large, fit discarded.")
         flag_half = False
 
     ### 8. Choose the best fit ###
