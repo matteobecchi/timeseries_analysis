@@ -497,11 +497,13 @@ def set_final_states(
     # Step 3: Write the final states and final thresholds to text files.
     # The data is saved in two separate files:
     # 'final_states.txt' and 'final_thresholds.txt'.
-    with open("final_states.txt", "w", encoding="utf-8") as file:
+    with open("final_states.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
         print("# Mu \t Sigma \t A \t state_fraction", file=file)
         for state in updated_states:
             print(state.mean, state.sigma, state.area, state.perc, file=file)
-    with open("final_thresholds.txt", "w", encoding="utf-8") as file:
+    with open("final_thresholds.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
         for state in updated_states:
             print(state.th_inf[0], state.th_inf[1], file=file)
         print(

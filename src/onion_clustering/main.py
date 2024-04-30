@@ -222,7 +222,7 @@ def gauss_fit_max(
         fit_param, fit_data, "Half"
     )
 
-    ### 7.bis Avoid that the ENV0 is fitted in a very large Gaussian ###
+    ### 7.bis Avoid that the ENV0 is hidden in a very large Gaussian ###
     data_range = np.max(m_clean) - np.min(m_clean)
     if popt_min[1] > data_range / 4:
         print("\tWARNING: sigma is too large, fit discarded.")
@@ -457,7 +457,7 @@ def timeseries_analysis(
         print("* No possible classification was found. ")
         # We need to free the memory otherwise it accumulates
         del tmp_cl_ob
-        return 1, 1.0
+        return 0, 1.0
 
     tmp_cl_ob.states, tmp_cl_ob.data.labels = set_final_states(
         tmp_cl_ob.states, tmp_labels, tmp_cl_ob.data.range
