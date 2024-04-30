@@ -472,6 +472,9 @@ def set_final_states(
         if i not in states_to_remove
     ]
 
+    # Here I want to avoid the case where no ENV0 is set because of a too
+    # large Gaussian
+
     # Compute the fraction of data points in each state
     for st_id, state in enumerate(updated_states):
         num_of_points = np.sum(all_the_labels == st_id + 1)
@@ -494,18 +497,6 @@ def set_final_states(
 
     updated_states[-1].th_sup[0] = m_range[1]
     updated_states[-1].th_sup[1] = 0
-
-    # if updated_states[0].th_sup[0] < m_range[0]:
-    #     updated_states.pop(0)
-    #     updated_states[0].th_inf[0] = m_range[0]
-    #     mask = all_the_labels > 1
-    #     all_the_labels[mask] -= 1
-
-    # if updated_states[-1].th_inf[0] > m_range[1]:
-    #     updated_states.pop(-1)
-    #     updated_states[-1].th_inf[1] = m_range[1]
-    #     mask = all_the_labels == np.max(all_the_labels)
-    #     all_the_labels[mask] -= 1
 
     # Step 3: Write the final states and final thresholds to text files.
     # The data is saved in two separate files:

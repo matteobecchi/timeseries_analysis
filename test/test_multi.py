@@ -19,8 +19,10 @@ def setup_test_environment(tmpdir):
 # Define the actual test
 def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
-    PATH_TO_INPUT_DATA = ("/Users/mattebecchi/00_signal_analysis/data/"
-        "synthetic_2D/3D_synthetic_data.npy")
+    PATH_TO_INPUT_DATA = (
+        "/Users/mattebecchi/00_signal_analysis/data/"
+        "synthetic_2D/3D_synthetic_data.npy"
+    )
     TAU_WINDOW = 10  # time resolution of the analysis
     T_CONV = 200  # convert frames in time units (default 1)
     T_UNITS = "dt"  # the time units (default 'frames')

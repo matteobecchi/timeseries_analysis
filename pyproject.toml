@@ -30,7 +30,7 @@ line-length = 79
 
 [tool.ruff]
 line-length = 79
-extend-select = ["I"]
+lint.extend-select = ["I"]
 
 [tool.mypy]
 show_error_codes = true
