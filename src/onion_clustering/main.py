@@ -457,8 +457,8 @@ def timeseries_analysis(
     fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
     n_states = len(tmp_cl_ob.states)
 
-    if one_last_state:
-        n_states += 1
+    # if one_last_state:
+    #     n_states += 1
 
     # We need to free the memory otherwise it accumulates
     del tmp_cl_ob

@@ -479,7 +479,6 @@ def set_final_states(
 
     # Step 2: Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
-
     updated_states[0].th_inf[0] = m_range[0]
     updated_states[0].th_inf[1] = 0
 
