@@ -176,7 +176,7 @@ def gauss_fit_max(
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     gap = 1
     if bins.size > 50:
-        gap = bins.size*0.05
+        gap = int(bins.size*0.05)
     print(f"BINNING INFO: bins = {bins.size}")
 
     ### 2. Smoothing with tau = 3 ###
