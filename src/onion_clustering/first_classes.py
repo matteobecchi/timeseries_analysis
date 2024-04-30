@@ -297,7 +297,7 @@ class UniData:
         axes.set_xlabel(r"Time $t$ [frames]")
         axes.set_ylabel(r"Signal")
         axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-        axes.legend()
+        axes.legend(loc="lower left")
 
         fig.savefig("output_figures/Fig4.png", dpi=600)
 
