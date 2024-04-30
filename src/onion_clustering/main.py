@@ -221,6 +221,13 @@ def gauss_fit_max(
         fit_param, fit_data, "Half"
     )
 
+    ### Avoid that the ENV0 is fitted in a very large Gaussian
+    data_range = np.max(m_clean) - np.min(m_clean)
+    if popt_min[1] > data_range / 2:
+        flag_min = False
+    if popt_half[1] > data_range / 2:
+        flag_half = False
+
     ### 8. Choose the best fit ###
     goodness = goodness_min
     if flag_min == 1 and flag_half == 0:

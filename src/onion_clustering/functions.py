@@ -472,9 +472,6 @@ def set_final_states(
         if i not in states_to_remove
     ]
 
-    # Here I want to avoid the case where no ENV0 is set because of a too
-    # large Gaussian
-
     # Compute the fraction of data points in each state
     for st_id, state in enumerate(updated_states):
         num_of_points = np.sum(all_the_labels == st_id + 1)
