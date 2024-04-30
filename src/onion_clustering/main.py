@@ -222,12 +222,11 @@ def gauss_fit_max(
     )
 
     ### Avoid that the ENV0 is fitted in a very large Gaussian
-    if m_clean.size > 0:
-        data_range = np.max(m_clean) - np.min(m_clean)
-        if popt_min[1] > data_range / 2:
-            flag_min = False
-        if popt_half[1] > data_range / 2:
-            flag_half = False
+    data_range = np.max(m_clean) - np.min(m_clean)
+    if popt_min[1] > data_range / 2:
+        flag_min = False
+    if popt_half[1] > data_range / 2:
+        flag_half = False
 
     ### 8. Choose the best fit ###
     goodness = goodness_min
@@ -406,6 +405,9 @@ def iterative_search(
         ### Exit the loop if no new stable windows are found
         if counter <= 0.0:
             print("Iterations interrupted because last state is empty. ")
+            break
+        if m_next.size == 0:
+            print("Iterations interrupted because all points are classififed.")
             break
         m_copy = m_next
 
