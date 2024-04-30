@@ -109,8 +109,8 @@ def perform_gauss_fit(
         )
         if popt[1] < 0:
             print("FOUND A NEGATIVE SIGMA, CHANGING IT.")
-            popt[1] = -popt[1]
-            popt[2] = -popt[2]
+            popt[1] *= -1
+            popt[2] *= -1
         gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
         if gauss_max < area0 / 2:
             goodness -= 1
