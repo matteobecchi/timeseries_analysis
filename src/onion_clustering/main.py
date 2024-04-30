@@ -97,7 +97,7 @@ def perform_gauss_fit(
     selected_bins = bins[id0:id1]
     selected_counts = counts[id0:id1]
     mu0 = bins[max_ind]
-    sigma0 = (bins[id0] - bins[id1]) / 6
+    sigma0 = (bins[id1] - bins[id0]) / 6
     area0 = counts[max_ind] * np.sqrt(np.pi) * sigma0
     try:
         popt, pcov, _, _, _ = scipy.optimize.curve_fit(
