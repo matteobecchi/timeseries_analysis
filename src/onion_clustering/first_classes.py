@@ -290,7 +290,8 @@ class UniData:
                 window,
                 lw=0.1,
                 c=palette[0],
-                zorder=0
+                zorder=0,
+                alpha=0.25,
             )
 
         fig.suptitle("Average time sequence inside each environments")
