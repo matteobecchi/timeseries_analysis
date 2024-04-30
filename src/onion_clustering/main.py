@@ -177,7 +177,7 @@ def gauss_fit_max(
     gap = 1
     if bins.size > 99:
         gap = int(bins.size*0.02)
-    print(f"\tNumber of bins = {bins.size}")
+    print(f"\tNumber of bins = {bins.size}, gap = {gap}")
 
     ### 2. Smoothing with tau = 3 ###
     counts = moving_average(counts, gap)
