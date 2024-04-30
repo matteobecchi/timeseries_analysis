@@ -210,6 +210,7 @@ class UniData:
         # Initialize lists to store cluster means and standard deviations
         center_list = []
         std_list = []
+        env0 = []
 
         # If there are no assigned window, we still need the "0" state
         # for consistency:
@@ -234,9 +235,11 @@ class UniData:
                         tmp.append(self.matrix[i][time_0:time_1])
 
             # Calculate mean and standard deviation for the current cluster
-            if len(tmp) > 0:
+            if len(tmp) > 0 and ref_label > 0:
                 center_list.append(np.mean(tmp, axis=0))
                 std_list.append(np.std(tmp, axis=0))
+            elif len(tmp) > 0:
+                env0.append(tmp)
 
         center_arr = np.array(center_list)
         std_arr = np.array(std_list)
@@ -270,15 +273,19 @@ class UniData:
                 err_inf,
                 err_sup,
                 alpha=0.25,
-                color=palette[center_id + missing_zero],
+                color=palette[center_id + missing_zero + 1],
             )
             axes.plot(
                 time_seq,
                 center,
                 label="ENV" + str(center_id + missing_zero),
                 marker="o",
-                c=palette[center_id + missing_zero],
+                c=palette[center_id + missing_zero + 1],
             )
+
+        for window in env0:
+            axes.plot(time_seq, window, lw=1, c=palette[0])
+
         fig.suptitle("Average time sequence inside each environments")
         axes.set_xlabel(r"Time $t$ [frames]")
         axes.set_ylabel(r"Signal")
