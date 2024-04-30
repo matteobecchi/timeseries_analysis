@@ -281,10 +281,17 @@ class UniData:
                 label="ENV" + str(center_id + missing_zero),
                 marker="o",
                 c=palette[center_id + missing_zero + 1],
+                zorder=1,
             )
 
         for window in env0:
-            axes.plot(time_seq, window, lw=1, c=palette[0])
+            axes.plot(
+                time_seq,
+                window,
+                lw=0.1,
+                c=palette[0],
+                zorder=0
+            )
 
         fig.suptitle("Average time sequence inside each environments")
         axes.set_xlabel(r"Time $t$ [frames]")
