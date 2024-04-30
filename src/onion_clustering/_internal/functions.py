@@ -606,18 +606,6 @@ def set_final_states(
     updated_states[-1].th_sup[0] = m_range[1]
     updated_states[-1].th_sup[1] = 0
 
-    # if updated_states[0].th_sup[0] < m_range[0]:
-    #     updated_states.pop(0)
-    #     updated_states[0].th_inf[0] = m_range[0]
-    #     mask = all_the_labels > 1
-    #     all_the_labels[mask] -= 1
-
-    # if updated_states[-1].th_inf[0] > m_range[1]:
-    #     updated_states.pop(-1)
-    #     updated_states[-1].th_inf[1] = m_range[1]
-    #     mask = all_the_labels == np.max(all_the_labels)
-    #     all_the_labels[mask] -= 1
-
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print("* FINAL STATES AND THRESHOLDS:", file=dump)
         print("# Mu \t Sigma \t A \t state_fraction", file=dump)
