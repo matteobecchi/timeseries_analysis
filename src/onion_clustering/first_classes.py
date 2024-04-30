@@ -239,7 +239,7 @@ class UniData:
                 center_list.append(np.mean(tmp, axis=0))
                 std_list.append(np.std(tmp, axis=0))
             elif len(tmp) > 0:
-                env0.append(tmp)
+                env0 = tmp
 
         center_arr = np.array(center_list)
         std_arr = np.array(std_list)
