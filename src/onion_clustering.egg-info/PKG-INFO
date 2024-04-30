@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: onion_clustering
-Version: 0.1.4
+Version: 0.1.5
 Summary: Code for unsupervised clustering of time-correlated data.
 Maintainer-email: Matteo Becchi <bechmath@gmail.com>
 Project-URL: github, https://github.com/matteobecchi/timeseries_analysis/
