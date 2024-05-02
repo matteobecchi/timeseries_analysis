@@ -349,8 +349,7 @@ class ClusteringObject:
 
             fig, axes = plt.subplots()
             width = time[1:] - time[:-1]
-            width = np.insert(width, 0, width[0])
-            print(width)
+            width = np.insert(width, 0, width[0]/2)
 
             bottom = np.zeros(len(pop_array))
 
