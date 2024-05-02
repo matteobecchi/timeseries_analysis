@@ -24,11 +24,10 @@ from onion_clustering.functions import (
     set_final_states,
 )
 
-NUMBER_OF_SIGMAS = 1.5
 OUTPUT_FILE = "states_output.txt"
 
 
-def all_the_input_stuff() -> ClusteringObject1D:
+def all_the_input_stuff(number_of_sigma: float) -> ClusteringObject1D:
     """
     Reads input parameters and raw data from specified files and directories,
     processes the raw data, and creates output files.
@@ -63,7 +62,7 @@ def all_the_input_stuff() -> ClusteringObject1D:
         except OSError as ex_msg:
             print(f"Failed to delete {file_path}. Reason: {ex_msg}")
 
-    clustering_object = ClusteringObject1D(par, data)
+    clustering_object = ClusteringObject1D(par, data, number_of_sigma)
 
     return clustering_object
 
@@ -155,7 +154,11 @@ def perform_gauss_fit(
 
 
 def gauss_fit_max(
-    m_clean: np.ndarray, par: Parameters, filename: str, full_out: bool
+    m_clean: np.ndarray,
+    par: Parameters,
+    number_of_sigma: float,
+    filename: str,
+    full_out: bool,
 ) -> Union[StateUni, None]:
     """
     Performs Gaussian fitting on input data.
@@ -249,7 +252,7 @@ def gauss_fit_max(
         return None
 
     state = StateUni(popt[0], popt[1], popt[2])
-    state.build_boundaries(NUMBER_OF_SIGMAS)
+    state.build_boundaries(number_of_sigma)
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
         print("\n", file=file)
@@ -392,6 +395,7 @@ def iterative_search(
         state = gauss_fit_max(
             m_copy,
             cl_ob.par,
+            cl_ob.number_of_sigma,
             "output_figures/" + name + "Fig1_" + str(iteration_id),
             full_out,
         )
@@ -550,7 +554,10 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
     cl_ob.list_of_pop = list_of_pop
 
 
-def main(full_output: bool = True) -> ClusteringObject1D:
+def main(
+    full_output: bool = True,
+    number_of_sigma: float = 1.5,
+)-> ClusteringObject1D:
     """
     Returns the clustering object with the analysi.
 
@@ -565,7 +572,7 @@ def main(full_output: bool = True) -> ClusteringObject1D:
     print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
     print("##############################################################")
 
-    clustering_object = all_the_input_stuff()
+    clustering_object = all_the_input_stuff(number_of_sigma)
     time_resolution_analysis(clustering_object, full_output)
     clustering_object = full_output_analysis(clustering_object, full_output)
 

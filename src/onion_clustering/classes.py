@@ -28,8 +28,14 @@ COLORMAP = "viridis"
 class ClusteringObject:
     """This class contains input, output and methods for plotting."""
 
-    def __init__(self, par: Parameters, data: Union[UniData, MultiData]):
+    def __init__(
+        self,
+        par: Parameters,
+        data: Union[UniData, MultiData],
+        number_of_sigma: float,
+    ):
         self.par = par
+        self.number_of_sigma = number_of_sigma
         self.data = data
         self.iterations = -1
         self.tau_window_list: np.ndarray
@@ -354,15 +360,16 @@ class ClusteringObject:
 
             fig, axes = plt.subplots()
             width = time[1:] - time[:-1]
-            width = np.insert(width, 0, width[0]**2/width[1])
+            width = np.insert(width, 0, width[0] / 2)
 
             bottom = np.zeros(len(pop_array))
             for j, state in enumerate(pop_array.T):
-                _ = axes.bar(time, state, width, bottom=bottom,
-                    edgecolor='black')
+                _ = axes.bar(
+                    time, state, width, bottom=bottom, edgecolor="black"
+                )
                 bottom += state
 
-            axes.set_xlabel(r"Time resolution $\Delta t$ " + units)
+            axes.set_xlabel(rf"Time resolution $\Delta t$ {units}")
             axes.set_ylabel(r"Population's fractions")
             axes.set_xscale("log")
 
