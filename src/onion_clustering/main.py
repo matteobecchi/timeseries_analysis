@@ -546,6 +546,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
     )
 
     ### I want t_smooth as first index, tau_window as second index
+    print(tmp_list_of_pop)
     list_of_pop = [
         [sublist[j] for j in range(len(sublist))]
         for sublist in tmp_list_of_pop
