@@ -352,13 +352,6 @@ class ClusteringObject:
 
             pop_array = np.array(pop_array)
 
-            # Create a color palette for plotting states
-            palette = []
-            cmap = plt.get_cmap(COLORMAP, max_num_of_states)
-            for i in range(1, cmap.N):
-                rgba = cmap(i)
-                palette.append(rgb2hex(rgba))
-
             fig, axes = plt.subplots()
             width = time[1:] - time[:-1]
             width = np.insert(width, 0, width[0]**2/width[1])
@@ -366,7 +359,7 @@ class ClusteringObject:
             bottom = np.zeros(len(pop_array))
             for j, state in enumerate(pop_array.T):
                 _ = axes.bar(time, state, width, bottom=bottom,
-                    color=palette[j], edgecolor='black')
+                    edgecolor='black')
                 bottom += state
 
             axes.set_xlabel(r"Time resolution $\Delta t$ " + units)
