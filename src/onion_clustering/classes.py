@@ -358,6 +358,7 @@ class ClusteringObject:
             axes.set_ylabel(
                 r"Population's fractions", weight="bold", c="#1f77b4"
             )
+            axes.set_xscale('log')
 
             fig.savefig(
                 f"output_figures/Populations_{t_smooth}.png",
