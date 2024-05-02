@@ -346,6 +346,10 @@ class ClusteringObject:
 
             pop_array = np.array(pop_array)
 
+            print("#################################")
+            print(pop_array)
+            print("#################################")
+
             fig, axes = plt.subplots()
             width = 0.5
             bottom = np.zeros(len(pop_array))
