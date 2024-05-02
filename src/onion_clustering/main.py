@@ -513,20 +513,18 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
 
     number_of_states = []
     fraction_0 = []
-    tmp_list_of_pop = []
+    list_of_pop = [[[] for _ in tau_window_list] for _ in t_smooth_list]
 
-    for tau_w in tau_window_list:
+    for i, tau_w in enumerate(tau_window_list):
         tmp = [tau_w]
         tmp1 = [tau_w]
-        tmp2 = []
-        for t_s in t_smooth_list:
+        for j, t_s in enumerate(t_smooth_list):
             n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
-            tmp2.append(l_pop)
+            list_of_pop[j][i].append(l_pop)
         number_of_states.append(tmp)
         fraction_0.append(tmp1)
-        tmp_list_of_pop.append(tmp2)
 
     number_of_states_arr = np.array(number_of_states)
     fraction_0_arr = np.array(fraction_0)
@@ -545,15 +543,9 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
         header="tau_window\t fraction in ENV0 for different t_smooth",
     )
 
-    ### I want t_smooth as first index, tau_window as second index
-    print(tmp_list_of_pop)
-    list_of_pop = [
-        [sublist[j] for j in range(len(sublist))]
-        for sublist in tmp_list_of_pop
-    ]
-
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
+    print(list_of_pop)
     cl_ob.list_of_pop = list_of_pop
 
 
