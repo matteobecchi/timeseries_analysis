@@ -354,8 +354,7 @@ class ClusteringObject:
 
             # Create a color palette for plotting states
             palette = []
-            n_states = len(self.states)
-            cmap = plt.get_cmap(COLORMAP, n_states + 1)
+            cmap = plt.get_cmap(COLORMAP, max_num_of_states)
             for i in range(1, cmap.N):
                 rgba = cmap(i)
                 palette.append(rgb2hex(rgba))
