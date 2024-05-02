@@ -513,7 +513,9 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
 
     number_of_states = []
     fraction_0 = []
-    list_of_pop = [[[] for _ in tau_window_list] for _ in t_smooth_list]
+    list_of_pop: List[List[List[float]]] = [
+        [[] for _ in tau_window_list] for _ in t_smooth_list
+    ]
 
     for i, tau_w in enumerate(tau_window_list):
         tmp = [tau_w]
