@@ -344,8 +344,8 @@ class ClusteringObject:
                 [len(pop_list) for pop_list in pop_array]
             )
             print(max_num_of_states)
-            for j in range(len(pop_array)):
-                while len(pop_array[j]) < max_num_of_states:
+            for j, pop_list in enumerate(pop_array):
+                while len(pop_list) < max_num_of_states:
                     pop_array[j].append(0.0)
             print("#################################")
             print(pop_array)
