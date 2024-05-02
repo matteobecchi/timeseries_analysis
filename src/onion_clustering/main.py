@@ -176,7 +176,7 @@ def gauss_fit_max(
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     gap = 1
     if bins.size > 99:
-        gap = int(bins.size*0.02)
+        gap = int(bins.size * 0.02)
     print(f"\tNumber of bins = {bins.size}, gap = {gap}")
 
     ### 2. Smoothing with tau = 3 ###
@@ -380,7 +380,7 @@ def iterative_search(
     )
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
-        print(f"tau_window = {cl_ob.par.tau_w}")
+        print(f"tau_window = {cl_ob.par.tau_w}", file=file)
 
     states_list = []
     m_copy = cl_ob.data.matrix
@@ -425,7 +425,7 @@ def iterative_search(
 
 def timeseries_analysis(
     cl_ob: ClusteringObject1D, tau_w: int, t_smooth: int, full_out: bool
-) -> Tuple[int, float]:
+) -> Tuple[int, float, List[float]]:
     """
     Performs an analysis pipeline on time series data.
 
@@ -437,6 +437,8 @@ def timeseries_analysis(
     Returns:
     - num_states (int): Number of identified states.
     - fraction_0 (float): Fraction of unclassified data points.
+    - list_of_pop (List[float]): List of the populations of the different
+        states.
     """
 
     print("* New analysis: ", tau_w, t_smooth)
@@ -457,13 +459,15 @@ def timeseries_analysis(
         print("* No possible classification was found. ")
         # We need to free the memory otherwise it accumulates
         del tmp_cl_ob
-        return 0, 1.0
+        return 0, 1.0, [1.0]
 
     tmp_cl_ob.states, tmp_cl_ob.data.labels = set_final_states(
         tmp_cl_ob.states, tmp_labels, tmp_cl_ob.data.range
     )
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
+    list_of_pop = [state.perc for state in tmp_cl_ob.states]
+    fraction_0 = 1 - np.sum(list_of_pop)
+    list_of_pop.insert(0, fraction_0)
     n_states = len(tmp_cl_ob.states)
 
     # We need to free the memory otherwise it accumulates
@@ -472,7 +476,7 @@ def timeseries_analysis(
     print(
         "Number of states identified:", n_states, "[" + str(fraction_0) + "]\n"
     )
-    return n_states, fraction_0
+    return n_states, fraction_0, list_of_pop
 
 
 def full_output_analysis(
@@ -504,18 +508,26 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
     tau_window_list, t_smooth_list = param_grid(
         cl_ob.par, cl_ob.data.num_of_steps
     )
+    cl_ob.tau_window_list = np.array(tau_window_list)
+    cl_ob.t_smooth_list = np.array(t_smooth_list)
 
     number_of_states = []
     fraction_0 = []
+    tmp_list_of_pop = []
+
     for tau_w in tau_window_list:
         tmp = [tau_w]
         tmp1 = [tau_w]
+        tmp2 = []
         for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
+            n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
+            tmp2.append(l_pop)
         number_of_states.append(tmp)
         fraction_0.append(tmp1)
+        tmp_list_of_pop.append(tmp2)
+
     number_of_states_arr = np.array(number_of_states)
     fraction_0_arr = np.array(fraction_0)
 
@@ -533,8 +545,15 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
         header="tau_window\t fraction in ENV0 for different t_smooth",
     )
 
+    ### I want t_smooth as first index, tau_window as second index
+    list_of_pop = [
+        [sublist[j] for j in range(len(sublist))]
+        for sublist in tmp_list_of_pop
+    ]
+
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
+    cl_ob.list_of_pop = list_of_pop
 
 
 def main(full_output: bool = True) -> ClusteringObject1D:

@@ -32,8 +32,11 @@ class ClusteringObject:
         self.par = par
         self.data = data
         self.iterations = -1
+        self.tau_window_list: np.ndarray
+        self.t_smooth_list: np.ndarray
         self.number_of_states: np.ndarray
         self.fraction_0: np.ndarray
+        self.list_of_pop: List[List[List[float]]]
 
     def plot_input_data(self, filename: str):
         """Plots input data for visualization."""
@@ -323,6 +326,41 @@ class ClusteringObject:
                 "output_figures/Time_resolution_analysis_"
                 + str(t_smooth)
                 + ".png",
+                dpi=600,
+            )
+
+    def plot_pop_fractions(self):
+        print("* Print populations fractions...")
+
+        t_conv, units = self.par.t_conv, self.par.t_units
+        time = self.tau_window_list * t_conv
+
+        for i, t_smooth in enumerate(self.t_smooth_list):
+            pop_array = self.list_of_pop[i]
+            max_num_of_states = np.max(
+                [len(pop_list) for pop_list in pop_array]
+            )
+            for j in range(len(pop_array)):
+                while len(pop_array[j]) < max_num_of_states:
+                    pop_array[j].append(0.0)
+
+            pop_array = np.array(pop_array)
+
+            fig, axes = plt.subplots()
+            width = 0.5
+            bottom = np.zeros(len(pop_array))
+
+            for state in pop_array.T:
+                _ = axes.bar(time, state, width, bottom=bottom)
+                bottom += state
+
+            axes.set_xlabel(r"Time resolution $\Delta t$ " + units)
+            axes.set_ylabel(
+                r"Population's fractions", weight="bold", c="#1f77b4"
+            )
+
+            fig.savefig(
+                f"output_figures/Populations_{t_smooth}.png",
                 dpi=600,
             )
 

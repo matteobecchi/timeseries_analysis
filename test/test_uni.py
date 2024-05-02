@@ -1,7 +1,18 @@
 import os
 
 import pytest
-from onion_clustering import main
+from onion_clustering import main as onion
+
+### Set all the analysis parameters ###
+FILE = "water_coex_100ps_1nm_LENS.npy"
+PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/" + FILE
+TAU_WINDOW = 10  # time resolution of the analysis
+T_DELAY = 1  # remove the first t_delay frames (default 0)
+T_CONV = 0.1  # convert frames in time units (default 1)
+T_UNITS = "ns"  # the time units (default 'frames')
+NUM_TAU_W = 2
+MAX_TAU_W = 10
+MAX_T_SMOOTH = 2  # max value of t_smooth tested (default 5)
 
 
 # Define a fixture to set up the test environment
@@ -18,17 +29,6 @@ def setup_test_environment(tmpdir):
 
 # Define the actual test
 def test_output_files(setup_test_environment):
-    ### Set all the analysis parameters ###
-    FILE = "water_coex_100ps_1nm_LENS.npy"
-    PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/" + FILE
-    TAU_WINDOW = 10  # time resolution of the analysis
-    T_DELAY = 1  # remove the first t_delay frames (default 0)
-    T_CONV = 0.1  # convert frames in time units (default 1)
-    T_UNITS = "ns"  # the time units (default 'frames')
-    NUM_TAU_W = 2
-    MAX_TAU_W = 10
-    MAX_T_SMOOTH = 2  # max value of t_smooth tested (default 5)
-
     ### Create the 'data_directory.txt' file ###
     with open("data_directory.txt", "w+", encoding="utf-8") as file:
         print(PATH_TO_INPUT_DATA, file=file)
@@ -44,7 +44,7 @@ def test_output_files(setup_test_environment):
         print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
 
     # Call your code to generate the output files
-    tmp = main.main(False)
+    tmp = onion.main(False)
 
     # Test the output
     tmp.plot_tra_figure()
@@ -55,6 +55,7 @@ def test_output_files(setup_test_environment):
     tmp.plot_state_populations()
     tmp.sankey([0, 10, 20, 30, 40])
     tmp.print_labels()
+    tmp.plot_pop_fractions()
 
     # Define the paths to the expected and actual output files
     original_dir = (
