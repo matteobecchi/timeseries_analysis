@@ -8,7 +8,6 @@ pytest.ini
 examples/example_script.py
 examples/example_script_2d.py
 src/onion_clustering/__init__.py
-src/onion_clustering/__version__.py
 src/onion_clustering/classes.py
 src/onion_clustering/first_classes.py
 src/onion_clustering/functions.py
