@@ -545,7 +545,6 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
 
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
-    print(list_of_pop)
     cl_ob.list_of_pop = list_of_pop
 
 

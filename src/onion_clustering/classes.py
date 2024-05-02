@@ -337,18 +337,21 @@ class ClusteringObject:
 
         for i, t_smooth in enumerate(self.t_smooth_list):
             pop_array = self.list_of_pop[i]
+            print("#################################")
+            print(pop_array)
+            print("#################################")
             max_num_of_states = np.max(
                 [len(pop_list) for pop_list in pop_array]
             )
             for j in range(len(pop_array)):
                 while len(pop_array[j]) < max_num_of_states:
                     pop_array[j].append(0.0)
-
-            pop_array = np.array(pop_array)
-
             print("#################################")
             print(pop_array)
             print("#################################")
+
+            pop_array = np.array(pop_array)
+
 
             fig, axes = plt.subplots()
             width = 0.5
