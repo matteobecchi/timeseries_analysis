@@ -522,7 +522,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
             n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
-            list_of_pop[j][i].append(l_pop)
+            list_of_pop[i][j].append(l_pop)
         number_of_states.append(tmp)
         fraction_0.append(tmp1)
 
