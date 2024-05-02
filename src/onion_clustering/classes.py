@@ -337,28 +337,30 @@ class ClusteringObject:
 
         for i, t_smooth in enumerate(self.t_smooth_list):
             pop_array = self.list_of_pop[i]
-            print("#################################")
-            print(pop_array)
-            print("#################################")
+
             max_num_of_states = np.max(
                 [len(pop_list) for pop_list in pop_array]
             )
-            print(max_num_of_states)
             for j, pop_list in enumerate(pop_array):
                 while len(pop_list) < max_num_of_states:
                     pop_array[j].append(0.0)
-            print("#################################")
-            print(pop_array)
-            print("#################################")
 
             pop_array = np.array(pop_array)
+
+            # Create a color palette for plotting states
+            palette = []
+            n_states = len(self.states)
+            cmap = plt.get_cmap(COLORMAP, n_states + 1)
+            for i in range(1, cmap.N):
+                rgba = cmap(i)
+                palette.append(rgb2hex(rgba))
 
             fig, axes = plt.subplots()
             width = 0.5
             bottom = np.zeros(len(pop_array))
 
             for state in pop_array.T:
-                _ = axes.bar(time, state, width, bottom=bottom)
+                _ = axes.bar(time, state, width, bottom=bottom, color=palette)
                 bottom += state
 
             axes.set_xlabel(r"Time resolution $\Delta t$ " + units)
