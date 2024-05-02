@@ -348,7 +348,10 @@ class ClusteringObject:
             pop_array = np.array(pop_array)
 
             fig, axes = plt.subplots()
-            width = 0.5
+            width = time[1:] - time[:-1]
+            width = np.insert(width, 0, width[0])
+            print(width)
+
             bottom = np.zeros(len(pop_array))
 
             for state in pop_array.T:
@@ -356,9 +359,7 @@ class ClusteringObject:
                 bottom += state
 
             axes.set_xlabel(r"Time resolution $\Delta t$ " + units)
-            axes.set_ylabel(
-                r"Population's fractions", weight="bold", c="#1f77b4"
-            )
+            axes.set_ylabel(r"Population's fractions")
             axes.set_xscale("log")
 
             fig.savefig(
