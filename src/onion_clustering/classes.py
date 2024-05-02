@@ -330,6 +330,11 @@ class ClusteringObject:
             )
 
     def plot_pop_fractions(self):
+        """
+        Plot, for every time resolution, the populations of the ENVs.
+
+        The bottom state is the ENV0.
+        """
         print("* Print populations fractions...")
 
         t_conv, units = self.par.t_conv, self.par.t_units
