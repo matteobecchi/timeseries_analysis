@@ -352,9 +352,9 @@ class ClusteringObject:
             width = np.insert(width, 0, width[0]/2)
 
             bottom = np.zeros(len(pop_array))
-
             for state in pop_array.T:
-                _ = axes.bar(time, state, width, bottom=bottom)
+                _ = axes.bar(time, state, width, bottom=bottom,
+                    edgecolor='black')
                 bottom += state
 
             axes.set_xlabel(r"Time resolution $\Delta t$ " + units)
