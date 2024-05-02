@@ -337,6 +337,9 @@ class ClusteringObject:
 
         for i, t_smooth in enumerate(self.t_smooth_list):
             pop_array = self.list_of_pop[i]
+            print("#################################")
+            print(pop_array)
+            print("#################################")
             max_num_of_states = np.max(
                 [len(pop_list) for pop_list in pop_array]
             )
@@ -362,7 +365,7 @@ class ClusteringObject:
             axes.set_ylabel(
                 r"Population's fractions", weight="bold", c="#1f77b4"
             )
-            axes.set_xscale('log')
+            # axes.set_xscale('log')
 
             fig.savefig(
                 f"output_figures/Populations_{t_smooth}.png",
