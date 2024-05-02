@@ -343,6 +343,7 @@ class ClusteringObject:
             max_num_of_states = np.max(
                 [len(pop_list) for pop_list in pop_array]
             )
+            print(max_num_of_states)
             for j in range(len(pop_array)):
                 while len(pop_array[j]) < max_num_of_states:
                     pop_array[j].append(0.0)
