@@ -32,10 +32,10 @@ class ClusteringObject:
         self,
         par: Parameters,
         data: Union[UniData, MultiData],
-        number_of_sigma: float,
+        number_of_sigmas: float,
     ):
         self.par = par
-        self.number_of_sigma = number_of_sigma
+        self.number_of_sigmas = number_of_sigmas
         self.data = data
         self.iterations = -1
         self.tau_window_list: np.ndarray

@@ -27,7 +27,7 @@ NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = "states_output.txt"
 
 
-def all_the_input_stuff() -> ClusteringObject2D:
+def all_the_input_stuff(number_of_sigmas: float) -> ClusteringObject2D:
     """
     Reads input parameters and raw data from specified files and directories,
     processes the raw data, and creates output files.
@@ -56,7 +56,7 @@ def all_the_input_stuff() -> ClusteringObject2D:
         except OSError as exc_msg:
             print(f"Failed to delete {file_path}. Reason: {exc_msg}")
 
-    clustering_object = ClusteringObject2D(par, data)
+    clustering_object = ClusteringObject2D(par, data, number_of_sigmas)
 
     return clustering_object
 
@@ -65,6 +65,7 @@ def gauss_fit_max(
     m_clean: np.ndarray,
     m_limits: np.ndarray,
     bins: Union[int, str],
+    number_of_sigmas: float,
     filename: str,
     full_out: bool,
 ) -> Union[StateMulti, None]:
@@ -285,7 +286,7 @@ def gauss_fit_max(
         sigma.append(popt[3 * dim + 1])
         area.append(popt[3 * dim + 2])
     state = StateMulti(np.array(mean), np.array(sigma), np.array(area))
-    state.build_boundaries(NUMBER_OF_SIGMAS)
+    state.build_boundaries(number_of_sigmas)
 
     ### Plot the distribution and the fitted Gaussians
     if m_clean.shape[2] == 2:
@@ -501,7 +502,9 @@ def find_stable_trj(
 
 
 def iterative_search(
-    cl_ob: ClusteringObject2D, name: str, full_out: bool
+    cl_ob: ClusteringObject2D,
+    name: str,
+    full_out: bool,
 ) -> Tuple[ClusteringObject2D, bool]:
     """
     Perform an iterative search to identify stable windows in trajectory data.
@@ -532,6 +535,7 @@ def iterative_search(
             m_copy,
             np.array(cl_ob.data.range),
             bins,
+            cl_ob.number_of_sigmas,
             "output_figures/" + name + "Fig1_" + str(iteration_id),
             full_out,
         )
@@ -567,7 +571,10 @@ def iterative_search(
 
 
 def timeseries_analysis(
-    cl_ob: ClusteringObject2D, tau_w: int, t_smooth: int, full_out: bool
+    cl_ob: ClusteringObject2D,
+    tau_w: int,
+    t_smooth: int,
+    full_out: bool,
 ) -> Tuple[int, float]:
     """
     Perform time series analysis on the input data.
@@ -616,7 +623,8 @@ def timeseries_analysis(
 
 
 def full_output_analysis(
-    cl_ob: ClusteringObject2D, full_out: bool
+    cl_ob: ClusteringObject2D,
+    full_out: bool,
 ) -> ClusteringObject2D:
     """Perform a comprehensive analysis on the input data."""
 
@@ -677,7 +685,9 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     cl_ob.plot_tra_figure()
 
 
-def main(full_output: bool = True) -> ClusteringObject2D:
+def main(
+    full_output: bool = True, number_of_sigmas: float = 2.0
+) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysi.
 
@@ -692,7 +702,7 @@ def main(full_output: bool = True) -> ClusteringObject2D:
     print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
     print("##############################################################")
 
-    clustering_object = all_the_input_stuff()
+    clustering_object = all_the_input_stuff(number_of_sigmas)
     time_resolution_analysis(clustering_object, full_output)
     clustering_object = full_output_analysis(clustering_object, full_output)
 

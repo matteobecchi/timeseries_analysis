@@ -27,7 +27,7 @@ from onion_clustering.functions import (
 OUTPUT_FILE = "states_output.txt"
 
 
-def all_the_input_stuff(number_of_sigma: float) -> ClusteringObject1D:
+def all_the_input_stuff(number_of_sigmas: float) -> ClusteringObject1D:
     """
     Reads input parameters and raw data from specified files and directories,
     processes the raw data, and creates output files.
@@ -62,13 +62,15 @@ def all_the_input_stuff(number_of_sigma: float) -> ClusteringObject1D:
         except OSError as ex_msg:
             print(f"Failed to delete {file_path}. Reason: {ex_msg}")
 
-    clustering_object = ClusteringObject1D(par, data, number_of_sigma)
+    clustering_object = ClusteringObject1D(par, data, number_of_sigmas)
 
     return clustering_object
 
 
 def perform_gauss_fit(
-    param: List[int], data: List[np.ndarray], int_type: str
+    param: List[int],
+    data: List[np.ndarray],
+    int_type: str,
 ) -> Tuple[bool, int, np.ndarray]:
     """
     Perform Gaussian fit on given data.
@@ -156,7 +158,7 @@ def perform_gauss_fit(
 def gauss_fit_max(
     m_clean: np.ndarray,
     par: Parameters,
-    number_of_sigma: float,
+    number_of_sigmas: float,
     filename: str,
     full_out: bool,
 ) -> Union[StateUni, None]:
@@ -252,7 +254,7 @@ def gauss_fit_max(
         return None
 
     state = StateUni(popt[0], popt[1], popt[2])
-    state.build_boundaries(number_of_sigma)
+    state.build_boundaries(number_of_sigmas)
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
         print("\n", file=file)
@@ -361,7 +363,9 @@ def find_stable_trj(
 
 
 def iterative_search(
-    cl_ob: ClusteringObject1D, name: str, full_out: bool
+    cl_ob: ClusteringObject1D,
+    name: str,
+    full_out: bool,
 ) -> Tuple[ClusteringObject1D, np.ndarray, bool]:
     """
     Performs an iterative search for stable states in a trajectory.
@@ -395,7 +399,7 @@ def iterative_search(
         state = gauss_fit_max(
             m_copy,
             cl_ob.par,
-            cl_ob.number_of_sigma,
+            cl_ob.number_of_sigmas,
             "output_figures/" + name + "Fig1_" + str(iteration_id),
             full_out,
         )
@@ -428,7 +432,10 @@ def iterative_search(
 
 
 def timeseries_analysis(
-    cl_ob: ClusteringObject1D, tau_w: int, t_smooth: int, full_out: bool
+    cl_ob: ClusteringObject1D,
+    tau_w: int,
+    t_smooth: int,
+    full_out: bool,
 ) -> Tuple[int, float, List[float]]:
     """
     Performs an analysis pipeline on time series data.
@@ -484,7 +491,8 @@ def timeseries_analysis(
 
 
 def full_output_analysis(
-    cl_ob: ClusteringObject1D, full_out: bool
+    cl_ob: ClusteringObject1D,
+    full_out: bool,
 ) -> ClusteringObject1D:
     """Perform a comprehensive analysis on the input data."""
 
@@ -556,8 +564,8 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
 
 def main(
     full_output: bool = True,
-    number_of_sigma: float = 1.5,
-)-> ClusteringObject1D:
+    number_of_sigmas: float = 1.5,
+) -> ClusteringObject1D:
     """
     Returns the clustering object with the analysi.
 
@@ -572,7 +580,7 @@ def main(
     print("# this work: https://doi.org/10.48550/arXiv.2402.07786.      #")
     print("##############################################################")
 
-    clustering_object = all_the_input_stuff(number_of_sigma)
+    clustering_object = all_the_input_stuff(number_of_sigmas)
     time_resolution_analysis(clustering_object, full_output)
     clustering_object = full_output_analysis(clustering_object, full_output)
 
