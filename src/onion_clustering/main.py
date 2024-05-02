@@ -522,7 +522,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
             n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
-            list_of_pop[i][j].append(l_pop)
+            list_of_pop[j][i].append(l_pop)
         number_of_states.append(tmp)
         fraction_0.append(tmp1)
 
@@ -543,6 +543,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
         header="tau_window\t fraction in ENV0 for different t_smooth",
     )
 
+    print(list_of_pop)
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
     cl_ob.list_of_pop = list_of_pop
