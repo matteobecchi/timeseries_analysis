@@ -13,7 +13,7 @@ from onion_clustering import main
 # Use git clone git@github.com:matteobecchi/onion_example_files.git
 # to download example datasets
 PATH_TO_INPUT_DATA = "../onion_example_files/data/univariate_time-series.npy"
-TAU_WINDOW = 10  # time resolution of the analysis
+TAU_WINDOW = 4  # time resolution of the analysis
 
 ### Optional parametrers ###
 T_SMOOTH = 1  # window for moving average (default 1)
@@ -21,7 +21,7 @@ T_DELAY = 1  # remove the first t_delay frames (default 0)
 T_CONV = 1.0  # convert frames in time units (default 1)
 TIME_UNITS = "frames"  # the time units (default 'frames')
 EXAMPLE_ID = 0  # particle plotted as example (default 0)
-NUM_TAU_W = 10  # number of values of tau_window tested (default 20)
+NUM_TAU_W = 20  # number of values of tau_window tested (default 20)
 MIN_TAU_W = 2  # min number of tau_window tested (default 2)
 MIN_T_SMOOTH = 1  # min value of t_smooth tested (default 1)
 MAX_T_SMOOTH = 2  # max value of t_smooth tested (default 5)
