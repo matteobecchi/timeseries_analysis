@@ -6,11 +6,13 @@ See the documentation for all the details.
 import copy
 import os
 import shutil
+import warnings
 from typing import List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
+from scipy.optimize import OptimizeWarning
 
 from onion_clustering.classes import ClusteringObject1D
 from onion_clustering.first_classes import Parameters, StateUni, UniData
@@ -101,36 +103,48 @@ def perform_gauss_fit(
     sigma0 = (bins[id1] - bins[id0]) / 6
     area0 = counts[max_ind] * np.sqrt(np.pi) * sigma0
     try:
-        popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
-            gaussian,
-            selected_bins,
-            selected_counts,
-            p0=[mu0, sigma0, area0],
-            full_output=True,
-        )
-        if popt[1] < 0:
-            popt[1] *= -1
-            popt[2] *= -1
-        gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
-        if gauss_max < area0 / 2:
-            goodness -= 1
-        popt[2] *= n_data
-        if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
-            goodness -= 1
-        if popt[1] > selected_bins[-1] - selected_bins[0]:
-            goodness -= 1
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err / popt[j] > 0.5:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
+                gaussian,
+                selected_bins,
+                selected_counts,
+                p0=[mu0, sigma0, area0],
+                full_output=True,
+            )
+            if popt[1] < 0:
+                popt[1] *= -1
+                popt[2] *= -1
+            gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
+            if gauss_max < area0 / 2:
                 goodness -= 1
-        if id1 - id0 <= gap:
-            goodness -= 1
-        ss_res = np.sum(infodict["fvec"] ** 2)
-        ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
-        coeff_det_r2 = 1 - ss_res / ss_tot
-        return True, goodness, popt, coeff_det_r2
+            popt[2] *= n_data
+            if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
+                goodness -= 1
+            if popt[1] > selected_bins[-1] - selected_bins[0]:
+                goodness -= 1
+            perr = np.sqrt(np.diag(pcov))
+            for j, par_err in enumerate(perr):
+                if par_err / popt[j] > 0.5:
+                    goodness -= 1
+            if id1 - id0 <= gap:
+                goodness -= 1
+            ss_res = np.sum(infodict["fvec"] ** 2)
+            ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
+            coeff_det_r2 = 1 - ss_res / ss_tot
+            return True, goodness, popt, coeff_det_r2
+    except OptimizeWarning:
+        print(f"\t{int_type} fit: Optimize warning. ")
+        return (
+            False,
+            goodness,
+            np.empty(
+                3,
+            ),
+            0,
+        )
     except RuntimeError:
-        print("\t" + int_type + " fit: Runtime error. ")
+        print(f"\t{int_type} fit: Runtime error. ")
         return (
             False,
             goodness,
@@ -140,7 +154,7 @@ def perform_gauss_fit(
             0,
         )
     except TypeError:
-        print("\t" + int_type + " fit: TypeError.")
+        print(f"\t{int_type} fit: TypeError.")
         return (
             False,
             goodness,
@@ -150,7 +164,7 @@ def perform_gauss_fit(
             0,
         )
     except ValueError:
-        print("\t" + int_type + " fit: ValueError.")
+        print(f"\t{int_type} fit: ValueError.")
         return (
             False,
             goodness,
@@ -357,12 +371,154 @@ def find_stable_trj(
     # Convert the list of non-stable windows to a NumPy array
     m2_array = np.array(remaning_data)
     one_last_state = True
-    if len(m2_array) == 0:
+    if m2_array.size == 0:
         one_last_state = False
 
     # Return the array of non-stable windows, the fraction of stable windows,
     # and the updated list_of_states
     return m2_array, window_fraction, one_last_state
+
+
+def solve_batman(
+    cl_ob: ClusteringObject1D,
+    m_clean: np.ndarray,
+    par: Parameters,
+    number_of_sigmas: float,
+    tmp_labels: np.ndarray,
+    tau_window: int,
+    lim: int,
+):
+    """Description of the function."""
+    flat_m = m_clean.flatten()
+
+    ### 1. Histogram ###
+    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+    gap = 1
+    if bins.size > 99:
+        gap = int(bins.size * 0.02)
+    print(f"\tNumber of bins = {bins.size}, gap = {gap}")
+
+    ### 2. Smoothing with tau = 3 ###
+    counts = moving_average(counts, gap)
+    bins = moving_average(bins, gap)
+    if (counts == 0.0).any():
+        print(
+            "\tWARNING: there are empty bins. "
+            "Consider reducing the number of bins."
+        )
+
+    ### 3. Find the maxima ###
+    max_ind, _ = scipy.signal.find_peaks(counts)
+    max_val = np.array([counts[i] for i in max_ind])
+
+    for i, m_ind in enumerate(max_ind[:1]):
+        ### 4. Find the minima surrounding it ###
+        min_id0 = np.max([m_ind - gap, 0])
+        min_id1 = np.min([m_ind + gap, counts.size - 1])
+        while min_id0 > 0 and counts[min_id0] > counts[min_id0 - 1]:
+            min_id0 -= 1
+        while (
+            min_id1 < counts.size - 1 and counts[min_id1] > counts[min_id1 + 1]
+        ):
+            min_id1 += 1
+
+        ### 5. Try the fit between the minima and check its goodness ###
+        fit_param = [min_id0, min_id1, m_ind, flat_m.size, gap]
+        fit_data = [bins, counts]
+        flag_min, goodness_min, popt_min = perform_gauss_fit(
+            fit_param, fit_data, "Min"
+        )
+
+        ### 6. Find the inrterval of half height ###
+        half_id0 = np.max([m_ind - gap, 0])
+        half_id1 = np.min([m_ind + gap, counts.size - 1])
+        while half_id0 > 0 and counts[half_id0] > max_val[i] / 2:
+            half_id0 -= 1
+        while half_id1 < counts.size - 1 and counts[half_id1] > max_val[i] / 2:
+            half_id1 += 1
+
+        ### 7. Try the fit between the minima and check its goodness ###
+        fit_param = [half_id0, half_id1, m_ind, flat_m.size, gap]
+        fit_data = [bins, counts]
+        flag_half, goodness_half, popt_half = perform_gauss_fit(
+            fit_param, fit_data, "Half"
+        )
+
+        ### 7.bis Avoid that the ENV0 is hidden in a very large Gaussian ###
+        data_range = np.max(m_clean) - np.min(m_clean)
+        if popt_min[1] > data_range / 4:
+            print("\tWARNING: sigma is too large, fit discarded.")
+            flag_min = False
+        if popt_half[1] > data_range / 4:
+            print("\tWARNING: sigma is too large, fit discarded.")
+            flag_half = False
+
+        ### 8. Choose the best fit ###
+        if flag_min == 1 and flag_half == 0:
+            popt = popt_min
+        elif flag_min == 0 and flag_half == 1:
+            popt = popt_half
+        elif flag_min * flag_half == 1:
+            if goodness_min >= goodness_half:
+                popt = popt_min
+            else:
+                popt = popt_half
+        else:
+            continue
+
+        state = StateUni(popt[0], popt[1], popt[2])
+        state.build_boundaries(number_of_sigmas)
+
+        # Calculate the number of windows in the trajectory
+        number_of_windows = tmp_labels.shape[1]
+
+        mask_unclassified = tmp_labels < 0.5
+        m_reshaped = cl_ob.data.matrix[
+            :, : number_of_windows * tau_window
+        ].reshape(cl_ob.data.matrix.shape[0], number_of_windows, tau_window)
+        mask_inf = np.min(m_reshaped, axis=2) >= state.th_inf[0]
+        mask_sup = np.max(m_reshaped, axis=2) <= state.th_sup[0]
+        mask = mask_unclassified & mask_inf & mask_sup
+
+        tmp_labels[mask] = lim + 1
+        counter = np.sum(mask)
+
+        # Initialize an empty list to store non-stable windows
+        remaning_data = []
+        mask_remaining = mask_unclassified & ~mask
+        for i, window in np.argwhere(mask_remaining):
+            r_w = cl_ob.data.matrix[
+                i, window * tau_window : (window + 1) * tau_window
+            ]
+            remaning_data.append(r_w)
+
+        # Calculate the fraction of stable windows found
+        window_fraction = counter / (tmp_labels.size)
+
+        # Print the fraction of stable windows
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
+            print(
+                f"\tFraction of windows in state {lim + 1}"
+                f" = {window_fraction:.3}"
+            )
+            print(
+                f"\tFraction of windows in state {lim + 1}"
+                f" = {window_fraction:.3}",
+                file=file,
+            )
+
+        # Convert the list of non-stable windows to a NumPy array
+        m2_array = np.array(remaning_data)
+        one_last_state = True
+        if len(m2_array) == 0:
+            one_last_state = False
+
+        # Return the array of non-stable windows, the fraction of stable windows,
+        # and the updated list_of_states
+        return state, m2_array, window_fraction, one_last_state
+
+    # If event trying all the maxima does not work, surrend
+    return None, None, None, None
 
 
 def iterative_search(
@@ -415,16 +571,27 @@ def iterative_search(
             cl_ob, state, tmp_labels, states_counter
         )
 
+        ### Exit the loop if no new stable windows are found
+        if counter <= 0.0:
+            state, m_next, counter, one_last_state = solve_batman(
+                cl_ob,
+                m_copy,
+                cl_ob.par,
+                cl_ob.number_of_sigmas,
+                tmp_labels,
+                cl_ob.par.tau_w,
+                states_counter,
+            )
+
+            if counter == 0 or state is None:
+                print("Iterations interrupted because last state is empty. ")
+                break
+
         state.perc = counter
         states_list.append(state)
         states_counter += 1
         iteration_id += 1
         m_copy = m_next
-
-        ### Exit the loop if no new stable windows are found
-        if counter <= 0.0:
-            print("Iterations interrupted because last state is empty. ")
-            break
 
         if m_next.size == 0:
             print("Iterations interrupted because all points are classififed.")
