@@ -425,7 +425,7 @@ def solve_batman(
         ### 5. Try the fit between the minima and check its goodness ###
         fit_param = [min_id0, min_id1, m_ind, flat_m.size, gap]
         fit_data = [bins, counts]
-        flag_min, goodness_min, popt_min = perform_gauss_fit(
+        flag_min, goodness_min, popt_min, r_2_min = perform_gauss_fit(
             fit_param, fit_data, "Min"
         )
 
@@ -440,29 +440,28 @@ def solve_batman(
         ### 7. Try the fit between the minima and check its goodness ###
         fit_param = [half_id0, half_id1, m_ind, flat_m.size, gap]
         fit_data = [bins, counts]
-        flag_half, goodness_half, popt_half = perform_gauss_fit(
+        flag_half, goodness_half, popt_half, r_2_half = perform_gauss_fit(
             fit_param, fit_data, "Half"
         )
 
-        ### 7.bis Avoid that the ENV0 is hidden in a very large Gaussian ###
-        data_range = np.max(m_clean) - np.min(m_clean)
-        if popt_min[1] > data_range / 4:
-            print("\tWARNING: sigma is too large, fit discarded.")
-            flag_min = False
-        if popt_half[1] > data_range / 4:
-            print("\tWARNING: sigma is too large, fit discarded.")
-            flag_half = False
-
         ### 8. Choose the best fit ###
+        r_2 = r_2_min
         if flag_min == 1 and flag_half == 0:
             popt = popt_min
         elif flag_min == 0 and flag_half == 1:
             popt = popt_half
+            goodness = goodness_half
+            r_2 = r_2_half
         elif flag_min * flag_half == 1:
-            if goodness_min >= goodness_half:
+            # if goodness_min >= goodness_half:
+            if r_2_min >= r_2_half:
+                print(f"Preferring {r_2_min} to {r_2_half}")
                 popt = popt_min
             else:
+                print(f"Preferring {r_2_half} to {r_2_min}")
                 popt = popt_half
+                goodness = goodness_half
+                r_2 = r_2_half
         else:
             continue
 
