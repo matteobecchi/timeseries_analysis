@@ -94,7 +94,7 @@ def perform_gauss_fit(
     id0, id1, max_ind, n_data, gap = param
     bins, counts = data
 
-    goodness = 5
+    goodness = 7
     selected_bins = bins[id0:id1]
     selected_counts = counts[id0:id1]
     mu0 = bins[max_ind]
@@ -180,8 +180,8 @@ def gauss_fit_max(
     ### 1. Histogram ###
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     gap = 1
-    if bins.size > 99:
-        gap = int(bins.size * 0.02)
+    if bins.size > 49:
+        gap = int(bins.size * 0.02)*2
     print(f"\tNumber of bins = {bins.size}, gap = {gap}")
 
     ### 2. Smoothing with tau = 3 ###
@@ -226,15 +226,6 @@ def gauss_fit_max(
     flag_half, goodness_half, popt_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
     )
-
-    ### 7.bis Avoid that the ENV0 is hidden in a very large Gaussian ###
-    data_range = np.max(m_clean) - np.min(m_clean)
-    if popt_min[1] > data_range / 4:
-        print("\tWARNING: sigma is too large, fit discarded.")
-        flag_min = False
-    if popt_half[1] > data_range / 4:
-        print("\tWARNING: sigma is too large, fit discarded.")
-        flag_half = False
 
     ### 8. Choose the best fit ###
     goodness = goodness_min

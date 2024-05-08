@@ -278,7 +278,7 @@ class UniData:
             axes.plot(
                 time_seq,
                 center,
-                label="ENV" + str(center_id + missing_zero),
+                label=f"ENV{center_id + missing_zero + 1}",
                 marker="o",
                 c=palette[center_id + missing_zero + 1],
                 zorder=1,
