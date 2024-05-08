@@ -101,7 +101,7 @@ def perform_gauss_fit(
     sigma0 = (bins[id1] - bins[id0]) / 6
     area0 = counts[max_ind] * np.sqrt(np.pi) * sigma0
     try:
-        popt, pcov, _, _, _ = scipy.optimize.curve_fit(
+        popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
             gaussian,
             selected_bins,
             selected_counts,
@@ -125,7 +125,10 @@ def perform_gauss_fit(
                 goodness -= 1
         if id1 - id0 <= gap:
             goodness -= 1
-        return True, goodness, popt
+        ss_res = np.sum(infodict["fvec"]**2)
+        ss_tot = np.sum((selected_counts - np.mean(selected_counts))**2)
+        coeff_det_r2 = 1 - ss_res / ss_tot
+        return True, goodness, popt, coeff_det_r2
     except RuntimeError:
         print("\t" + int_type + " fit: Runtime error. ")
         return (
@@ -134,6 +137,7 @@ def perform_gauss_fit(
             np.empty(
                 3,
             ),
+            0,
         )
     except TypeError:
         print("\t" + int_type + " fit: TypeError.")
@@ -143,6 +147,7 @@ def perform_gauss_fit(
             np.empty(
                 3,
             ),
+            0,
         )
     except ValueError:
         print("\t" + int_type + " fit: ValueError.")
@@ -152,6 +157,7 @@ def perform_gauss_fit(
             np.empty(
                 3,
             ),
+            0,
         )
 
 
@@ -208,7 +214,7 @@ def gauss_fit_max(
     ### 5. Try the fit between the minima and check its goodness ###
     fit_param = [min_id0, min_id1, max_ind, flat_m.size, gap]
     fit_data = [bins, counts]
-    flag_min, goodness_min, popt_min = perform_gauss_fit(
+    flag_min, goodness_min, popt_min, r_2_min = perform_gauss_fit(
         fit_param, fit_data, "Min"
     )
 
@@ -223,23 +229,26 @@ def gauss_fit_max(
     ### 7. Try the fit between the minima and check its goodness ###
     fit_param = [half_id0, half_id1, max_ind, flat_m.size, gap]
     fit_data = [bins, counts]
-    flag_half, goodness_half, popt_half = perform_gauss_fit(
+    flag_half, goodness_half, popt_half, r_2_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
     )
 
     ### 8. Choose the best fit ###
     goodness = goodness_min
+    r_2 = r_2_min
     if flag_min == 1 and flag_half == 0:
         popt = popt_min
     elif flag_min == 0 and flag_half == 1:
         popt = popt_half
         goodness = goodness_half
+        r_2 = r_2_half
     elif flag_min * flag_half == 1:
         if goodness_min >= goodness_half:
             popt = popt_min
         else:
             popt = popt_half
             goodness = goodness_half
+            r_2 = r_2_half
     else:
         print("\tWARNING: this fit is not converging.")
         return None
@@ -258,7 +267,7 @@ def gauss_fit_max(
             f" area = {state.area:.4f}",
             file=file,
         )
-        print("\tFit goodness = " + str(goodness), file=file)
+        print(f"\tFit goodness = {goodness}, r2 = {r_2}", file=file)
 
     if full_out:
         ### Plot the distribution and the fitted gaussians
