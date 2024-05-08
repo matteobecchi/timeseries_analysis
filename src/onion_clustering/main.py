@@ -412,6 +412,12 @@ def iterative_search(
             cl_ob, state, tmp_labels, states_counter
         )
 
+        state.perc = counter
+        states_list.append(state)
+        states_counter += 1
+        iteration_id += 1
+        m_copy = m_next
+
         ### Exit the loop if no new stable windows are found
         if counter <= 0.0:
             print("Iterations interrupted because last state is empty. ")
@@ -420,12 +426,6 @@ def iterative_search(
         if m_next.size == 0:
             print("Iterations interrupted because all points are classififed.")
             break
-
-        state.perc = counter
-        states_list.append(state)
-        states_counter += 1
-        iteration_id += 1
-        m_copy = m_next
 
     cl_ob.iterations = len(states_list)
     atl, lis = relabel_states(tmp_labels, states_list)
