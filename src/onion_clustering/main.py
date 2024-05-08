@@ -243,9 +243,12 @@ def gauss_fit_max(
         goodness = goodness_half
         r_2 = r_2_half
     elif flag_min * flag_half == 1:
-        if goodness_min >= goodness_half:
+        # if goodness_min >= goodness_half:
+        if r_2_min >= r_2_half:
+            print(f"Preferring {r_2_min} to {r_2_half}")
             popt = popt_min
         else:
+            print(f"Preferring {r_2_half} to {r_2_min}")
             popt = popt_half
             goodness = goodness_half
             r_2 = r_2_half
