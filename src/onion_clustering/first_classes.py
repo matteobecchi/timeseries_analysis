@@ -280,14 +280,14 @@ class UniData:
                 err_inf,
                 err_sup,
                 alpha=0.25,
-                color=palette[center_id + missing_zero + 1],
+                color=palette[center_id + 1],
             )
             axes.plot(
                 time_seq,
                 center,
-                label=f"ENV{center_id + missing_zero + 1}",
+                label=f"ENV{center_id + 1}",
                 marker="o",
-                c=palette[center_id + missing_zero + 1],
+                c=palette[center_id + 1],
                 zorder=1,
             )
 
