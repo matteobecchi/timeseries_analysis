@@ -15,7 +15,13 @@ from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 def read_input_data() -> str:
     """
     Attempt to read the content of 'data_directory.txt' file
-    and load it into a NumPy array as strings.
+    and load it into a string.
+
+    Returns
+    -------
+
+    data_dir : str
+        The path to the input file.
     """
     try:
         data_dir = np.loadtxt("data_directory.txt", dtype=str)
@@ -29,33 +35,30 @@ def read_input_data() -> str:
     return str(data_dir)
 
 
-def moving_average(data: np.ndarray, window: int) -> np.ndarray:
-    """Applies a moving average filter to a 1D or 2D NumPy array.
-
-    Args:
-    - data (np.ndarray): The input array to be smoothed.
-    - window (int): The size of the moving average window.
-
-    Returns:
-    - np.ndarray: The smoothed array obtained after applying
-    the moving average filter.
-
-    Raises:
-    - ValueError: If the input array dimension is not supported
-    (only 1D and 2D arrays are supported).
+def moving_average(
+    data: np.ndarray,
+    window: int,
+) -> np.ndarray:
     """
+    Applies a moving average filter to a 1D or 2D NumPy array.
 
-    # Step 1: Create a NumPy array 'weights' with the values 1.0
-    # repeated 'window' times.
-    # Then, divide each element of 'weights' by the 'window' value
-    # to get the average weights.
+    Parameters
+    ----------
+
+    data : np.ndarray
+        The input array to be smoothed.
+
+    window : int
+        The size of the moving average window.
+
+    Returns
+    -------
+
+    np.ndarray
+        The smoothed array obtained after applying
+        the moving average filter.
+    """
     weights = np.ones(window) / window
-
-    # Step 2: Apply the moving average filter to the 'data' array using
-    # the 'weights' array. The 'np.convolve' function performs a linear
-    # convolution between 'data' and 'weights'. The result is a smoothed
-    # version of the 'data', where each point represents the weighted
-    # average of its neighbors.
     if data.ndim == 1:
         return np.convolve(data, weights, mode="valid")
     if data.ndim >= 2:
@@ -67,22 +70,29 @@ def moving_average(data: np.ndarray, window: int) -> np.ndarray:
     )
 
 
-def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
+def moving_average_2d(
+    data: np.ndarray,
+    side: int,
+) -> np.ndarray:
     """Applies a 2D moving average filter to a NumPy array.
 
-    Args:
-    - data (np.ndarray): The 2D input array to be smoothed.
-    - side (int): The side length of the square moving average window
+    Parameters
+    ----------
+
+    data : np.ndarray
+        The 2D input array to be smoothed.
+
+    side : int
+        The side length of the square moving average window
         (must be an odd number).
 
-    Returns:
-    - np.ndarray: The smoothed array obtained after applying the 2D
+    Returns
+    -------
+
+    np.ndarray
+        The smoothed array obtained after applying the 2D
         moving average filter.
-
-    Raises:
-    - ValueError: If the side length 'side' is not an odd number.
     """
-
     if side % 2 == 0:  # Check if side is an odd number
         raise ValueError("L must be an odd number.")
     half_width = (side - 1) // 2
@@ -104,45 +114,54 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
     return result
 
 
-def plot_histo(axes: plt.Axes, counts: np.ndarray, bins: np.ndarray):
+def plot_histo(
+    axes: plt.Axes,
+    counts: np.ndarray,
+    bins: np.ndarray,
+):
     """Plots a histogram on the specified axes.
 
-    Args:
-    - axes: The matplotlib axes to plot on.
-    - counts (np.ndarray): The count or frequency of occurrences.
-    - bins (np.ndarray): The bin edges defining the intervals.
+    Parameters
+    ----------
 
-    Returns:
-    - None
+    axes
+        The matplotlib axes to plot on.
 
-    The function plots a histogram with the provided count and bin information
-    on the specified axes 'axes' and labels the x and y axes accordingly.
+    counts : np.ndarray
+        The count or frequency of occurrences.
+
+    bins : np.ndarray
+        The bin edges defining the intervals.
     """
-
     axes.stairs(counts, bins, fill=True)
     axes.set_xlabel(r"Normalized signal")
     axes.set_ylabel(r"Probability distribution")
 
 
-def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
+def param_grid(
+    par: Parameters,
+    trj_len: int,
+) -> Tuple[List, List]:
     """Generates parameter grids for tau_window and t_smooth.
 
-    Args:
-    - par (Parameters): An instance of the Parameters class containing
-        parameter details.
-    - trj_len (int): Length of the trajectory data.
+    Parameters
+    ----------
 
-    Returns:
-    - tau_window (List[int]): A list of tau_window values.
-    - t_smooth (List[int]): A list of t_smooth values.
+    par : Parameters
+        An instance of the Parameters class containing parameter details.
 
-    This function generates grids of values for 'tau_window' and 't_smooth'
-    based on the provided 'Parameters' instance and the length of the
-    trajectory. It calculates the values for 'tau_window' within the range
-    defined in 'Parameters' and generates 't_smooth' values within the
-    specified range.
+    trj_len : int
+        Length of the trajectory data.
+
+    Returns
+    -------
+
+    tau_window : List[int]
+        A list of tau_window values.
+
+    t_smooth : List[int]
+        A list of t_smooth values.
     """
-
     if par.max_tau_w == -1:
         par.max_tau_w = trj_len - par.max_t_smooth
     tmp = np.geomspace(
@@ -531,13 +550,16 @@ def find_max_prob_state(
     window : np.ndarray of shape (tau_window,)
         The signal window to assign to a state.
 
+    old_label : int
+        The temporary label for the considered signal window.
+
     list_of_states : List[StateUni]
         List of the identified states.
 
     Returns
     -------
 
-    int
+    new_label : int
         The label for the considered signal window.
 
     Notes
@@ -547,10 +569,6 @@ def find_max_prob_state(
     robust against outliers. Not sure if this is the best chioce.
     """
     median_x = np.median(window)
-    # closeness = [
-    #     np.abs(median_x - state.mean) / state.sigma for state in list_of_states
-    # ]
-    # return int(np.argmin(closeness) + 1)
     new_label = old_label
     if median_x < list_of_states[old_label - 1].th_inf[0]:
         new_label -= 1

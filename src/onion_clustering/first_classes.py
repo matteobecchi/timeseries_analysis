@@ -214,11 +214,9 @@ class UniData:
 
         # If there are no assigned window, we still need the "0" state
         # for consistency:
-        missing_zero = 0
         list_of_labels = np.unique(all_the_labels)
         if 0 not in list_of_labels:
             list_of_labels = np.insert(list_of_labels, 0, 0)
-            missing_zero = 1
 
         # Loop through unique labels (clusters)
         for ref_label in list_of_labels:

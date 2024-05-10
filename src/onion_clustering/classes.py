@@ -20,7 +20,10 @@ from onion_clustering.first_classes import (
     StateUni,
     UniData,
 )
-from onion_clustering.functions import gaussian
+from onion_clustering.functions import (
+    gaussian,
+    moving_average,
+)
 
 COLORMAP = "viridis"
 
@@ -352,9 +355,9 @@ class ClusteringObject:
             max_num_of_states = np.max(
                 [len(pop_list) for pop_list in pop_array]
             )
-            for j, pop_list in enumerate(pop_array):
+            for _, pop_list in enumerate(pop_array):
                 while len(pop_list) < max_num_of_states:
-                    pop_array[j].append(0.0)
+                    pop_list.append(0.0)
 
             pop_array = np.array(pop_array)
 
@@ -363,7 +366,7 @@ class ClusteringObject:
             width = np.insert(width, 0, width[0] / 2)
 
             bottom = np.zeros(len(pop_array))
-            for j, state in enumerate(pop_array.T):
+            for _, state in enumerate(pop_array.T):
                 _ = axes.bar(
                     time, state, width, bottom=bottom, edgecolor="black"
                 )
@@ -394,6 +397,12 @@ class ClusteringObject1D(ClusteringObject):
         counts, bins = np.histogram(flat_m, bins=binning, density=True)
         bins -= (bins[1] - bins[0]) / 2
         counts *= flat_m.size
+
+        gap = 1
+        if bins.size > 49:
+            gap = int(bins.size * 0.02) * 2
+        counts = moving_average(counts, gap)
+        bins = moving_average(bins, gap)
 
         # Create a plot with two subplots (side-by-side)
         fig, axes = plt.subplots(
@@ -471,6 +480,12 @@ class ClusteringObject1D(ClusteringObject):
         counts, bins = np.histogram(flat_m, bins=self.par.bins, density=True)
         bins -= (bins[1] - bins[0]) / 2
         counts *= flat_m.size
+
+        gap = 1
+        if bins.size > 49:
+            gap = int(bins.size * 0.02) * 2
+        counts = moving_average(counts, gap)
+        bins = moving_average(bins, gap)
 
         # Create a 1x2 subplots with shared y-axis
         fig, axes = plt.subplots(
@@ -703,12 +718,12 @@ class ClusteringObject2D(ClusteringObject):
 
             elif self.data.dims == 3:
                 fig = plt.figure(figsize=(6, 6))
-                ax: Axes3D = fig.add_subplot(111, projection="3d")
+                axes: Axes3D = fig.add_subplot(111, projection="3d")
 
                 # Plot the individual trajectories
                 step = 1 if m_clean.size > 1000000 else 1
                 for idx, mol in enumerate(m_clean[::step]):
-                    ax.plot(
+                    axes.plot(
                         mol[:, 0],
                         mol[:, 1],
                         mol[:, 2],
@@ -721,9 +736,9 @@ class ClusteringObject2D(ClusteringObject):
                     )
 
                 # Set labels and titles for the plots
-                ax.set_xlabel("Signal 1")
-                ax.set_ylabel("Signal 2")
-                ax.set_zlabel("Signal 3")
+                axes.set_xlabel("Signal 1")
+                axes.set_ylabel("Signal 2")
+                axes.set_zlabel("Signal 3")
 
             fig.savefig("output_figures/" + filename + ".png", dpi=600)
             plt.close(fig)
@@ -789,7 +804,7 @@ class ClusteringObject2D(ClusteringObject):
         all_the_labels = self.create_all_the_labels()
 
         if m_clean.shape[2] == 3:
-            fig, ax = plt.subplots(2, 2, figsize=(6, 6))
+            fig, axes = plt.subplots(2, 2, figsize=(6, 6))
             dir0 = [0, 0, 1]
             dir1 = [1, 2, 2]
             ax0 = [0, 0, 1]
@@ -814,7 +829,7 @@ class ClusteringObject2D(ClusteringObject):
                 step = 5 if m_resized.size > 1000000 else 1
 
                 for i, mol in enumerate(m_resized[::step]):
-                    ax[a_0][a_1].plot(
+                    axes[a_0][a_1].plot(
                         mol.T[d_0],
                         mol.T[d_1],
                         c="black",
@@ -823,7 +838,7 @@ class ClusteringObject2D(ClusteringObject):
                         zorder=0,
                     )
                     color_list = all_the_labels[i * step]
-                    ax[a_0][a_1].scatter(
+                    axes[a_0][a_1].scatter(
                         mol.T[d_0],
                         mol.T[d_1],
                         c=color_list,
@@ -835,7 +850,7 @@ class ClusteringObject2D(ClusteringObject):
                     )
 
                     color_list = all_the_labels[id_min]
-                    ax[a_0][a_1].plot(
+                    axes[a_0][a_1].plot(
                         m_resized[id_min].T[d_0],
                         m_resized[id_min].T[d_1],
                         c="black",
@@ -843,7 +858,7 @@ class ClusteringObject2D(ClusteringObject):
                         rasterized=True,
                         zorder=0,
                     )
-                    ax[a_0][a_1].scatter(
+                    axes[a_0][a_1].scatter(
                         m_resized[id_min].T[d_0],
                         m_resized[id_min].T[d_1],
                         c=color_list,
@@ -854,7 +869,7 @@ class ClusteringObject2D(ClusteringObject):
                         rasterized=True,
                     )
                     color_list = all_the_labels[id_max]
-                    ax[a_0][a_1].plot(
+                    axes[a_0][a_1].plot(
                         m_resized[id_max].T[d_0],
                         m_resized[id_max].T[d_1],
                         c="black",
@@ -862,7 +877,7 @@ class ClusteringObject2D(ClusteringObject):
                         rasterized=True,
                         zorder=0,
                     )
-                    ax[a_0][a_1].scatter(
+                    axes[a_0][a_1].scatter(
                         m_resized[id_max].T[d_0],
                         m_resized[id_max].T[d_1],
                         c=color_list,
@@ -883,18 +898,18 @@ class ClusteringObject2D(ClusteringObject):
                                 color="black",
                                 fill=False,
                             )
-                            ax[a_0][a_1].add_patch(ellipse)
+                            axes[a_0][a_1].add_patch(ellipse)
 
                 # Set plot titles and axis labels
-                ax[a_0][a_1].set_xlabel(r"Signal " + str(d_0))
-                ax[a_0][a_1].set_ylabel(r"Signal " + str(d_1))
+                axes[a_0][a_1].set_xlabel(r"Signal " + str(d_0))
+                axes[a_0][a_1].set_ylabel(r"Signal " + str(d_1))
 
-            ax[1][1].axis("off")
+            axes[1][1].axis("off")
             fig.savefig("output_figures/Fig2.png", dpi=600)
             plt.close(fig)
 
         elif m_clean.shape[2] == 2:
-            fig, ax = plt.subplots(figsize=(6, 6))
+            fig, axes = plt.subplots(figsize=(6, 6))
 
             # Plot the individual trajectories
             id_max, id_min = 0, 0
@@ -910,7 +925,7 @@ class ClusteringObject2D(ClusteringObject):
             step = 5 if m_resized.size > 1000000 else 1
 
             for i, mol in enumerate(m_resized[::step]):
-                ax.plot(
+                axes.plot(
                     mol.T[0],
                     mol.T[1],
                     c="black",
@@ -919,7 +934,7 @@ class ClusteringObject2D(ClusteringObject):
                     zorder=0,
                 )
                 color_list = all_the_labels[i * step]
-                ax.scatter(
+                axes.scatter(
                     mol.T[0],
                     mol.T[1],
                     c=color_list,
@@ -931,7 +946,7 @@ class ClusteringObject2D(ClusteringObject):
                 )
 
             color_list = all_the_labels[id_min]
-            ax.plot(
+            axes.plot(
                 m_resized[id_min].T[0],
                 m_resized[id_min].T[1],
                 c="black",
@@ -939,7 +954,7 @@ class ClusteringObject2D(ClusteringObject):
                 rasterized=True,
                 zorder=0,
             )
-            ax.scatter(
+            axes.scatter(
                 m_resized[id_min].T[0],
                 m_resized[id_min].T[1],
                 c=color_list,
@@ -950,7 +965,7 @@ class ClusteringObject2D(ClusteringObject):
                 rasterized=True,
             )
             color_list = all_the_labels[id_max]
-            ax.plot(
+            axes.plot(
                 m_resized[id_max].T[0],
                 m_resized[id_max].T[1],
                 c="black",
@@ -958,7 +973,7 @@ class ClusteringObject2D(ClusteringObject):
                 rasterized=True,
                 zorder=0,
             )
-            ax.scatter(
+            axes.scatter(
                 m_resized[id_max].T[0],
                 m_resized[id_max].T[1],
                 c=color_list,
@@ -978,11 +993,11 @@ class ClusteringObject2D(ClusteringObject):
                     color="black",
                     fill=False,
                 )
-                ax.add_patch(ellipse)
+                axes.add_patch(ellipse)
 
             # Set plot titles and axis labels
-            ax.set_xlabel(r"$x$")
-            ax.set_ylabel(r"$y$")
+            axes.set_xlabel(r"$x$")
+            axes.set_ylabel(r"$y$")
 
             fig.savefig("output_figures/Fig2.png", dpi=600)
             plt.close(fig)
@@ -997,7 +1012,7 @@ class ClusteringObject2D(ClusteringObject):
         signal_x = m_clean[self.par.example_id].T[0][: all_the_labels.shape[1]]
         signal_y = m_clean[self.par.example_id].T[1][: all_the_labels.shape[1]]
 
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, axes = plt.subplots(figsize=(6, 6))
 
         # Create a colormap to map colors to the labels
         cmap = plt.get_cmap(
@@ -1009,9 +1024,9 @@ class ClusteringObject2D(ClusteringObject):
             ),
         )
         color = all_the_labels[self.par.example_id]
-        ax.plot(signal_x, signal_y, c="black", lw=0.1)
+        axes.plot(signal_x, signal_y, c="black", lw=0.1)
 
-        ax.scatter(
+        axes.scatter(
             signal_x,
             signal_y,
             c=color,
@@ -1024,8 +1039,8 @@ class ClusteringObject2D(ClusteringObject):
 
         # Set plot titles and axis labels
         fig.suptitle("Example particle: ID = " + str(self.par.example_id))
-        ax.set_xlabel(r"$x$")
-        ax.set_ylabel(r"$y$")
+        axes.set_xlabel(r"$x$")
+        axes.set_ylabel(r"$y$")
 
         fig.savefig("output_figures/Fig3.png", dpi=600)
         plt.close(fig)

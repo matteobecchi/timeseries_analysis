@@ -88,7 +88,7 @@ def perform_gauss_fit(
     param: List[int],
     data: List[np.ndarray],
     int_type: str,
-) -> Tuple[bool, int, np.ndarray, float]:
+) -> Tuple[bool, float, np.ndarray]:
     """
     Perform Gaussian fit on given data.
 
@@ -119,19 +119,15 @@ def perform_gauss_fit(
     bool
         True if the fit is successful, False otherwise.
 
-    goodness : int
-        Goodness value calculated based on fit quality. TO REMOVE
+    coeff_det_r2 : float
+        Coefficient of determination of the fit. Zero if the fit fails.
 
     popt : np.ndarray or None
         Parameters of the Gaussian fit if successful, None otherwise.
-
-    coeff_det_r2 : float
-        Coefficient of determination of the fit. Zero if the fit fails.
     """
     id0, id1, max_ind, n_data = param
     bins, counts = data
 
-    goodness = 7
     selected_bins = bins[id0:id1]
     selected_counts = counts[id0:id1]
     mu0 = bins[max_ind]
@@ -150,61 +146,46 @@ def perform_gauss_fit(
             if popt[1] < 0:
                 popt[1] *= -1
                 popt[2] *= -1
-            # gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
-            # if gauss_max < area0 / 2:
-            #     goodness -= 1
             popt[2] *= n_data
-            # if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
-            #     goodness -= 1
-            # if popt[1] > selected_bins[-1] - selected_bins[0]:
-            #     goodness -= 1
-            # perr = np.sqrt(np.diag(pcov))
-            # for j, par_err in enumerate(perr):
-            #     if par_err / popt[j] > 0.5:
-            #         goodness -= 1
             ss_res = np.sum(infodict["fvec"] ** 2)
             ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
             coeff_det_r2 = 1 - ss_res / ss_tot
-            return True, goodness, popt, coeff_det_r2
+            return True, coeff_det_r2, popt
     except OptimizeWarning:
         print(f"\t{int_type} fit: Optimize warning. ")
         return (
             False,
-            goodness,
+            0,
             np.empty(
                 3,
             ),
-            0,
         )
     except RuntimeError:
         print(f"\t{int_type} fit: Runtime error. ")
         return (
             False,
-            goodness,
+            0,
             np.empty(
                 3,
             ),
-            0,
         )
     except TypeError:
         print(f"\t{int_type} fit: TypeError.")
         return (
             False,
-            goodness,
+            0,
             np.empty(
                 3,
             ),
-            0,
         )
     except ValueError:
         print(f"\t{int_type} fit: ValueError.")
         return (
             False,
-            goodness,
+            0,
             np.empty(
                 3,
             ),
-            0,
         )
 
 
@@ -278,9 +259,7 @@ def gauss_fit_max(
     ### 5. Try the fit between the minima and check its goodness ###
     fit_param = [min_id0, min_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
-    flag_min, _, popt_min, r_2_min = perform_gauss_fit(
-        fit_param, fit_data, "Min"
-    )
+    flag_min, r_2_min, popt_min = perform_gauss_fit(fit_param, fit_data, "Min")
 
     ### 6. Find the inrterval of half height ###
     half_id0 = np.max([max_ind - gap, 0])
@@ -293,7 +272,7 @@ def gauss_fit_max(
     ### 7. Try the fit between the minima and check its goodness ###
     fit_param = [half_id0, half_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
-    flag_half, _, popt_half, r_2_half = perform_gauss_fit(
+    flag_half, r_2_half, popt_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
     )
 
@@ -447,7 +426,34 @@ def solve_batman(
     tau_window: int,
     lim: int,
 ):
-    """Description of the function."""
+    """
+    This functions takes care of particular cases where the
+    data points on the tails of a Gaussian are not correctly assigned,
+    creating weird sharp peaks in the hsistogram.
+
+    Parameters
+    ----------
+
+    cl_ob : ClusteringObject1D
+
+    m_clean : np.ndarray
+        Input data for Gaussian fitting.
+
+    par : Parameters
+        Object containing parameters for fitting.
+
+    number_of_sigmas : float
+        To set the thresholds for assigning windows to the state.
+
+    tmp_labels : np.ndarray
+        Labels indicating window classifications.
+
+    tau_windw : int
+        The time resolution of the analysis.
+
+    lim : int
+        Offset value for classifying stable windows.
+    """
     flat_m = m_clean.flatten()
 
     ### 1. Histogram ###
@@ -484,7 +490,7 @@ def solve_batman(
         ### 5. Try the fit between the minima and check its goodness ###
         fit_param = [min_id0, min_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
-        flag_min, _, popt_min, r_2_min = perform_gauss_fit(
+        flag_min, r_2_min, popt_min = perform_gauss_fit(
             fit_param, fit_data, "Min"
         )
 
@@ -499,7 +505,7 @@ def solve_batman(
         ### 7. Try the fit between the minima and check its goodness ###
         fit_param = [half_id0, half_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
-        flag_half, _, popt_half, r_2_half = perform_gauss_fit(
+        flag_half, r_2_half, popt_half = perform_gauss_fit(
             fit_param, fit_data, "Half"
         )
 
@@ -579,14 +585,29 @@ def iterative_search(
     """
     Performs an iterative search for stable states in a trajectory.
 
-    Args:
-    - cl_ob (ClusteringObject1D).
-    - name (str): Name for identifying output figures.
+    Parameters
+    ----------
 
-    Returns:
-    - cl_ob (ClusteringObject1D): updated with the clustering results.
-    - atl (np.ndarray): temporary array of labels
-    - one_last_state (bool): Indicates if there's one last state remaining.
+    cl_ob : ClusteringObject1D
+
+    name : str
+        Name for identifying output figures.
+
+    full_output : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    cl_ob : ClusteringObject1D
+        Updated with the clustering results.
+
+    atl : np.ndarray of shape (n_particles, n_windows)
+        Temporary array of labels.
+
+    one_last_state : bool
+        Indicates if there's one last state remaining.
     """
 
     # Initialize an array to store labels for each window.
@@ -662,16 +683,28 @@ def timeseries_analysis(
     """
     Performs an analysis pipeline on time series data.
 
-    Args:
-    - cl_ob (ClusteringObject1D)
-    - tau_w (int): the time window for the analysis
-    - t_smooth (int): the width of the moving average for the analysis
+    Parameters
+    ----------
 
-    Returns:
-    - num_states (int): Number of identified states.
-    - fraction_0 (float): Fraction of unclassified data points.
-    - list_of_pop (List[float]): List of the populations of the different
-        states.
+    cl_ob : ClusteringObject1D
+
+    tau_w : int
+        The time resolution for the analysis.
+
+    t_smooth : int
+        The width of the moving average for the analysis.
+
+    Returns
+    -------
+
+    num_states : int
+        Number of identified states.
+
+    fraction_0 : float
+        Fraction of unclassified data points. Between 0 and 1.
+
+    list_of_pop : List[float]
+        List of the populations of the different states.
     """
 
     print("* New analysis: ", tau_w, t_smooth)
@@ -721,7 +754,24 @@ def full_output_analysis(
     cl_ob: ClusteringObject1D,
     full_out: bool,
 ) -> ClusteringObject1D:
-    """Perform a comprehensive analysis on the input data."""
+    """
+    Perform a comprehensive analysis on the input data.
+
+    Parameters
+    ----------
+
+    cl_ob : ClusteringObject1D
+
+    full_out : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    cl_ob : ClusteringObject1D
+        Updated with the clustering results.
+    """
 
     cl_ob.preparing_the_data()
 
@@ -743,13 +793,21 @@ def full_output_analysis(
     return cl_ob
 
 
-def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
+def time_resolution_analysis(
+    cl_ob: ClusteringObject1D,
+    full_out: bool,
+):
     """
     Performs Temporal Resolution Analysis (TRA) to explore parameter
     space and analyze the dataset.
 
-    Args:
-    - cl_ob (ClusteringObject1D): Conteining now only the raw input data.
+    Parameters
+    ----------
+    cl_ob : ClusteringObject1D
+
+    full_out : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
     """
     tau_window_list, t_smooth_list = param_grid(
         cl_ob.par, cl_ob.data.num_of_steps
@@ -798,14 +856,31 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D, full_out: bool):
 
 def main(
     full_output: bool = True,
-    number_of_sigmas: float = 1.5,
+    number_of_sigmas: float = 2.0,
 ) -> ClusteringObject1D:
     """
     Returns the clustering object with the analysi.
 
+    Parameters
+    ----------
+
+    full_output : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    number_of_sigmas : float
+        The signal windos are classified inside a state with a certain mean
+        and std_dev if all the points differ from the mean less than
+        std_dev * number_of_sigmas.
+
+    Notes
+    -----
+
     all_the_input_stuff() reads the data and the parameters
+
     time_resolution_analysis() explore the parameter
         (tau_window, t_smooth) space.
+
     full_output_analysis() performs a detailed analysis
         with the chosen parameters.
     """
