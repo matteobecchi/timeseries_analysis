@@ -538,6 +538,12 @@ def find_max_prob_state(
 
     int
         The label for the considered signal window.
+
+    Notes
+    -----
+
+    I am using the meadian here, instead of the mean, because it's more
+    robust against outliers. Not sure if this is the best chioce.
     """
     median_x = np.median(window)
     closeness = [
@@ -592,8 +598,6 @@ def max_prob_assignment(
         num_of_points = np.sum(final_labels == i + 1)
         state.perc = num_of_points / final_labels.size
 
-    print(np.unique(all_the_labels)) # REMOVE
-    print(np.unique(final_labels)) # REMOVE
     return final_labels, list_of_states
 
 

@@ -684,9 +684,7 @@ def timeseries_analysis(
     tmp_cl_ob.preparing_the_data()
     tmp_cl_ob.plot_input_data(name + "Fig0")
 
-    tmp_cl_ob, tmp_labels, _ = iterative_search(
-        tmp_cl_ob, name, full_out
-    )
+    tmp_cl_ob, tmp_labels, _ = iterative_search(tmp_cl_ob, name, full_out)
 
     if len(tmp_cl_ob.states) == 0:
         print("* No possible classification was found. ")
