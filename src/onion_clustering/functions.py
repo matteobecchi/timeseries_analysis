@@ -518,6 +518,7 @@ def set_final_states(
 
 def find_max_prob_state(
     window: np.ndarray,
+    old_label: int,
     list_of_states: List[StateUni],
 ) -> int:
     """
@@ -546,10 +547,16 @@ def find_max_prob_state(
     robust against outliers. Not sure if this is the best chioce.
     """
     median_x = np.median(window)
-    closeness = [
-        np.abs(median_x - state.mean) / state.sigma for state in list_of_states
-    ]
-    return int(np.argmin(closeness) + 1)
+    # closeness = [
+    #     np.abs(median_x - state.mean) / state.sigma for state in list_of_states
+    # ]
+    # return int(np.argmin(closeness) + 1)
+    new_label = old_label
+    if median_x < list_of_states[old_label - 1].th_inf[0]:
+        new_label -= 1
+    elif median_x > list_of_states[old_label - 1].th_sup[0]:
+        new_label += 1
+    return new_label
 
 
 def max_prob_assignment(
@@ -591,7 +598,9 @@ def max_prob_assignment(
         for j, old_label in enumerate(mol):
             if old_label > 0:
                 window = matrix[i][tau_window * j : tau_window * (j + 1)]
-                new_label = find_max_prob_state(window, list_of_states)
+                new_label = find_max_prob_state(
+                    window, old_label, list_of_states
+                )
                 final_labels[i][j] = new_label
 
     for i, state in enumerate(list_of_states):
