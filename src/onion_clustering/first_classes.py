@@ -262,6 +262,13 @@ class UniData:
             rgba = cmap(i)
             palette.append(rgb2hex(rgba))
 
+        print("######### DEBUG #############")
+        print("labels:", np.unique(all_the_labels))
+        print(f"palette length: {len(palette)}")
+        print(f"Missing ENVO? {missing_zero}")
+        print(f"medoid length: {len(center_list)}")
+        print("#############################")
+
         # Plot
         fig, axes = plt.subplots()
         time_seq = range(tau_window)
