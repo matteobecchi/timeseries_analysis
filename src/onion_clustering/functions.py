@@ -104,11 +104,11 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
     return result
 
 
-def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
+def plot_histo(axes: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     """Plots a histogram on the specified axes.
 
     Args:
-    - ax: The matplotlib axes to plot on.
+    - axes: The matplotlib axes to plot on.
     - counts (np.ndarray): The count or frequency of occurrences.
     - bins (np.ndarray): The bin edges defining the intervals.
 
@@ -116,12 +116,12 @@ def plot_histo(ax: plt.Axes, counts: np.ndarray, bins: np.ndarray):
     - None
 
     The function plots a histogram with the provided count and bin information
-    on the specified axes 'ax' and labels the x and y axes accordingly.
+    on the specified axes 'axes' and labels the x and y axes accordingly.
     """
 
-    ax.stairs(counts, bins, fill=True)
-    ax.set_xlabel(r"Normalized signal")
-    ax.set_ylabel(r"Probability distribution")
+    axes.stairs(counts, bins, fill=True)
+    axes.set_xlabel(r"Normalized signal")
+    axes.set_ylabel(r"Probability distribution")
 
 
 def param_grid(par: Parameters, trj_len: int) -> Tuple[List, List]:
@@ -458,11 +458,11 @@ def set_final_states(
     )
 
     final_map = np.zeros(max(np.unique(all_the_labels)) + 1, dtype=int)
-    for i, el in enumerate(np.unique(all_the_labels)):
-        final_map[el] = i + 1 * (1 - if_env0)
+    for i, elem in enumerate(np.unique(all_the_labels)):
+        final_map[elem] = i + 1 * (1 - if_env0)
     for i, particle in enumerate(all_the_labels):
-        for j, el in enumerate(particle):
-            all_the_labels[i][j] = final_map[el]
+        for j, elem in enumerate(particle):
+            all_the_labels[i][j] = final_map[elem]
 
     # Remove merged states from the state list
     states_to_remove = set(s0 for s0, s1 in best_merge)
@@ -514,6 +514,87 @@ def set_final_states(
 
     # Step 5: Return the 'updated_states' as the output of the function.
     return updated_states, all_the_labels
+
+
+def find_max_prob_state(
+    window: np.ndarray,
+    list_of_states: List[StateUni],
+) -> int:
+    """
+    Assign a singla window to the state for which the belonging
+    is the most probable.
+
+    Parameters
+    ----------
+
+    window : np.ndarray of shape (tau_window,)
+        The signal window to assign to a state.
+
+    list_of_states : List[StateUni]
+        List of the identified states.
+
+    Returns
+    -------
+
+    int
+        The label for the considered signal window.
+    """
+    median_x = np.median(window)
+    closeness = [
+        np.abs(median_x - state.mean) / state.sigma for state in list_of_states
+    ]
+    return int(np.argmin(closeness) + 1)
+
+
+def max_prob_assignment(
+    list_of_states: List[StateUni],
+    matrix: np.ndarray,
+    all_the_labels: np.ndarray,
+    tau_window: int,
+) -> Tuple[np.ndarray, List[StateUni]]:
+    """
+    After all the states have been identified, assign each window.
+    Each signal window is assignet to the most probable state.
+
+    Parameters
+    ----------
+
+    list_of_states : List[StateUni]
+        List of the identified states.
+
+    matrix : np.ndarray of shape (num_of_particles, num_of_timesteps)
+        The data to cluster.
+
+    all_the_labels : np.ndarray of shape (num_of_particles, num_of_windows)
+        The temporary labels assigned to the signal windows.
+
+    tau_window : int
+        The time resolution of the analysis.
+
+    Returns
+    -------
+
+    final_labels : np.ndarray of shape (num_of_particles, num_of_windows)
+        The definitive labels for all the signal windows.
+
+    list_of_states : List[StateUni]
+        List of the identified states, with updated percetages.
+    """
+    final_labels = np.zeros(all_the_labels.shape, dtype=int)
+    for i, mol in enumerate(all_the_labels):
+        for j, old_label in enumerate(mol):
+            if old_label > 0:
+                window = matrix[i][tau_window * j : tau_window * (j + 1)]
+                new_label = find_max_prob_state(window, list_of_states)
+                final_labels[i][j] = new_label
+
+    for i, state in enumerate(list_of_states):
+        num_of_points = np.sum(final_labels == i + 1)
+        state.perc = num_of_points / final_labels.size
+
+    print(np.unique(all_the_labels)) # REMOVE
+    print(np.unique(final_labels)) # REMOVE
+    return final_labels, list_of_states
 
 
 def relabel_states_2d(

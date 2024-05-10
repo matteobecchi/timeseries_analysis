@@ -18,6 +18,7 @@ from onion_clustering.classes import ClusteringObject1D
 from onion_clustering.first_classes import Parameters, StateUni, UniData
 from onion_clustering.functions import (
     gaussian,
+    max_prob_assignment,
     moving_average,
     param_grid,
     plot_histo,
@@ -139,7 +140,7 @@ def perform_gauss_fit(
     try:
         with warnings.catch_warnings():
             warnings.filterwarnings("error")
-            popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
+            popt, _, infodict, _, _ = scipy.optimize.curve_fit(
                 gaussian,
                 selected_bins,
                 selected_counts,
@@ -683,7 +684,7 @@ def timeseries_analysis(
     tmp_cl_ob.preparing_the_data()
     tmp_cl_ob.plot_input_data(name + "Fig0")
 
-    tmp_cl_ob, tmp_labels, one_last_state = iterative_search(
+    tmp_cl_ob, tmp_labels, _ = iterative_search(
         tmp_cl_ob, name, full_out
     )
 
@@ -693,8 +694,15 @@ def timeseries_analysis(
         del tmp_cl_ob
         return 0, 1.0, [1.0]
 
-    tmp_cl_ob.states, tmp_cl_ob.data.labels = set_final_states(
+    list_of_states, tmp_labels = set_final_states(
         tmp_cl_ob.states, tmp_labels, tmp_cl_ob.data.range
+    )
+
+    tmp_cl_ob.data.labels, tmp_cl_ob.states = max_prob_assignment(
+        list_of_states,
+        tmp_cl_ob.data.matrix,
+        tmp_labels,
+        tau_w,
     )
 
     list_of_pop = [state.perc for state in tmp_cl_ob.states]
@@ -723,8 +731,15 @@ def full_output_analysis(
     if len(cl_ob.states) == 0:
         print("* No possible classification was found. ")
         return cl_ob
-    cl_ob.states, cl_ob.data.labels = set_final_states(
+    list_of_states, tmp_labels = set_final_states(
         cl_ob.states, tmp_labels, cl_ob.data.range
+    )
+
+    cl_ob.data.labels, cl_ob.states = max_prob_assignment(
+        list_of_states,
+        cl_ob.data.matrix,
+        tmp_labels,
+        cl_ob.par.tau_w,
     )
 
     return cl_ob
