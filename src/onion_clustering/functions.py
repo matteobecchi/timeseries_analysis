@@ -186,22 +186,27 @@ def gaussian(
 ) -> np.ndarray:
     """Compute the Gaussian function values at given points 'x'.
 
-    Args:
-    - x_points (np.ndarray): Array of input values.
-    - x_mean (float): Mean value of the Gaussian function.
-    - sigma (float): Standard deviation of the Gaussian function.
-    - area (float): Area under the Gaussian curve.
+    Parameters
+    ----------
 
-    Returns:
-    - np.ndarray: Gaussian function values computed at the input points.
+    x_points : np.ndarray
+        Array of input values.
 
-    This function calculates the values of a Gaussian function at the given
-    array of points 'x_points' using the provided 'x_mean', 'sigma'
-    (standard deviation), and 'area' (area under the curve) parameters.
-    It returns an array of Gaussian function values corresponding to the
-    input 'x_points'.
+    x_mean : float
+        Mean value of the Gaussian function.
+
+    sigma : float
+        Standard deviation of the Gaussian function.
+
+    area : float
+        Area under the Gaussian curve.
+
+    Returns
+    -------
+
+    np.ndarray
+        Gaussian function values computed at the input points.
     """
-
     return (
         np.exp(-(((x_points - x_mean) / sigma) ** 2))
         * area
@@ -220,31 +225,43 @@ def custom_fit(
 ) -> Tuple[int, int, np.ndarray]:
     """Fit a Gaussian curve to selected data based on provided parameters.
 
-    Args:
-    - dim (int): The dimension of the data.
-    - max_ind (int): Index of the maximum value in the histogram.
-    - minima (list[int]): List of indices representing the minimum points.
-    - edges (np.ndarray): Array containing the bin edges of the histogram.
-    - counts (np.ndarray): Array containing histogram counts.
-    - gap (int): Minimum allowed gap size for fitting intervals.
-    - m_limits (list[list[int]]): List of min and max limits for each
-        dimension.
+    Parameters
+    ----------
 
-    Returns:
-    - tuple[int, int, list[float]]: A tuple containing:
-        - flag (int): Flag indicating the success (1) or failure (0) of
-            the fitting process.
-        - goodness (int): Goodness value representing the fitting quality
-            (higher is better).
-        - popt (list[float]): Optimal values for the parameters
-            (mu, sigma, area) of the fitted Gaussian.
+    dim : int
+        The dimension of the data.
 
-    This function attempts to fit a Gaussian curve to selected data within the
-    specified dimension 'dim' based on provided histogram data ('edges' and
-    'counts'). It uses 'max_ind' to initialize parameters and 'minima' to
-    define the fitting interval.
+    max_ind : int
+        Index of the maximum value in the histogram.
+
+    minima : list[int]
+        List of indices representing the minimum points.
+
+    edges : np.ndarray
+        Array containing the bin edges of the histogram.
+
+    counts : np.ndarray
+        Array containing histogram counts.
+
+    gap : int
+        Minimum allowed gap size for fitting intervals.
+
+    m_limits : list[list[int]]
+        List of min and max limits for each dimension.
+
+    Returns
+    -------
+
+    flag : int
+        Flag indicating the success (1) or failure (0) of the fitting process.
+
+    goodness : int
+        Goodness value representing the fitting quality (higher is better).
+
+    popt : list[float]
+        Optimal values for the parameters (mu, sigma, area) of the
+        fitted Gaussian.
     """
-
     # Initialize flag and goodness variables
     flag = 1
     goodness = 5
@@ -308,27 +325,30 @@ def custom_fit(
 
 
 def relabel_states(
-    all_the_labels: np.ndarray, states_list: list[StateUni]
+    all_the_labels: np.ndarray,
+    states_list: list[StateUni],
 ) -> Tuple[np.ndarray, list[StateUni]]:
-    """Relabel states and update the state list based on occurrence in
-        'all_the_labels'.
+    """
+    Relabel states and update the state list based on occurrence in
+    'all_the_labels'.
 
-    Args:
-    - all_the_labels (np.ndarray): Array containing labels assigned
-        to each window in the trajectory.
-    - states_list (list[StateUni]): List of StateUni objects representing
-        different states.
+    Parameters
+    ----------
 
-    Returns:
-    - tuple[np.ndarray, list[StateUni]]: A tuple containing:
-        - all_the_labels (np.ndarray): Updated labels array with relabeled
-            states.
-        - relevant_states (list[StateUni]): Updated list of non-empty states,
-        ordered by mean values.
+    all_the_labels : np.ndarray
+        Array containing labels assigned to each window in the trajectory.
 
-    This function performs several operations to relabel the states and update
-    the state list. It removes empty states, reorders them based on the mean
-    values and relabels the labels in 'all_the_labels'.
+    states_list : list[StateUni]
+        List of StateUni objects representing different states.
+
+    Returns
+    -------
+
+    all_the_labels : np.ndarray
+        Updated labels array with relabeled states.
+
+    relevant_states : list[StateUni]
+        Updated list of non-empty states, ordered by mean values.
     """
     # Step 1: Remove states with zero relevance
     relevant_states = [state for state in states_list if state.perc != 0.0]
@@ -361,13 +381,23 @@ def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
     """
     Finds the intersection between two Gaussians.
 
-    Args:
-    - st_0, st_1 (StateUni): the two states we are computing the threshold
-        between
+    Parameters
+    ----------
 
-    Returns:
-    - th_val (float): the value of the threshold
-    - th_type (int): the type of the threshold (1 or 2)
+    st_0, st_1 : StateUni
+        The two states we are computing the threshold between.
+
+    Returns
+    -------
+
+    th_val : float
+        The value of the threshold.
+
+    th_type : int
+        The type of the threshold (1 or 2).
+
+    Notes
+    -----
 
     If the intersection exists, the threshold is type 1. If there are 2
     intersections, the one with higher value is chosen.
