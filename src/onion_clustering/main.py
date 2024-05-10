@@ -33,6 +33,20 @@ def all_the_input_stuff(number_of_sigmas: float) -> ClusteringObject1D:
     """
     Reads input parameters and raw data from specified files and directories,
     processes the raw data, and creates output files.
+
+    Parameters
+    ----------
+
+    number_of_sigmas : float
+        The signal windos are classified inside a state with a certain mean
+        and std_dev if all the points differ from the mean less than
+        std_dev * number_of_sigmas.
+
+    Returns
+    -------
+
+    clustering_object : ClusteringObject1D
+        The object containing all the information and data for the analysis.
     """
     # Read input parameters from files.
     data_directory = read_input_data()
@@ -77,23 +91,43 @@ def perform_gauss_fit(
     """
     Perform Gaussian fit on given data.
 
-    Args:
-    - id0 (int): Index representing the lower limit for data selection.
-    - id1 (int): Index representing the upper limit for data selection.
-    - bins (np.ndarray): Array containing bin values.
-    - counts (np.ndarray): Array containing counts corresponding to bins.
-    - n_data (int): Number of data points.
-    - gap (int): Gap value for the fit.
-    - interval_type (str): Type of interval.
+    Parameters
+    ----------
 
-    Returns:
-    - tuple: A tuple containing:
-        - bool: True if the fit is successful, False otherwise.
-        - int: Goodness value calculated based on fit quality.
-        - array or None: Parameters of the Gaussian fit if successful,
-            None otherwise.
+    id0 : int
+        Index representing the lower limit for data selection.
+
+    id1 : int
+        Index representing the upper limit for data selection.
+
+    bins : np.ndarray
+        Array containing bin values.
+
+    counts : np.ndarray
+        Array containing counts corresponding to bins.
+
+    n_data : int
+        Number of data points.
+
+    interval_type : str
+        Type of interval ("min" of "half").
+
+    Returns
+    -------
+
+    bool
+        True if the fit is successful, False otherwise.
+
+    goodness : int
+        Goodness value calculated based on fit quality. TO REMOVE
+
+    popt : np.ndarray or None
+        Parameters of the Gaussian fit if successful, None otherwise.
+
+    coeff_det_r2 : float
+        Coefficient of determination of the fit. Zero if the fit fails.
     """
-    id0, id1, max_ind, n_data, gap = param
+    id0, id1, max_ind, n_data = param
     bins, counts = data
 
     goodness = 7
@@ -115,20 +149,18 @@ def perform_gauss_fit(
             if popt[1] < 0:
                 popt[1] *= -1
                 popt[2] *= -1
-            gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
-            if gauss_max < area0 / 2:
-                goodness -= 1
+            # gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
+            # if gauss_max < area0 / 2:
+            #     goodness -= 1
             popt[2] *= n_data
-            if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
-                goodness -= 1
-            if popt[1] > selected_bins[-1] - selected_bins[0]:
-                goodness -= 1
-            perr = np.sqrt(np.diag(pcov))
-            for j, par_err in enumerate(perr):
-                if par_err / popt[j] > 0.5:
-                    goodness -= 1
-            if id1 - id0 <= gap:
-                goodness -= 1
+            # if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
+            #     goodness -= 1
+            # if popt[1] > selected_bins[-1] - selected_bins[0]:
+            #     goodness -= 1
+            # perr = np.sqrt(np.diag(pcov))
+            # for j, par_err in enumerate(perr):
+            #     if par_err / popt[j] > 0.5:
+            #         goodness -= 1
             ss_res = np.sum(infodict["fvec"] ** 2)
             ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
             coeff_det_r2 = 1 - ss_res / ss_tot
@@ -185,14 +217,31 @@ def gauss_fit_max(
     """
     Performs Gaussian fitting on input data.
 
-    Args:
-    - m_clean (np.ndarray): Input data for Gaussian fitting.
-    - par (Parameters): Object containing parameters for fitting.
-    - filename (str): Name of the output plot file.
+    Parameters
+    ----------
 
-    Returns:
-    - state (StateUni): Object containing Gaussian fit parameters
-        (mu, sigma, area) or None if the fit fails.
+    m_clean : np.ndarray
+        Input data for Gaussian fitting.
+
+    par : Parameters
+        Object containing parameters for fitting.
+
+    number_of_sigmas : float
+        To set the thresholds for assigning windows to the state.
+
+    filename : str
+        Name of the output plot file.
+
+    full_output : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    state : StateUni
+        Object containing Gaussian fit parameters (mu, sigma, area)
+        or None if the fit fails.
     """
     print("* Gaussian fit...")
     flat_m = m_clean.flatten()
@@ -226,9 +275,9 @@ def gauss_fit_max(
         min_id1 += 1
 
     ### 5. Try the fit between the minima and check its goodness ###
-    fit_param = [min_id0, min_id1, max_ind, flat_m.size, gap]
+    fit_param = [min_id0, min_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
-    flag_min, goodness_min, popt_min, r_2_min = perform_gauss_fit(
+    flag_min, _, popt_min, r_2_min = perform_gauss_fit(
         fit_param, fit_data, "Min"
     )
 
@@ -241,30 +290,24 @@ def gauss_fit_max(
         half_id1 += 1
 
     ### 7. Try the fit between the minima and check its goodness ###
-    fit_param = [half_id0, half_id1, max_ind, flat_m.size, gap]
+    fit_param = [half_id0, half_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
-    flag_half, goodness_half, popt_half, r_2_half = perform_gauss_fit(
+    flag_half, _, popt_half, r_2_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
     )
 
     ### 8. Choose the best fit ###
-    goodness = goodness_min
     r_2 = r_2_min
     if flag_min == 1 and flag_half == 0:
         popt = popt_min
     elif flag_min == 0 and flag_half == 1:
         popt = popt_half
-        goodness = goodness_half
         r_2 = r_2_half
     elif flag_min * flag_half == 1:
-        # if goodness_min >= goodness_half:
         if r_2_min >= r_2_half:
-            print(f"Preferring {r_2_min} to {r_2_half}")
             popt = popt_min
         else:
-            print(f"Preferring {r_2_half} to {r_2_min}")
             popt = popt_half
-            goodness = goodness_half
             r_2 = r_2_half
     else:
         print("\tWARNING: this fit is not converging.")
@@ -284,7 +327,7 @@ def gauss_fit_max(
             f" area = {state.area:.4f}",
             file=file,
         )
-        print(f"\tFit goodness = {goodness}, r2 = {r_2}", file=file)
+        print(f"\tFit r2 = {r_2}", file=file)
 
     if full_out:
         ### Plot the distribution and the fitted gaussians
@@ -315,18 +358,33 @@ def find_stable_trj(
     lim: int,
 ) -> Tuple[np.ndarray, float, bool]:
     """
-    Identifies stable windows in a trajectory.
+    Identifies stable windows within a state.
 
-    Args:
-    - cl_ob (ClusteringObject1D): the clustering object
-    - state (StateUni): Object containing stable state parameters.
-    - all_the_labels (np.ndarray): Labels indicating window classifications.
-    - offset (int): Offset value for classifying stable windows.
+    Parameters
+    ----------
 
-    Returns:
-    - m2_array (np.ndarray): Array of non-stable windows.
-    - fw (float): Fraction of windows classified as stable.
-    - one_last_state (bool): Indicates if there's one last state remaining.
+    cl_ob : ClusteringObject1D
+
+    state : StateUni
+        Object containing stable state parameters.
+
+    all_the_labels : np.ndarray
+        Labels indicating window classifications.
+
+    offset : int
+        Offset value for classifying stable windows.
+
+    Returns
+    -------
+
+    m2_array : np.ndarray
+        Array of non-stable windows.
+
+    fw : float
+        Fraction of windows classified as stable.
+
+    one_last_state : bool
+        Indicates if there's one last state remaining.
     """
     print("* Finding stable windows...")
 
@@ -423,9 +481,9 @@ def solve_batman(
             min_id1 += 1
 
         ### 5. Try the fit between the minima and check its goodness ###
-        fit_param = [min_id0, min_id1, m_ind, flat_m.size, gap]
+        fit_param = [min_id0, min_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
-        flag_min, goodness_min, popt_min, r_2_min = perform_gauss_fit(
+        flag_min, _, popt_min, r_2_min = perform_gauss_fit(
             fit_param, fit_data, "Min"
         )
 
@@ -438,30 +496,22 @@ def solve_batman(
             half_id1 += 1
 
         ### 7. Try the fit between the minima and check its goodness ###
-        fit_param = [half_id0, half_id1, m_ind, flat_m.size, gap]
+        fit_param = [half_id0, half_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
-        flag_half, goodness_half, popt_half, r_2_half = perform_gauss_fit(
+        flag_half, _, popt_half, r_2_half = perform_gauss_fit(
             fit_param, fit_data, "Half"
         )
 
         ### 8. Choose the best fit ###
-        r_2 = r_2_min
         if flag_min == 1 and flag_half == 0:
             popt = popt_min
         elif flag_min == 0 and flag_half == 1:
             popt = popt_half
-            goodness = goodness_half
-            r_2 = r_2_half
         elif flag_min * flag_half == 1:
-            # if goodness_min >= goodness_half:
             if r_2_min >= r_2_half:
-                print(f"Preferring {r_2_min} to {r_2_half}")
                 popt = popt_min
             else:
-                print(f"Preferring {r_2_half} to {r_2_min}")
                 popt = popt_half
-                goodness = goodness_half
-                r_2 = r_2_half
         else:
             continue
 
