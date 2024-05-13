@@ -532,6 +532,7 @@ def set_final_states(
                     proposed_merge.append(
                         [j, i] if shared_area_1 > shared_area_2 else [i, j]
                     )
+    print(proposed_merge)
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
