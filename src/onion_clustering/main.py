@@ -873,6 +873,13 @@ def main(
         and std_dev if all the points differ from the mean less than
         std_dev * number_of_sigmas.
 
+    Returns
+    -------
+
+    clustering_object : ClusteringObject1D
+        The clusteriong object, with the input data, the parameters and the
+        results of the clustering.
+
     Notes
     -----
 
