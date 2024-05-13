@@ -493,20 +493,29 @@ def set_final_states(
     """
     Assigns final states and relabels labels based on specific criteria.
 
-    Args:
-    - list_of_states (list[StateUni]): List of StateUni objects representing
-        potential states.
-    - all_the_labels (np.ndarray): 2D NumPy array containing labels for each
-        data point.
-    - m_range (list[float]): Range of values in the data.
+    Parameters
+    ----------
 
-    Returns:
-    - tuple: A tuple containing the final list of states
-    (list[StateUni]) and the newly labeled data (np.ndarray).
+    list_of_states : List[StateUni]
+        List of StateUni objects representing potential states.
+
+    all_the_labels : np.ndarray of shape (n_particles, n_windows)
+        The proposed labels for each data point.
+
+    m_range : np.ndarray of shape (2,)
+        Range of values in the data matrix.
+
+    Returns
+    -------
+
+    updated_states : List[StateUni]
+        Final list of StateUni objects representing potential states.
+
+    all_the_labels : np.ndarray of shape (n_particles, n_windows)
+        The definitive labels for each data point.
     """
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
-
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
