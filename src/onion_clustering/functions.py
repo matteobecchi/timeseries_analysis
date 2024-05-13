@@ -511,10 +511,13 @@ def set_final_states(
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
             if j > i:
+                """
+                # The original condition, to be removed if the new is better
                 # if (
                 #     st_0.peak > st_1.peak
                 #     and abs(st_1.mean - st_0.mean) < st_0.sigma
                 # ):
+                """
                 shared_area_1, shared_area_2 = shared_area_between_gaussians(
                     st_1.area,
                     st_1.mean,
