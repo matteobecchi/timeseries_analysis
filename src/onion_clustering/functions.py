@@ -517,6 +517,7 @@ def set_final_states(
                     > 0.8
                 ):
                     proposed_merge.append([j, i])
+    print(proposed_merge)
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
