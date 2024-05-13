@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 import scipy.signal
+from scipy.integrate import quad
 
 from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
@@ -432,6 +433,48 @@ def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
     return th_aver, 2
 
 
+def shared_area_between_gaussians(
+    area1, mean1, sigma1, area2, mean2, sigma2
+) -> float:
+    """
+    Computes the shared area between two Gaussians.
+
+    Parameters
+    ----------
+
+    area1, mean1, sigma1 : float
+        The parameters of the Gaussian we want to merge in the second one.
+
+    area2, mean2, sigma2 : float
+        The parameters of the Gaussian we want to merge the first one in.
+
+    Returns
+    -------
+
+    shared_fraction : float
+        The fraction of the area of the first Gaussian in common with the
+        second Gaussian.
+    """
+
+    def gauss_1(x):
+        gauss = gaussian(x, mean1, sigma1, area1)
+        return gauss
+
+    def min_of_gaussians(x):
+        min_values = np.minimum(
+            gaussian(x, mean1, sigma1, area1),
+            gaussian(x, mean2, sigma2, area2),
+        )
+        return min_values
+
+    area_first_gaussian, _ = quad(gauss_1, -np.inf, np.inf)
+    shared_area, _ = quad(min_of_gaussians, -np.inf, np.inf)
+    shared_fraction = shared_area / area_first_gaussian
+
+    print(shared_fraction)
+    return shared_fraction
+
+
 def set_final_states(
     list_of_states: List[StateUni],
     all_the_labels: np.ndarray,
@@ -458,9 +501,20 @@ def set_final_states(
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
             if j != i:
+                # if (
+                #     st_0.peak > st_1.peak
+                #     and abs(st_1.mean - st_0.mean) < st_0.sigma
+                # ):
                 if (
-                    st_0.peak > st_1.peak
-                    and abs(st_1.mean - st_0.mean) < st_0.sigma
+                    shared_area_between_gaussians(
+                        st_1.area,
+                        st_1.mean,
+                        st_1.sigma,
+                        st_0.area,
+                        st_0.mean,
+                        st_0.sigma,
+                    )
+                    > 0.8
                 ):
                     proposed_merge.append([j, i])
 
