@@ -435,7 +435,7 @@ def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
 
 def shared_area_between_gaussians(
     area1, mean1, sigma1, area2, mean2, sigma2
-) -> float:
+) -> Tuple[float, float]:
     """
     Computes the shared area between two Gaussians.
 
@@ -443,21 +443,29 @@ def shared_area_between_gaussians(
     ----------
 
     area1, mean1, sigma1 : float
-        The parameters of the Gaussian we want to merge in the second one.
+        The parameters of Gaussian 1.
 
     area2, mean2, sigma2 : float
-        The parameters of the Gaussian we want to merge the first one in.
+        The parameters of Gaussian 2.
 
     Returns
     -------
 
-    shared_fraction : float
+    shared_fraction_1 : float
         The fraction of the area of the first Gaussian in common with the
         second Gaussian.
+
+    shared_fraction_2 : float
+        The fraction of the area of the second Gaussian in common with the
+        first Gaussian.
     """
 
     def gauss_1(x):
         gauss = gaussian(x, mean1, sigma1, area1)
+        return gauss
+
+    def gauss_2(x):
+        gauss = gaussian(x, mean2, sigma2, area2)
         return gauss
 
     def min_of_gaussians(x):
@@ -467,12 +475,14 @@ def shared_area_between_gaussians(
         )
         return min_values
 
-    area_first_gaussian, _ = quad(gauss_1, -np.inf, np.inf)
+    area_gaussian_1, _ = quad(gauss_1, -np.inf, np.inf)
+    area_gaussian_2, _ = quad(gauss_2, -np.inf, np.inf)
     shared_area, _ = quad(min_of_gaussians, -np.inf, np.inf)
-    shared_fraction = shared_area / area_first_gaussian
+    shared_fraction_1 = shared_area / area_gaussian_1
+    shared_fraction_2 = shared_area / area_gaussian_2
 
-    print(shared_fraction)
-    return shared_fraction
+    print(shared_fraction_1, shared_fraction_2)
+    return shared_fraction_1, shared_fraction_2
 
 
 def set_final_states(
@@ -500,25 +510,28 @@ def set_final_states(
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
-            if j != i:
+            if j > i:
                 # if (
                 #     st_0.peak > st_1.peak
                 #     and abs(st_1.mean - st_0.mean) < st_0.sigma
                 # ):
-                if (
-                    shared_area_between_gaussians(
-                        st_1.area,
-                        st_1.mean,
-                        st_1.sigma,
-                        st_0.area,
-                        st_0.mean,
-                        st_0.sigma,
-                    )
-                    > 0.8
-                ):
+                shared_area_1, shared_area_2 = shared_area_between_gaussians(
+                    st_1.area,
+                    st_1.mean,
+                    st_1.sigma,
+                    st_0.area,
+                    st_0.mean,
+                    st_0.sigma,
+                )
+                thresh = 0.8
+                if shared_area_1 > thresh and shared_area_2 <= thresh:
                     proposed_merge.append([j, i])
-    print(f"Number of states = {len(list_of_states)}")
-    print(proposed_merge)
+                elif shared_area_2 > thresh and shared_area_1 <= thresh:
+                    proposed_merge.append([i, j])
+                elif shared_area_1 > thresh and shared_area_2 > thresh:
+                    proposed_merge.append(
+                        [j, i] if shared_area_1 > shared_area_2 else [i, j]
+                    )
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
