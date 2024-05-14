@@ -784,20 +784,19 @@ def full_output_analysis(
         print("* No possible classification was found. ")
         return cl_ob
 
-    # list_of_states, tmp_labels = set_final_states(
-    cl_ob.states, cl_ob.data.labels = set_final_states(
+    list_of_states, tmp_labels = set_final_states(
         cl_ob.states,
         tmp_labels,
         cl_ob.data.range,
         AREA_MAX_OVERLAP,
     )
 
-    # cl_ob.data.labels, cl_ob.states = max_prob_assignment(
-    #     list_of_states,
-    #     cl_ob.data.matrix,
-    #     tmp_labels,
-    #     cl_ob.par.tau_w,
-    # )
+    cl_ob.data.labels, cl_ob.states = max_prob_assignment(
+        list_of_states,
+        cl_ob.data.matrix,
+        tmp_labels,
+        cl_ob.par.tau_w,
+    )
 
     return cl_ob
 

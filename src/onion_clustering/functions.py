@@ -588,8 +588,10 @@ def set_final_states(
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
 
-    print(f"Initially there are {len(list_of_states)} states,"
-        f" and the labels are {np.unique(all_the_labels)}.")
+    print(
+        f"Initially there are {len(list_of_states)} states,"
+        f" and the labels are {np.unique(all_the_labels)}."
+    )
 
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
@@ -700,9 +702,10 @@ def set_final_states(
     #     m_range,
     # )
 
-    print(f"After merging there are {len(updated_states)} states,"
-    f" and the labels are {np.unique(all_the_labels)}.")
-
+    print(
+        f"After merging there are {len(updated_states)} states,"
+        f" and the labels are {np.unique(all_the_labels)}."
+    )
 
     # Compute the fraction of data points in each state
     for st_id, state in enumerate(updated_states):
@@ -830,7 +833,12 @@ def max_prob_assignment(
                 new_label = find_max_prob_state(
                     window, old_label, list_of_states
                 )
-                final_labels[i][j] = new_label
+                s_range = (
+                    list_of_states[new_label - 1].th_sup[0]
+                    - list_of_states[new_label - 1].th_inf[0]
+                )
+                if np.max(window) - np.min(window) < s_range:
+                    final_labels[i][j] = new_label
 
     for i, state in enumerate(list_of_states):
         num_of_points = np.sum(final_labels == i + 1)
