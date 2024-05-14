@@ -834,22 +834,20 @@ def max_prob_assignment(
                     window, old_label, list_of_states
                 )
                 s_range = np.abs(
-                    list_of_states[new_label - 1].th_sup[0]
-                    - list_of_states[new_label - 1].th_inf[0]
+                    list_of_states[new_label].th_sup[0]
+                    - list_of_states[new_label].th_inf[0]
                 )
                 if np.max(window) - np.min(window) < s_range:
-                    final_labels[i][j] = new_label
+                    final_labels[i][j] = new_label + 1
 
     for i, state in enumerate(list_of_states):
         num_of_points = np.sum(final_labels == i + 1)
         state.perc = num_of_points / final_labels.size
 
-    print(np.unique(final_labels))
     states_to_remove = []
     for i, state in enumerate(list_of_states):
         if state.perc == 0.0:
             states_to_remove.append(i)
-    print(states_to_remove)
 
     for i in states_to_remove[::-1]:
         list_of_states.pop(i)
