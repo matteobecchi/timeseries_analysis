@@ -834,11 +834,11 @@ def max_prob_assignment(
                     window, old_label, list_of_states
                 )
                 s_range = np.abs(
-                    list_of_states[new_label].th_sup[0]
-                    - list_of_states[new_label].th_inf[0]
+                    list_of_states[new_label - 1].th_sup[0]
+                    - list_of_states[new_label - 1].th_inf[0]
                 )
                 if np.max(window) - np.min(window) < s_range:
-                    final_labels[i][j] = new_label + 1
+                    final_labels[i][j] = new_label
 
     for i, state in enumerate(list_of_states):
         num_of_points = np.sum(final_labels == i + 1)
