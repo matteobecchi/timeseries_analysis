@@ -616,10 +616,10 @@ def set_final_states(
                     proposed_merge.append(
                         [j, i] if shared_area_1 > shared_area_2 else [i, j]
                     )
-                # Condition 2: mean overlap
+                # Condition 2: mean proximity
                 elif (
                     st_0.peak > st_1.peak
-                    and np.abs(st_0.mean - st_1.mean) < st_0.sigma / 4
+                    and np.abs(st_0.mean - st_1.mean) < st_0.sigma / np.sqrt(2)
                     and st_1.sigma < 2 * st_0.sigma
                 ):
                     proposed_merge.append([j, i])
@@ -628,7 +628,7 @@ def set_final_states(
                     )
                 elif (
                     st_1.peak > st_0.peak
-                    and np.abs(st_0.mean - st_1.mean) < st_1.sigma / 4
+                    and np.abs(st_0.mean - st_1.mean) < st_1.sigma / np.sqrt(2)
                     and st_0.sigma < 2 * st_1.sigma
                 ):
                     proposed_merge.append([i, j])
