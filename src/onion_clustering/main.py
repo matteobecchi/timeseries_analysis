@@ -785,7 +785,7 @@ def full_output_analysis(
         return cl_ob
 
     # list_of_states, tmp_labels = set_final_states(
-    cl_ob.data.labels, cl_ob.states = set_final_states(
+    cl_ob.states, cl_ob.data.labels = set_final_states(
         cl_ob.states,
         tmp_labels,
         cl_ob.data.range,
