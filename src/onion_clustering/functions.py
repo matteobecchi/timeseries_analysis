@@ -588,7 +588,7 @@ def set_final_states(
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
 
-    print(f"Initially there are {len(list_of_state)} states,"
+    print(f"Initially there are {len(list_of_states)} states,"
         f" and the labels are {np.unique(all_the_labels)}.")
 
     proposed_merge = []
