@@ -832,12 +832,9 @@ def max_prob_assignment(
                 new_label = find_max_prob_state(
                     window, old_label, list_of_states
                 )
-                # s_range = np.abs(
-                #     list_of_states[new_label - 1].th_sup[0]
-                #     - list_of_states[new_label - 1].th_inf[0]
-                # )
-                # if np.max(window) - np.min(window) < s_range:
-                #     final_labels[i][j] = new_label
+                s_range = 2.*list_of_states[new_label - 1].sigma
+                if np.max(window) - np.min(window) < s_range:
+                    final_labels[i][j] = new_label
                 final_labels[i][j] = new_label
 
     print(np.unique(all_the_labels))
