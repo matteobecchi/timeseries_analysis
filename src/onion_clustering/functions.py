@@ -626,18 +626,12 @@ def set_final_states(
                     and st_1.sigma < 2 * st_0.sigma
                 ):
                     proposed_merge.append([j, i])
-                    print(j, i)
-                    print("Means' distance: ", np.abs(st_0.mean - st_1.mean))
-                    print("Sigmas: ", st_1.sigma, st_0.sigma)
                 elif (
                     st_1.peak > st_0.peak
                     and np.abs(st_0.mean - st_1.mean) < st_1.sigma
                     and st_0.sigma < 2 * st_1.sigma
                 ):
                     proposed_merge.append([i, j])
-                    print(i, j)
-                    print("Means' distance: ", np.abs(st_0.mean - st_1.mean))
-                    print("Sigmas: ", st_0.sigma, st_1.sigma)
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
@@ -832,7 +826,7 @@ def max_prob_assignment(
                 new_label = find_max_prob_state(
                     window, old_label, list_of_states
                 )
-                s_range = 2.*list_of_states[new_label - 1].sigma
+                s_range = 4.*list_of_states[new_label - 1].sigma
                 if np.max(window) - np.min(window) < s_range:
                     final_labels[i][j] = new_label
                 final_labels[i][j] = new_label
