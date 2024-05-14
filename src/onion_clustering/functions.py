@@ -484,6 +484,74 @@ def shared_area_between_gaussians(
     return shared_fraction_1, shared_fraction_2
 
 
+def final_state_settings(
+    list_of_states: List[StateUni],
+    all_the_labels: np.ndarray,
+    m_range: np.ndarray,
+) -> List[StateUni]:
+    """
+    Final adjustemts and output in the list of identified states.
+
+    Parameters
+    ----------
+
+    list_of_states : list[StateUni]
+        The list of final states.
+
+    all_the_labels : np.ndarray of shape (n_particles, n_windows)
+        The final labels for all the data points.
+
+    m_range : np.ndarray of shape (2,)
+        Range of values in the data matrix.
+
+    Returns
+    -------
+
+    list_of_states : list[StateUni]
+        Now with the correct fraction asssigned to each state.
+    """
+    # Compute the fraction of data points in each state
+    for st_id, state in enumerate(list_of_states):
+        num_of_points = np.sum(all_the_labels == st_id + 1)
+        state.perc = num_of_points / all_the_labels.size
+
+    # Calculate the final threshold values
+    # and their types based on the intercept between neighboring states.
+    list_of_states[0].th_inf[0] = m_range[0]
+    list_of_states[0].th_inf[1] = 0
+
+    for i in range(len(list_of_states) - 1):
+        th_val, th_type = find_intersection(
+            list_of_states[i], list_of_states[i + 1]
+        )
+        list_of_states[i].th_sup[0] = th_val
+        list_of_states[i].th_sup[1] = th_type
+        list_of_states[i + 1].th_inf[0] = th_val
+        list_of_states[i + 1].th_inf[1] = th_type
+
+    list_of_states[-1].th_sup[0] = m_range[1]
+    list_of_states[-1].th_sup[1] = 0
+
+    # Write the final states and final thresholds to text files.
+    with open("final_states.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
+        print("# Mu \t Sigma \t A \t state_fraction", file=file)
+        for state in list_of_states:
+            print(state.mean, state.sigma, state.area, state.perc, file=file)
+    with open("final_thresholds.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
+        print("# Threshold_value \t Threshold type", file=file)
+        for state in list_of_states:
+            print(state.th_inf[0], state.th_inf[1], file=file)
+        print(
+            list_of_states[-1].th_sup[0],
+            list_of_states[-1].th_sup[1],
+            file=file,
+        )
+
+    return list_of_states
+
+
 def set_final_states(
     list_of_states: List[StateUni],
     all_the_labels: np.ndarray,
@@ -549,20 +617,26 @@ def set_final_states(
                         [j, i] if shared_area_1 > shared_area_2 else [i, j]
                     )
                 # Condition 2: mean overlap
-                if (
+                elif (
                     st_0.peak > st_1.peak
                     and np.abs(st_0.mean - st_1.mean) < st_0.sigma / 2
                     and st_1.sigma < 2 * st_0.sigma
                 ):
                     proposed_merge.append([j, i])
-                    print(np.abs(st_0.mean - st_1.mean), st_1.sigma, st_0.sigma)
+                    print(
+                        np.abs(st_0.mean - st_1.mean), st_1.sigma, st_0.sigma
+                    )
                 elif (
                     st_1.peak > st_0.peak
                     and np.abs(st_0.mean - st_1.mean) < st_1.sigma / 2
                     and st_0.sigma < 2 * st_1.sigma
                 ):
                     proposed_merge.append([i, j])
-                    print(np.abs(st_0.mean - st_1.mean), st_0.sigma, st_1.sigma)
+                    print(
+                        np.abs(st_0.mean - st_1.mean), st_0.sigma, st_1.sigma
+                    )
+    print("FOR DEBUG:")
+    print(proposed_merge)
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
@@ -621,44 +695,50 @@ def set_final_states(
         if i not in states_to_remove
     ]
 
-    # Compute the fraction of data points in each state
-    for st_id, state in enumerate(updated_states):
-        num_of_points = np.sum(all_the_labels == st_id + 1)
-        state.perc = num_of_points / all_the_labels.size
+    updated_states = final_state_settings(
+        updated_states,
+        all_the_labels,
+        m_range,
+    )
 
-    # Step 2: Calculate the final threshold values
-    # and their types based on the intercept between neighboring states.
-    updated_states[0].th_inf[0] = m_range[0]
-    updated_states[0].th_inf[1] = 0
+    # # Compute the fraction of data points in each state
+    # for st_id, state in enumerate(updated_states):
+    #     num_of_points = np.sum(all_the_labels == st_id + 1)
+    #     state.perc = num_of_points / all_the_labels.size
 
-    for i in range(len(updated_states) - 1):
-        th_val, th_type = find_intersection(
-            updated_states[i], updated_states[i + 1]
-        )
-        updated_states[i].th_sup[0] = th_val
-        updated_states[i].th_sup[1] = th_type
-        updated_states[i + 1].th_inf[0] = th_val
-        updated_states[i + 1].th_inf[1] = th_type
+    # # Step 2: Calculate the final threshold values
+    # # and their types based on the intercept between neighboring states.
+    # updated_states[0].th_inf[0] = m_range[0]
+    # updated_states[0].th_inf[1] = 0
 
-    updated_states[-1].th_sup[0] = m_range[1]
-    updated_states[-1].th_sup[1] = 0
+    # for i in range(len(updated_states) - 1):
+    #     th_val, th_type = find_intersection(
+    #         updated_states[i], updated_states[i + 1]
+    #     )
+    #     updated_states[i].th_sup[0] = th_val
+    #     updated_states[i].th_sup[1] = th_type
+    #     updated_states[i + 1].th_inf[0] = th_val
+    #     updated_states[i + 1].th_inf[1] = th_type
 
-    # Step 3: Write the final states and final thresholds to text files.
-    with open("final_states.txt", "a", encoding="utf-8") as file:
-        print("####################################", file=file)
-        print("# Mu \t Sigma \t A \t state_fraction", file=file)
-        for state in updated_states:
-            print(state.mean, state.sigma, state.area, state.perc, file=file)
-    with open("final_thresholds.txt", "a", encoding="utf-8") as file:
-        print("####################################", file=file)
-        print("# Threshold_value \t Threshold type", file=file)
-        for state in updated_states:
-            print(state.th_inf[0], state.th_inf[1], file=file)
-        print(
-            updated_states[-1].th_sup[0],
-            updated_states[-1].th_sup[1],
-            file=file,
-        )
+    # updated_states[-1].th_sup[0] = m_range[1]
+    # updated_states[-1].th_sup[1] = 0
+
+    # # Step 3: Write the final states and final thresholds to text files.
+    # with open("final_states.txt", "a", encoding="utf-8") as file:
+    #     print("####################################", file=file)
+    #     print("# Mu \t Sigma \t A \t state_fraction", file=file)
+    #     for state in updated_states:
+    #         print(state.mean, state.sigma, state.area, state.perc, file=file)
+    # with open("final_thresholds.txt", "a", encoding="utf-8") as file:
+    #     print("####################################", file=file)
+    #     print("# Threshold_value \t Threshold type", file=file)
+    #     for state in updated_states:
+    #         print(state.th_inf[0], state.th_inf[1], file=file)
+    #     print(
+    #         updated_states[-1].th_sup[0],
+    #         updated_states[-1].th_sup[1],
+    #         file=file,
+    #     )
 
     return updated_states, all_the_labels
 
