@@ -738,6 +738,7 @@ def timeseries_analysis(
         tmp_labels,
         tmp_cl_ob.data.range,
         tau_w,
+        tmp_cl_ob.number_of_sigmas,
     )
 
     list_of_pop = [state.perc for state in tmp_cl_ob.states]
@@ -796,6 +797,7 @@ def full_output_analysis(
         tmp_labels,
         cl_ob.data.range,
         cl_ob.par.tau_w,
+        cl_ob.number_of_sigmas,
     )
 
     return cl_ob
