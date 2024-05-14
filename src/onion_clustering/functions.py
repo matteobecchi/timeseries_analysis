@@ -694,53 +694,54 @@ def set_final_states(
         if i not in states_to_remove
     ]
 
+    # updated_states = final_state_settings(
+    #     updated_states,
+    #     all_the_labels,
+    #     m_range,
+    # )
+
     print(f"After merging there are {len(updated_states)} states,"
-        f" and the labels are {np.unique(all_the_labels)}.")
+    f" and the labels are {np.unique(all_the_labels)}.")
 
-    updated_states = final_state_settings(
-        updated_states,
-        all_the_labels,
-        m_range,
-    )
 
-    # # Compute the fraction of data points in each state
-    # for st_id, state in enumerate(updated_states):
-    #     num_of_points = np.sum(all_the_labels == st_id + 1)
-    #     state.perc = num_of_points / all_the_labels.size
+    # Compute the fraction of data points in each state
+    for st_id, state in enumerate(updated_states):
+        num_of_points = np.sum(all_the_labels == st_id + 1)
+        state.perc = num_of_points / all_the_labels.size
 
-    # # Step 2: Calculate the final threshold values
-    # # and their types based on the intercept between neighboring states.
-    # updated_states[0].th_inf[0] = m_range[0]
-    # updated_states[0].th_inf[1] = 0
+    # Step 2: Calculate the final threshold values
+    # and their types based on the intercept between neighboring states.
+    updated_states[0].th_inf[0] = m_range[0]
+    updated_states[0].th_inf[1] = 0
 
-    # for i in range(len(updated_states) - 1):
-    #     th_val, th_type = find_intersection(
-    #         updated_states[i], updated_states[i + 1]
-    #     )
-    #     updated_states[i].th_sup[0] = th_val
-    #     updated_states[i].th_sup[1] = th_type
-    #     updated_states[i + 1].th_inf[0] = th_val
-    #     updated_states[i + 1].th_inf[1] = th_type
+    for i in range(len(updated_states) - 1):
+        th_val, th_type = find_intersection(
+            updated_states[i], updated_states[i + 1]
+        )
+        updated_states[i].th_sup[0] = th_val
+        updated_states[i].th_sup[1] = th_type
+        updated_states[i + 1].th_inf[0] = th_val
+        updated_states[i + 1].th_inf[1] = th_type
 
-    # updated_states[-1].th_sup[0] = m_range[1]
-    # updated_states[-1].th_sup[1] = 0
+    updated_states[-1].th_sup[0] = m_range[1]
+    updated_states[-1].th_sup[1] = 0
 
-    # # Step 3: Write the final states and final thresholds to text files.
-    # with open("final_states.txt", "a", encoding="utf-8") as file:
-    #     print("####################################", file=file)
-    #     print("# Mu \t Sigma \t A \t state_fraction", file=file)
-    #     for state in updated_states:
-    #         print(state.mean, state.sigma, state.area, state.perc, file=file)
-    # with open("final_thresholds.txt", "a", encoding="utf-8") as file:
-    #     print("####################################", file=file)
-    #     print("# Threshold_value \t Threshold type", file=file)
-    #     for state in updated_states:
-    #         print(state.th_inf[0], state.th_inf[1], file=file)
-    #     print(
-    #         updated_states[-1].th_sup[0],
-    #         updated_states[-1].th_sup[1],
-    #         file=file,
-    #     )
+    # Step 3: Write the final states and final thresholds to text files.
+    with open("final_states.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
+        print("# Mu \t Sigma \t A \t state_fraction", file=file)
+        for state in updated_states:
+            print(state.mean, state.sigma, state.area, state.perc, file=file)
+    with open("final_thresholds.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
+        print("# Threshold_value \t Threshold type", file=file)
+        for state in updated_states:
+            print(state.th_inf[0], state.th_inf[1], file=file)
+        print(
+            updated_states[-1].th_sup[0],
+            updated_states[-1].th_sup[1],
+            file=file,
+        )
 
     return updated_states, all_the_labels
 
