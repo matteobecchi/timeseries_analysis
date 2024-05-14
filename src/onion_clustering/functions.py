@@ -623,6 +623,7 @@ def set_final_states(
                     and st_1.sigma < 2 * st_0.sigma
                 ):
                     proposed_merge.append([j, i])
+                    print(j, i)
                     print("Means' distance: ", np.abs(st_0.mean - st_1.mean))
                     print("Sigmas: ", st_1.sigma, st_0.sigma)
                 elif (
@@ -631,6 +632,7 @@ def set_final_states(
                     and st_0.sigma < 2 * st_1.sigma
                 ):
                     proposed_merge.append([i, j])
+                    print(i, j)
                     print("Means' distance: ", np.abs(st_0.mean - st_1.mean))
                     print("Sigmas: ", st_0.sigma, st_1.sigma)
 
@@ -656,13 +658,16 @@ def set_final_states(
             ]
             best_merge.append(candidate_merge[np.argmin(list_of_distances)])
 
+    print("FOR DEBUG 2:")
+    print(best_merge)
+
     # Settle merging chains
     # if [i, j], all the [k, i] become [k, j]
     for pair in best_merge:
         for j, elem in enumerate(best_merge):
-            if elem[1] == pair[0]:
+            if elem[1] == pair[0] and elem[0] != pair[1]:
                 best_merge[j][1] = pair[1]
-    print("FOR DEBUG 2:")
+    print("FOR DEBUG 3:")
     print(best_merge)
 
     # Relabel the labels in all_the_labels
