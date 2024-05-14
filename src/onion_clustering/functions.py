@@ -488,7 +488,6 @@ def shared_area_between_gaussians(
 
 def final_state_settings(
     list_of_states: List[StateUni],
-    all_the_labels: np.ndarray,
     m_range: np.ndarray,
 ) -> List[StateUni]:
     """
@@ -500,9 +499,6 @@ def final_state_settings(
     list_of_states : list[StateUni]
         The list of final states.
 
-    all_the_labels : np.ndarray of shape (n_particles, n_windows)
-        The final labels for all the data points.
-
     m_range : np.ndarray of shape (2,)
         Range of values in the data matrix.
 
@@ -510,7 +506,7 @@ def final_state_settings(
     -------
 
     list_of_states : list[StateUni]
-        Now with the correct fraction asssigned to each state.
+        Now with the correct thresholds asssigned to each state.
     """
     # Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
@@ -780,7 +776,6 @@ def max_prob_assignment(
 
     updated_states = final_state_settings(
         list_of_states,
-        final_labels,
         m_range,
     )
 
