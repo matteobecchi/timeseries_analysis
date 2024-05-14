@@ -695,7 +695,7 @@ def find_max_prob_state(
     list_of_states: List[StateUni],
 ) -> int:
     """
-    Assign a singla window to the state for which the belonging
+    Assign a single window to the state for which the belonging
     is the most probable.
 
     Parameters
@@ -775,10 +775,9 @@ def max_prob_assignment(
                 new_label = find_max_prob_state(
                     window, old_label, list_of_states
                 )
-                s_range = 4.*list_of_states[new_label - 1].sigma
+                s_range = 4.0 * list_of_states[new_label - 1].sigma
                 if np.max(window) - np.min(window) < s_range:
                     final_labels[i][j] = new_label
-                final_labels[i][j] = new_label
 
     for i, state in enumerate(list_of_states):
         num_of_points = np.sum(final_labels == i + 1)
