@@ -844,10 +844,12 @@ def max_prob_assignment(
         num_of_points = np.sum(final_labels == i + 1)
         state.perc = num_of_points / final_labels.size
 
+    print(np.unique(all_the_labels))
     states_to_remove = []
     for i, state in enumerate(list_of_states):
         if state.perc == 0.0:
             states_to_remove.append(i)
+    print(states_to_remove)
 
     for i in states_to_remove[::-1]:
         list_of_states.pop(i)
