@@ -620,7 +620,7 @@ def set_final_states(
                 elif (
                     st_0.peak > st_1.peak
                     and np.abs(st_0.mean - st_1.mean) < st_0.sigma
-                    and st_1.sigma < 4 * st_0.sigma
+                    and st_1.sigma < 2 * st_0.sigma
                 ):
                     proposed_merge.append([j, i])
                     print(j, i)
@@ -629,7 +629,7 @@ def set_final_states(
                 elif (
                     st_1.peak > st_0.peak
                     and np.abs(st_0.mean - st_1.mean) < st_1.sigma
-                    and st_0.sigma < 4 * st_1.sigma
+                    and st_0.sigma < 2 * st_1.sigma
                 ):
                     proposed_merge.append([i, j])
                     print(i, j)
