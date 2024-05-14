@@ -28,6 +28,7 @@ from onion_clustering.functions import (
 )
 
 OUTPUT_FILE = "states_output.txt"
+AREA_MAX_OVERLAP = 0.8
 
 
 def all_the_input_stuff(number_of_sigmas: float) -> ClusteringObject1D:
@@ -726,7 +727,10 @@ def timeseries_analysis(
         return 0, 1.0, [1.0]
 
     list_of_states, tmp_labels = set_final_states(
-        tmp_cl_ob.states, tmp_labels, tmp_cl_ob.data.range
+        tmp_cl_ob.states,
+        tmp_labels,
+        tmp_cl_ob.data.range,
+        AREA_MAX_OVERLAP,
     )
 
     tmp_cl_ob.data.labels, tmp_cl_ob.states = max_prob_assignment(
@@ -780,7 +784,10 @@ def full_output_analysis(
         print("* No possible classification was found. ")
         return cl_ob
     list_of_states, tmp_labels = set_final_states(
-        cl_ob.states, tmp_labels, cl_ob.data.range
+        cl_ob.states,
+        tmp_labels,
+        cl_ob.data.range,
+        AREA_MAX_OVERLAP,
     )
 
     cl_ob.data.labels, cl_ob.states = max_prob_assignment(

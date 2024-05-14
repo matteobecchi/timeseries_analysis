@@ -481,7 +481,6 @@ def shared_area_between_gaussians(
     shared_fraction_1 = shared_area / area_gaussian_1
     shared_fraction_2 = shared_area / area_gaussian_2
 
-    print(shared_fraction_1, shared_fraction_2)
     return shared_fraction_1, shared_fraction_2
 
 
@@ -489,6 +488,7 @@ def set_final_states(
     list_of_states: List[StateUni],
     all_the_labels: np.ndarray,
     m_range: np.ndarray,
+    area_max_overlap: float,
 ) -> Tuple[List[StateUni], np.ndarray]:
     """
     Assigns final states and relabels labels based on specific criteria.
@@ -504,6 +504,9 @@ def set_final_states(
 
     m_range : np.ndarray of shape (2,)
         Range of values in the data matrix.
+
+    area_max_overlap : float
+        The threshold for merging two states together if they overlap.
 
     Returns
     -------
@@ -527,6 +530,7 @@ def set_final_states(
                 #     and abs(st_1.mean - st_0.mean) < st_0.sigma
                 # ):
                 """
+                # Condition 1: area overlap
                 shared_area_1, shared_area_2 = shared_area_between_gaussians(
                     st_1.area,
                     st_1.mean,
@@ -535,7 +539,7 @@ def set_final_states(
                     st_0.mean,
                     st_0.sigma,
                 )
-                thresh = 0.8
+                thresh = area_max_overlap
                 if shared_area_1 > thresh and shared_area_2 <= thresh:
                     proposed_merge.append([j, i])
                 elif shared_area_2 > thresh and shared_area_1 <= thresh:
@@ -544,7 +548,19 @@ def set_final_states(
                     proposed_merge.append(
                         [j, i] if shared_area_1 > shared_area_2 else [i, j]
                     )
-    print(proposed_merge)
+                # Condition 2: mean overlap
+                if (
+                    st_0.peak > st_1.peak
+                    and np.abs(st_0.mean - st_1.mean) < st_0.sigma / 2
+                    and st_1.sigma < 2 * st_0.sigma
+                ):
+                    proposed_merge.append([j, i])
+                elif (
+                    st_1.peak > st_0.peak
+                    and np.abs(st_0.mean - st_1.mean) < st_1.sigma / 2
+                    and st_0.sigma < 2 * st_1.sigma
+                ):
+                    proposed_merge.append([i, j])
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
@@ -626,8 +642,6 @@ def set_final_states(
     updated_states[-1].th_sup[1] = 0
 
     # Step 3: Write the final states and final thresholds to text files.
-    # The data is saved in two separate files:
-    # 'final_states.txt' and 'final_thresholds.txt'.
     with open("final_states.txt", "a", encoding="utf-8") as file:
         print("####################################", file=file)
         print("# Mu \t Sigma \t A \t state_fraction", file=file)
@@ -635,6 +649,7 @@ def set_final_states(
             print(state.mean, state.sigma, state.area, state.perc, file=file)
     with open("final_thresholds.txt", "a", encoding="utf-8") as file:
         print("####################################", file=file)
+        print("# Threshold_value \t Threshold type", file=file)
         for state in updated_states:
             print(state.th_inf[0], state.th_inf[1], file=file)
         print(
@@ -643,7 +658,6 @@ def set_final_states(
             file=file,
         )
 
-    # Step 5: Return the 'updated_states' as the output of the function.
     return updated_states, all_the_labels
 
 
