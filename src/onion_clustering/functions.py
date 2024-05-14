@@ -833,7 +833,7 @@ def max_prob_assignment(
                 new_label = find_max_prob_state(
                     window, old_label, list_of_states
                 )
-                s_range = (
+                s_range = np.abs(
                     list_of_states[new_label - 1].th_sup[0]
                     - list_of_states[new_label - 1].th_inf[0]
                 )
