@@ -635,7 +635,7 @@ def set_final_states(
                     print(
                         np.abs(st_0.mean - st_1.mean), st_0.sigma, st_1.sigma
                     )
-    print("FOR DEBUG:")
+    print("FOR DEBUG 1:")
     print(proposed_merge)
 
     # Find the best merges (merge into the closest candidate)
@@ -663,6 +663,8 @@ def set_final_states(
         for j, elem in enumerate(best_merge):
             if elem[1] == pair[0]:
                 best_merge[j][1] = pair[1]
+    print("FOR DEBUG 2:")
+    print(best_merge)
 
     # Relabel the labels in all_the_labels
     relabel_dic = {}
