@@ -650,13 +650,17 @@ def set_final_states(
         if len(candidate_merge) == 1:
             best_merge.append(candidate_merge[0])
         else:
-            list_of_distances = [
-                np.linalg.norm(
-                    list_of_states[pair[1]].mean - list_of_states[pair[0]].mean
-                )
-                for pair in candidate_merge
+            importance = [
+                list_of_states[pair[1]].perc for pair in candidate_merge
             ]
-            best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            # list_of_distances = [
+            #     np.linalg.norm(
+            #         list_of_states[pair[1]].mean - list_of_states[pair[0]].mean
+            #     )
+            #     for pair in candidate_merge
+            # ]
+            best_merge.append(candidate_merge[np.argmax(importance)])
+            # best_merge.append(candidate_merge[np.argmin(list_of_distances)])
 
     print("FOR DEBUG 2:")
     print(best_merge)
