@@ -587,6 +587,10 @@ def set_final_states(
     """
     ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
+
+    print(f"Initially there are {len(list_of_state)} states,"
+        f" and the labels are {np.unique(all_the_labels)}.")
+
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
@@ -636,9 +640,6 @@ def set_final_states(
                     print("Means' distance: ", np.abs(st_0.mean - st_1.mean))
                     print("Sigmas: ", st_0.sigma, st_1.sigma)
 
-    print("FOR DEBUG 1:")
-    print(proposed_merge)
-
     # Find the best merges (merge into the closest candidate)
     best_merge = []
     states_to_be_merged = np.unique([pair[0] for pair in proposed_merge])
@@ -655,17 +656,12 @@ def set_final_states(
             ]
             best_merge.append(candidate_merge[np.argmax(importance)])
 
-    print("FOR DEBUG 2:")
-    print(best_merge)
-
     # Settle merging chains
     # if [i, j], all the [k, i] become [k, j]
     for pair in best_merge:
         for j, elem in enumerate(best_merge):
             if elem[1] == pair[0] and elem[0] != pair[1]:
                 best_merge[j][1] = pair[1]
-    print("FOR DEBUG 3:")
-    print(best_merge)
 
     # Relabel the labels in all_the_labels
     relabel_dic = {}
@@ -697,6 +693,9 @@ def set_final_states(
         for i, state in enumerate(list_of_states)
         if i not in states_to_remove
     ]
+
+    print(f"After merging there are {len(updated_states)} states,"
+        f" and the labels are {np.unique(all_the_labels)}.")
 
     updated_states = final_state_settings(
         updated_states,
