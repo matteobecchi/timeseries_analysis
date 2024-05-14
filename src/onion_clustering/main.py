@@ -729,7 +729,6 @@ def timeseries_analysis(
     list_of_states, tmp_labels = set_final_states(
         tmp_cl_ob.states,
         tmp_labels,
-        tmp_cl_ob.data.range,
         AREA_MAX_OVERLAP,
     )
 
@@ -737,6 +736,7 @@ def timeseries_analysis(
         list_of_states,
         tmp_cl_ob.data.matrix,
         tmp_labels,
+        tmp_cl_ob.data.range,
         tau_w,
     )
 
@@ -787,7 +787,6 @@ def full_output_analysis(
     list_of_states, tmp_labels = set_final_states(
         cl_ob.states,
         tmp_labels,
-        cl_ob.data.range,
         AREA_MAX_OVERLAP,
     )
 
@@ -795,6 +794,7 @@ def full_output_analysis(
         list_of_states,
         cl_ob.data.matrix,
         tmp_labels,
+        cl_ob.data.range,
         cl_ob.par.tau_w,
     )
 

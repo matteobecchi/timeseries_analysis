@@ -512,11 +512,6 @@ def final_state_settings(
     list_of_states : list[StateUni]
         Now with the correct fraction asssigned to each state.
     """
-    # Compute the fraction of data points in each state
-    for st_id, state in enumerate(list_of_states):
-        num_of_points = np.sum(all_the_labels == st_id + 1)
-        state.perc = num_of_points / all_the_labels.size
-
     # Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
     list_of_states[0].th_inf[0] = m_range[0]
@@ -557,7 +552,6 @@ def final_state_settings(
 def set_final_states(
     list_of_states: List[StateUni],
     all_the_labels: np.ndarray,
-    m_range: np.ndarray,
     area_max_overlap: float,
 ) -> Tuple[List[StateUni], np.ndarray]:
     """
@@ -572,9 +566,6 @@ def set_final_states(
     all_the_labels : np.ndarray of shape (n_particles, n_windows)
         The proposed labels for each data point.
 
-    m_range : np.ndarray of shape (2,)
-        Range of values in the data matrix.
-
     area_max_overlap : float
         The threshold for merging two states together if they overlap.
 
@@ -587,9 +578,7 @@ def set_final_states(
     all_the_labels : np.ndarray of shape (n_particles, n_windows)
         The definitive labels for each data point.
     """
-    ### Step 1: Merge together the strongly overlapping states
     # Find all the possible merges: j could be merged into i --> [j, i]
-
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
@@ -604,9 +593,9 @@ def set_final_states(
                     st_0.sigma,
                 )
                 thresh = area_max_overlap
-                if shared_area_1 > thresh and shared_area_2 <= thresh:
+                if shared_area_1 > thresh >= shared_area_2:
                     proposed_merge.append([j, i])
-                elif shared_area_2 > thresh and shared_area_1 <= thresh:
+                elif shared_area_2 > thresh >= shared_area_1:
                     proposed_merge.append([i, j])
                 elif shared_area_1 > thresh and shared_area_2 > thresh:
                     proposed_merge.append(
@@ -680,12 +669,6 @@ def set_final_states(
         if i not in states_to_remove
     ]
 
-    updated_states = final_state_settings(
-        updated_states,
-        all_the_labels,
-        m_range,
-    )
-
     return updated_states, all_the_labels
 
 
@@ -737,6 +720,7 @@ def max_prob_assignment(
     list_of_states: List[StateUni],
     matrix: np.ndarray,
     all_the_labels: np.ndarray,
+    m_range: np.ndarray,
     tau_window: int,
 ) -> Tuple[np.ndarray, List[StateUni]]:
     """
@@ -755,6 +739,9 @@ def max_prob_assignment(
     all_the_labels : np.ndarray of shape (num_of_particles, num_of_windows)
         The temporary labels assigned to the signal windows.
 
+    m_range : np.ndarray of shape (2,)
+        Range of values in the data matrix.
+
     tau_window : int
         The time resolution of the analysis.
 
@@ -764,7 +751,7 @@ def max_prob_assignment(
     final_labels : np.ndarray of shape (num_of_particles, num_of_windows)
         The definitive labels for all the signal windows.
 
-    list_of_states : List[StateUni]
+    updated_states : List[StateUni]
         List of the identified states, with updated percetages.
     """
     final_labels = np.zeros(all_the_labels.shape, dtype=int)
@@ -791,7 +778,13 @@ def max_prob_assignment(
     for i in states_to_remove[::-1]:
         list_of_states.pop(i)
 
-    return final_labels, list_of_states
+    updated_states = final_state_settings(
+        list_of_states,
+        final_labels,
+        m_range,
+    )
+
+    return final_labels, updated_states
 
 
 def relabel_states_2d(
