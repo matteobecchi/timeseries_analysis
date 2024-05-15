@@ -17,7 +17,7 @@ def setup_test_environment(tmpdir):
 
 
 # Define the actual test
-def test_output_files():
+def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
     PATH_TO_INPUT_DATA = (
         "/Users/mattebecchi/00_signal_analysis/data/"
@@ -26,9 +26,9 @@ def test_output_files():
     TAU_WINDOW = 10
     T_CONV = 200
     T_UNITS = "dt"
-    NUM_TAU_W = 10  # 2
-    MAX_TAU_W = 100  # 10
-    MAX_T_SMOOTH = 1  # 2
+    NUM_TAU_W = 2
+    MAX_TAU_W = 10
+    MAX_T_SMOOTH = 2
     BINS = 50
 
     ### Create the 'data_directory.txt' file ###
