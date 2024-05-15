@@ -9,7 +9,7 @@ Install the package using `pip install onion_clustering`.
 
 The `examples/` folder contains an example of usage. Run `python3 example_script.py`, this will create the following files:
 * A text file called `input_parameters.txt` , whose format is explained below;
-* A text file called `data_directory.txt` containing one line with the path to the input data file (including the input data file name). 
+* A text file called `data_directory.txt` containing one line with the path to the input data file (including the input data file name); 
 and run the code. 
 
 ## input_parameters.txt 
@@ -51,16 +51,12 @@ The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D 
 
 ## Gaussian fitting procedure
 1. The histogram of the time-series is computed, using the `bins='auto'` numpy option (unless a different `bins` is passed as imput parameter). 
-2. The histogram is smoothed with moving average with `window_size=3` (unless there are less that 50 bins, in wich case no smoothing occurs). 
+2. The histogram is smoothed with moving average with a window proportional to the number of bins (unless there are less that 50 bins, in wich case no smoothing occurs). 
 3. The absolute maximum of the histogram is found. 
 4. Two Gaussian fits are performed:
  * The first one inside the interval between the two minima surrounding the maximum. 
  * The second one inside the interval where the peak around the maxima has its half height. 
-5. Both fits, if converged, are evaluated according to the following points:
- * `mu` is contained inside the fit interval;
- * `sigma` is smaller than the fit interval;
- * the height of the peak is at least half the value of the maximum;
- * the relative uncertanty over the fit parameters is smaller than 0.5.
+5. Both fits, if converged, are evaluated according to the coefficinet of determination r^2. 
 6. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops, returning a warning message. 
 
 ## Aknowledgements
