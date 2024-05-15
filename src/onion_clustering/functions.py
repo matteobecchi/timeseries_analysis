@@ -318,7 +318,6 @@ def custom_fit(
     minima: list[int],
     edges: np.ndarray,
     counts: np.ndarray,
-    gap: int,
     m_limits: np.ndarray,
 ) -> Tuple[int, float, np.ndarray]:
     """Fit a Gaussian curve to selected data based on provided parameters.
@@ -340,9 +339,6 @@ def custom_fit(
 
     counts : np.ndarray
         Array containing histogram counts.
-
-    gap : int
-        Minimum allowed gap size for fitting intervals.
 
     m_limits : list[list[int]]
         List of min and max limits for each dimension.

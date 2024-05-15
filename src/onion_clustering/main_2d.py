@@ -139,7 +139,7 @@ def gauss_fit_max(
     for dim in range(m_clean.shape[2]):
         try:
             flag_min, r2_min, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
+                dim, max_ind[dim], minima, edges[dim], counts, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_min.extend(popt)
@@ -157,7 +157,7 @@ def gauss_fit_max(
     for dim in range(m_clean.shape[2]):
         try:
             flag_half, r2_half, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
+                dim, max_ind[dim], minima, edges[dim], counts, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_half.extend(popt)
@@ -520,7 +520,7 @@ def timeseries_analysis(
     tmp_cl_ob.preparing_the_data()
     tmp_cl_ob.plot_input_data(name + "Fig0")
 
-    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob, name, full_out)
+    tmp_cl_ob, _ = iterative_search(tmp_cl_ob, name, full_out)
 
     if len(tmp_cl_ob.states) == 0:
         print("* No possible classification was found. ")
