@@ -1,7 +1,0 @@
-tau_window	10
-t_conv	200
-t_units	dt
-num_tau_w	10
-max_tau_w	100
-max_t_smooth	1
-bins	50

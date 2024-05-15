@@ -707,7 +707,6 @@ def timeseries_analysis(
     list_of_pop : List[float]
         List of the populations of the different states.
     """
-
     print("* New analysis: ", tau_w, t_smooth)
     name = str(t_smooth) + "_" + str(tau_w) + "_"
 
@@ -749,9 +748,7 @@ def timeseries_analysis(
     # We need to free the memory otherwise it accumulates
     del tmp_cl_ob
 
-    print(
-        "Number of states identified:", n_states, "[" + str(fraction_0) + "]\n"
-    )
+    print(f"Number of states identified: {n_states}, [{fraction_0}]\n")
     return n_states, fraction_0, list_of_pop
 
 

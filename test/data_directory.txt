@@ -1,1 +1,0 @@
-/Users/mattebecchi/00_signal_analysis/data/synthetic_2D/3D_synthetic_data.npy

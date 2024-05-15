@@ -483,20 +483,33 @@ def timeseries_analysis(
     tau_w: int,
     t_smooth: int,
     full_out: bool,
-) -> Tuple[int, float]:
+) -> Tuple[int, float, List[float]]:
     """
     Perform time series analysis on the input data.
 
-    Args:
-    - cl_ob (ClusteringObject)
-    - tau_w (int): the time window for the analysis
-    - t_smooth (int): the width of the moving average for the analysis
+    Parameters
+    ----------
 
-    Returns:
-    - Tuple (int, float): Number of identified states,
-        fraction of unclassified data.
+    cl_ob : ClusteringObject2D
+
+    tau_w : int
+        The time resolution for the analysis.
+
+    t_smooth : int
+        The width of the moving average for the analysis.
+
+    Returns
+    -------
+
+    num_states : int
+        Number of identified states.
+
+    fraction_0 : float
+        Fraction of unclassified data points. Between 0 and 1.
+
+    list_of_pop : List[float]
+        List of the populations of the different states.
     """
-
     print("* New analysis: ", tau_w, t_smooth)
     name = str(t_smooth) + "_" + str(tau_w) + "_"
 
@@ -515,24 +528,40 @@ def timeseries_analysis(
         del tmp_cl_ob
         return 0, 1.0
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
+    list_of_pop = [state.perc for state in tmp_cl_ob.states]
+    fraction_0 = 1 - np.sum(list_of_pop)
+    list_of_pop.insert(0, fraction_0)
     n_states = len(tmp_cl_ob.states)
 
     # We need to free the memory otherwise it accumulates
     del tmp_cl_ob
 
-    print(
-        "Number of states identified:", n_states, "[" + str(fraction_0) + "]\n"
-    )
-    return n_states, fraction_0
+    print(f"Number of states identified: {n_states}, [{fraction_0}]\n")
+    return n_states, fraction_0, list_of_pop
 
 
 def full_output_analysis(
     cl_ob: ClusteringObject2D,
     full_out: bool,
 ) -> ClusteringObject2D:
-    """Perform a comprehensive analysis on the input data."""
+    """
+    Perform a comprehensive analysis on the input data.
 
+    Parameters
+    ----------
+
+    cl_ob : ClusteringObject2D
+
+    full_out : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    cl_ob : ClusteringObject1D
+        Updated with the clustering results.
+    """
     cl_ob.preparing_the_data()
 
     cl_ob, _ = iterative_search(cl_ob, "", full_out)
@@ -554,17 +583,23 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     tau_window_list, t_smooth_list = param_grid(
         cl_ob.par, cl_ob.data.num_of_steps
     )
+    cl_ob.tau_window_list = np.array(tau_window_list)
+    cl_ob.t_smooth_list = np.array(t_smooth_list)
 
-    ### If the analysis hat to be performed anew ###
     number_of_states = []
     fraction_0 = []
-    for tau_w in tau_window_list:
+    list_of_pop: List[List[List[float]]] = [
+        [[] for _ in tau_window_list] for _ in t_smooth_list
+    ]
+
+    for i, tau_w in enumerate(tau_window_list):
         tmp = [tau_w]
         tmp1 = [tau_w]
-        for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
+        for j, t_s in enumerate(t_smooth_list):
+            n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
+            list_of_pop[j][i] = l_pop
         number_of_states.append(tmp)
         fraction_0.append(tmp1)
     number_of_states_arr = np.array(number_of_states)
@@ -586,8 +621,7 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
 
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
-
-    cl_ob.plot_tra_figure()
+    cl_ob.list_of_pop = list_of_pop
 
 
 def main(
