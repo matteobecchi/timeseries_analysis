@@ -17,13 +17,14 @@ from onion_clustering.classes import ClusteringObject2D
 from onion_clustering.first_classes import MultiData, Parameters, StateMulti
 from onion_clustering.functions import (
     custom_fit,
+    find_half_height_around_max,
+    find_minima_around_max,
     moving_average_2d,
     param_grid,
     read_input_data,
     relabel_states_2d,
 )
 
-NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = "states_output.txt"
 
 
@@ -72,32 +73,34 @@ def gauss_fit_max(
     """
     Perform Gaussian fit and generate plots based on the provided data.
 
-    Args:
-    - m_clean (np.ndarray): Processed array of cleaned data.
-    - m_limits (list[list[int]]): List containing minimum and maximum
-        values for each dimension.
-    - bins (Union[int, str]): Number of bins for histograms or 'auto'
-        for automatic binning.
-    - filename (str): Name of the output file to save the plot.
+    Parameters
+    ----------
 
-    Returns:
-    - State or None: State object for state identification or None
-        if fitting fails.
+    m_clean : np.ndarray of shape (n_particles, n_timesteps)
+        Processed array of cleaned data.
 
-    This function performs the following steps:
-    1. Generates histograms based on the data and chosen binning strategy.
-    2. Smoothes the histograms.
-    3. Identifies the maximum values in the histograms.
-    4. Finds minima surrounding the maximum values.
-    5. Tries fitting between minima and checks goodness.
-    6. Determines the interval of half height.
-    7. Tries fitting between the half-height interval and checks goodness.
-    8. Chooses the best fit based on goodness and returns the state.
+    m_limits : list[list[int]]
+        List containing minimum and maximum values for each dimension.
 
-    The function then generates plots of the distribution and fitted Gaussians
-    based on the dimensionality of the data. It saves the plot as an image
-    file and returns a State object for further analysis
-    or None if fitting fails.
+    bins : Union[int, str]
+        Number of bins for histograms or 'auto' for automatic binning.
+
+    number_of_sigmas : float
+        To set the thresholds for assigning windows to the state.
+
+    filename : str
+        Name of the output file to save the plot.
+
+    full_out : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    State : StateMulti
+        Object containing Gaussian fit parameters (mu, sigma, area)
+        or None if the fit fails.
     """
     print("* Gaussian fit...")
     flat_m = m_clean.reshape(
@@ -109,10 +112,14 @@ def gauss_fit_max(
         bins = max(int(np.power(m_clean.size, 1 / 3) * 2), 10)
     counts, edges = np.histogramdd(flat_m, bins=bins, density=True)
     gap = 1
-    if np.all([e.size > 40 for e in edges]):
-        gap = 3
+    edges_sides = np.array([e.size for e in edges])
+    if np.all(edges_sides > 49):
+        # gap = 3
+        gap = int(np.min(edges_sides) * 0.02) * 2
+        if gap % 2 == 0:
+            gap += 1
 
-    ### 2. Smoothing with tau = 3 ###
+    ### 2. Smoothing with gap ###
     counts = moving_average_2d(counts, gap)
 
     ### 3. Find the maximum ###
@@ -121,156 +128,57 @@ def gauss_fit_max(
         max_indices = np.argwhere(data == max_val)
         return max_indices[0]
 
-    # max_val = counts.max()
     max_ind = find_max_index(counts)
 
     ### 4. Find the minima surrounding it ###
-    def find_minima_around_max(
-        data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-    ):
-        """
-        Find minima surrounding the maximum value in the given data array.
-
-        Args:
-        - data (np.ndarray): Input data array.
-        - max_ind (tuple): Indices of the maximum value in the data.
-        - gap (int): Gap value to determine the search range
-            around the maximum.
-
-        Returns:
-        - list: List of indices representing the minima surrounding
-            the maximum in each dimension.
-        """
-        minima: List[int] = []
-
-        for dim in range(data.ndim):
-            min_id0 = max(max_ind[dim] - gap, 0)
-            min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
-
-            tmp_max1: List[int] = list(max_ind)
-            tmp_max2: List[int] = list(max_ind)
-
-            tmp_max1[dim] = min_id0
-            tmp_max2[dim] = min_id0 - 1
-            while (
-                min_id0 > 0 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
-            ):
-                tmp_max1[dim] -= 1
-                tmp_max2[dim] -= 1
-                min_id0 -= 1
-
-            tmp_max1 = list(max_ind)
-            tmp_max2 = list(max_ind)
-
-            tmp_max1[dim] = min_id1
-            tmp_max2[dim] = min_id1 + 1
-            while (
-                min_id1 < data.shape[dim] - 1
-                and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
-            ):
-                tmp_max1[dim] += 1
-                tmp_max2[dim] += 1
-                min_id1 += 1
-
-            minima.extend([min_id0, min_id1])
-
-        return minima
-
     minima = find_minima_around_max(counts, max_ind, gap)
 
-    ### 5. Try the fit between the minima and check its goodness ###
+    ### 5. Try the fit between the minima and check its quality ###
     popt_min: List[float] = []
-    goodness_min = 0
+    det_coeff_min = 0.0
     for dim in range(m_clean.shape[2]):
         try:
-            flag_min, goodness, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
+            flag_min, r2_min, popt = custom_fit(
+                dim, max_ind[dim], minima, edges[dim], counts, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_min.extend(popt)
-            goodness_min += goodness
+            det_coeff_min += r2_min
         except RuntimeError:
             popt_min = []
             flag_min = False
-            goodness_min -= 5
 
     ### 6. Find the interval of half height ###
-    def find_half_height_around_max(
-        data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-    ):
-        """
-        Find half-heigth points surrounding the maximum value
-            in the given data array.
-
-        Args:
-        - data (np.ndarray): Input data array.
-        - max_ind (tuple): Indices of the maximum value in the data.
-        - gap (int): Gap value to determine the search range
-            around the maximum.
-
-        Returns:
-        - list: List of indices representing the minima surrounding
-            the maximum in each dimension.
-        """
-        max_val = data.max()
-        minima: List[int] = []
-
-        for dim in range(data.ndim):
-            half_id0 = max(max_ind[dim] - gap, 0)
-            half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
-
-            tmp_max: List[int] = list(max_ind)
-
-            tmp_max[dim] = half_id0
-            while half_id0 > 0 and data[tuple(tmp_max)] > max_val / 2:
-                tmp_max[dim] -= 1
-                half_id0 -= 1
-
-            tmp_max = list(max_ind)
-
-            tmp_max[dim] = half_id1
-            while (
-                half_id1 < data.shape[dim] - 1
-                and data[tuple(tmp_max)] > max_val / 2
-            ):
-                tmp_max[dim] += 1
-                half_id1 += 1
-
-            minima.extend([half_id0, half_id1])
-
-        return minima
-
     minima = find_half_height_around_max(counts, max_ind, gap)
 
-    ### 7. Try the fit between the minima and check its goodness ###
+    ### 7. Try the fit between the minima and check its quality ###
     popt_half: List[float] = []
-    goodness_half = 0
+    det_coeff_half = 0.0
     for dim in range(m_clean.shape[2]):
         try:
-            flag_half, goodness, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
+            flag_half, r2_half, popt = custom_fit(
+                dim, max_ind[dim], minima, edges[dim], counts, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_half.extend(popt)
-            goodness_half += goodness
+            det_coeff_half += r2_half
         except RuntimeError:
             popt_half = []
             flag_half = False
-            goodness_half -= 5
 
     ### 8. Choose the best fit ###
-    goodness = goodness_min
+    r2 = det_coeff_min
     if flag_min == 1 and flag_half == 0:
         popt = np.array(popt_min)
     elif flag_min == 0 and flag_half == 1:
         popt = np.array(popt_half)
-        goodness = goodness_half
+        r2 = det_coeff_half
     elif flag_min * flag_half == 1:
-        if goodness_min >= goodness_half:
+        if det_coeff_min >= det_coeff_half:
             popt = np.array(popt_min)
         else:
             popt = np.array(popt_half)
-            goodness = goodness_half
+            r2 = det_coeff_half
     else:
         print("\tWARNING: this fit is not converging.")
         return None
@@ -302,7 +210,7 @@ def gauss_fit_max(
                 f" area = {popt[2]:.4f}, {popt[5]:.4f}",
                 file=file,
             )
-            print("\tFit goodness = " + str(goodness), file=file)
+            print(f"\tFit r2 = {r2}", file=file)
 
         if full_out:
             fig, ax = plt.subplots(figsize=(6, 6))
@@ -344,7 +252,7 @@ def gauss_fit_max(
                 f"area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}",
                 file=file,
             )
-            print("\tFit goodness = " + str(goodness), file=file)
+            print(f"\tFit r2 = {r2}", file=file)
 
         if full_out:
             fig, ax = plt.subplots(2, 2, figsize=(6, 6))
@@ -575,20 +483,33 @@ def timeseries_analysis(
     tau_w: int,
     t_smooth: int,
     full_out: bool,
-) -> Tuple[int, float]:
+) -> Tuple[int, float, List[float]]:
     """
     Perform time series analysis on the input data.
 
-    Args:
-    - cl_ob (ClusteringObject)
-    - tau_w (int): the time window for the analysis
-    - t_smooth (int): the width of the moving average for the analysis
+    Parameters
+    ----------
 
-    Returns:
-    - Tuple (int, float): Number of identified states,
-        fraction of unclassified data.
+    cl_ob : ClusteringObject2D
+
+    tau_w : int
+        The time resolution for the analysis.
+
+    t_smooth : int
+        The width of the moving average for the analysis.
+
+    Returns
+    -------
+
+    num_states : int
+        Number of identified states.
+
+    fraction_0 : float
+        Fraction of unclassified data points. Between 0 and 1.
+
+    list_of_pop : List[float]
+        List of the populations of the different states.
     """
-
     print("* New analysis: ", tau_w, t_smooth)
     name = str(t_smooth) + "_" + str(tau_w) + "_"
 
@@ -599,35 +520,48 @@ def timeseries_analysis(
     tmp_cl_ob.preparing_the_data()
     tmp_cl_ob.plot_input_data(name + "Fig0")
 
-    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob, name, full_out)
+    tmp_cl_ob, _ = iterative_search(tmp_cl_ob, name, full_out)
 
     if len(tmp_cl_ob.states) == 0:
         print("* No possible classification was found. ")
         # We need to free the memory otherwise it accumulates
         del tmp_cl_ob
-        return 1, 1.0
+        return 0, 1.0, [1.0]
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.states])
+    list_of_pop = [state.perc for state in tmp_cl_ob.states]
+    fraction_0 = 1 - np.sum(list_of_pop)
+    list_of_pop.insert(0, fraction_0)
     n_states = len(tmp_cl_ob.states)
-
-    if one_last_state:
-        n_states += 1
 
     # We need to free the memory otherwise it accumulates
     del tmp_cl_ob
 
-    print(
-        "Number of states identified:", n_states, "[" + str(fraction_0) + "]\n"
-    )
-    return n_states, fraction_0
+    print(f"Number of states identified: {n_states}, [{fraction_0}]\n")
+    return n_states, fraction_0, list_of_pop
 
 
 def full_output_analysis(
     cl_ob: ClusteringObject2D,
     full_out: bool,
 ) -> ClusteringObject2D:
-    """Perform a comprehensive analysis on the input data."""
+    """
+    Perform a comprehensive analysis on the input data.
 
+    Parameters
+    ----------
+
+    cl_ob : ClusteringObject2D
+
+    full_out : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    cl_ob : ClusteringObject1D
+        Updated with the clustering results.
+    """
     cl_ob.preparing_the_data()
 
     cl_ob, _ = iterative_search(cl_ob, "", full_out)
@@ -649,17 +583,23 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
     tau_window_list, t_smooth_list = param_grid(
         cl_ob.par, cl_ob.data.num_of_steps
     )
+    cl_ob.tau_window_list = np.array(tau_window_list)
+    cl_ob.t_smooth_list = np.array(t_smooth_list)
 
-    ### If the analysis hat to be performed anew ###
     number_of_states = []
     fraction_0 = []
-    for tau_w in tau_window_list:
+    list_of_pop: List[List[List[float]]] = [
+        [[] for _ in tau_window_list] for _ in t_smooth_list
+    ]
+
+    for i, tau_w in enumerate(tau_window_list):
         tmp = [tau_w]
         tmp1 = [tau_w]
-        for t_s in t_smooth_list:
-            n_s, f_0 = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
+        for j, t_s in enumerate(t_smooth_list):
+            n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w, t_s, full_out)
             tmp.append(n_s)
             tmp1.append(f_0)
+            list_of_pop[j][i] = l_pop
         number_of_states.append(tmp)
         fraction_0.append(tmp1)
     number_of_states_arr = np.array(number_of_states)
@@ -681,12 +621,12 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
 
     cl_ob.number_of_states = number_of_states_arr
     cl_ob.fraction_0 = fraction_0_arr
-
-    cl_ob.plot_tra_figure()
+    cl_ob.list_of_pop = list_of_pop
 
 
 def main(
-    full_output: bool = True, number_of_sigmas: float = 2.0
+    full_output: bool = True,
+    number_of_sigmas: float = 2.0,
 ) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysi.

@@ -406,9 +406,6 @@ class MultiData:
     def plot_medoids(self):
         """
         Plot the mean time sequence for clusters in the data.
-
-        Returns:
-        - None: If the third dimension of input data is greater than 2.
         """
         if self.dims > 2:
             print("plot_medoids() does not work with 3D data.")
@@ -416,28 +413,45 @@ class MultiData:
 
         # Initialize lists to store cluster means and standard deviations
         tau_window = int(self.num_of_steps / self.labels.shape[1])
+        all_the_labels = self.labels
         center_list = []
+        env0 = []
+
+        # If there are no assigned window, we still need the "0" state
+        # for consistency:
+        list_of_labels = np.unique(all_the_labels)
+        if 0 not in list_of_labels:
+            list_of_labels = np.insert(list_of_labels, 0, 0)
 
         # Loop through unique labels (clusters)
-        for ref_label in np.unique(self.labels):
+        for ref_label in np.unique(all_the_labels):
             tmp = []
             # Iterate through molecules and their labels
-            for i, mol in enumerate(self.labels):
-                for j, label in enumerate(mol):
+            for i, mol in enumerate(all_the_labels):
+                for window, label in enumerate(mol):
                     # Define time interval
-                    t_0 = j * tau_window
-                    t_1 = (j + 1) * tau_window
+                    time_0 = window * tau_window
+                    time_1 = (window + 1) * tau_window
                     # If the label matches the current cluster,
                     # append the corresponding data to tmp
                     if label == ref_label:
-                        tmp.append(self.matrix[i][t_0:t_1])
+                        tmp.append(self.matrix[i][time_0:time_1])
 
-            # Calculate mean and standard deviation for the current cluster
-            center_list.append(np.mean(tmp, axis=0))
+            # Calculate mean for the current cluster
+            if len(tmp) > 0 and ref_label > 0:
+                center_list.append(np.mean(tmp, axis=0))
+            elif len(tmp) > 0:
+                env0 = tmp
+
+        center_arr = np.array(center_list)
+        np.save(
+            "medoid_center.npy",
+            center_arr,
+        )
 
         # Create a color palette
         palette = []
-        cmap = plt.get_cmap(COLORMAP, np.unique(self.labels).size)
+        cmap = plt.get_cmap(COLORMAP, list_of_labels.size)
         palette.append(rgb2hex(cmap(0)))
         for i in range(1, cmap.N):
             rgba = cmap(i)
@@ -451,10 +465,20 @@ class MultiData:
             axes.plot(
                 sig_x,
                 sig_y,
-                label="ENV" + str(id_c),
+                label=f"ENV{id_c + 1}",
                 marker="o",
-                c=palette[id_c],
+                c=palette[id_c + 1],
             )
+        for window in env0:
+            axes.plot(
+                window.T[0],
+                window.T[1],
+                lw=0.1,
+                c=palette[0],
+                zorder=0,
+                alpha=0.25,
+            )
+
         fig.suptitle("Average time sequence inside each environments")
         axes.set_xlabel(r"Signal 1")
         axes.set_ylabel(r"Signal 2")

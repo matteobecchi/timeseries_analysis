@@ -9,6 +9,7 @@ import numpy as np
 import scipy.optimize
 import scipy.signal
 from scipy.integrate import quad
+from scipy.optimize import OptimizeWarning
 
 from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
@@ -215,15 +216,110 @@ def gaussian(
     )
 
 
+def find_minima_around_max(
+    data: np.ndarray, max_ind: Tuple[int, ...], gap: int
+):
+    """
+    Find minima surrounding the maximum value in the given data array.
+
+    Args:
+    - data (np.ndarray): Input data array.
+    - max_ind (tuple): Indices of the maximum value in the data.
+    - gap (int): Gap value to determine the search range
+        around the maximum.
+
+    Returns:
+    - list: List of indices representing the minima surrounding
+        the maximum in each dimension.
+    """
+    minima: List[int] = []
+
+    for dim in range(data.ndim):
+        min_id0 = max(max_ind[dim] - gap, 0)
+        min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
+
+        tmp_max1: List[int] = list(max_ind)
+        tmp_max2: List[int] = list(max_ind)
+
+        tmp_max1[dim] = min_id0
+        tmp_max2[dim] = min_id0 - 1
+        while min_id0 > 0 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]:
+            tmp_max1[dim] -= 1
+            tmp_max2[dim] -= 1
+            min_id0 -= 1
+
+        tmp_max1 = list(max_ind)
+        tmp_max2 = list(max_ind)
+
+        tmp_max1[dim] = min_id1
+        tmp_max2[dim] = min_id1 + 1
+        while (
+            min_id1 < data.shape[dim] - 1
+            and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
+        ):
+            tmp_max1[dim] += 1
+            tmp_max2[dim] += 1
+            min_id1 += 1
+
+        minima.extend([min_id0, min_id1])
+
+    return minima
+
+
+def find_half_height_around_max(
+    data: np.ndarray, max_ind: Tuple[int, ...], gap: int
+):
+    """
+    Find half-heigth points surrounding the maximum value
+        in the given data array.
+
+    Args:
+    - data (np.ndarray): Input data array.
+    - max_ind (tuple): Indices of the maximum value in the data.
+    - gap (int): Gap value to determine the search range
+        around the maximum.
+
+    Returns:
+    - list: List of indices representing the minima surrounding
+        the maximum in each dimension.
+    """
+    max_val = data.max()
+    minima: List[int] = []
+
+    for dim in range(data.ndim):
+        half_id0 = max(max_ind[dim] - gap, 0)
+        half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
+
+        tmp_max: List[int] = list(max_ind)
+
+        tmp_max[dim] = half_id0
+        while half_id0 > 0 and data[tuple(tmp_max)] > max_val / 2:
+            tmp_max[dim] -= 1
+            half_id0 -= 1
+
+        tmp_max = list(max_ind)
+
+        tmp_max[dim] = half_id1
+        while (
+            half_id1 < data.shape[dim] - 1
+            and data[tuple(tmp_max)] > max_val / 2
+        ):
+            tmp_max[dim] += 1
+            half_id1 += 1
+
+        minima.extend([half_id0, half_id1])
+
+    return minima
+
+
 def custom_fit(
     dim: int,
     max_ind: int,
     minima: list[int],
     edges: np.ndarray,
     counts: np.ndarray,
-    gap: int,
     m_limits: np.ndarray,
-) -> Tuple[int, int, np.ndarray]:
+) -> Tuple[int, float, np.ndarray]:
     """Fit a Gaussian curve to selected data based on provided parameters.
 
     Parameters
@@ -244,9 +340,6 @@ def custom_fit(
     counts : np.ndarray
         Array containing histogram counts.
 
-    gap : int
-        Minimum allowed gap size for fitting intervals.
-
     m_limits : list[list[int]]
         List of min and max limits for each dimension.
 
@@ -256,17 +349,13 @@ def custom_fit(
     flag : int
         Flag indicating the success (1) or failure (0) of the fitting process.
 
-    goodness : int
-        Goodness value representing the fitting quality (higher is better).
+    coeff_det_r2 : float
+        Determination coefficient of the fit (r^2). Between 0 and 1.
 
     popt : list[float]
         Optimal values for the parameters (mu, sigma, area) of the
         fitted Gaussian.
     """
-    # Initialize flag and goodness variables
-    flag = 1
-    goodness = 5
-
     # Extract relevant data within the specified minima
     edges_selection = edges[minima[2 * dim] : minima[2 * dim + 1]]
     all_axes = tuple(i for i in range(counts.ndim) if i != dim)
@@ -278,9 +367,11 @@ def custom_fit(
     sigma0 = (edges[minima[2 * dim + 1]] - edges[minima[2 * dim]]) / 2
     area0 = max(counts_selection) * np.sqrt(np.pi) * sigma0
 
+    flag = 1
+    coeff_det_r2 = 0
     try:
         # Attempt to fit a Gaussian using curve_fit
-        popt, pcov, _, _, _ = scipy.optimize.curve_fit(
+        popt, _, infodict, _, _ = scipy.optimize.curve_fit(
             gaussian,
             edges_selection,
             counts_selection,
@@ -292,24 +383,13 @@ def custom_fit(
             full_output=True,
         )
 
-        # Check goodness of fit and update the goodness variable
-        if popt[0] < edges_selection[0] or popt[0] > edges_selection[-1]:
-            goodness -= 1
-        if popt[1] > edges_selection[-1] - edges_selection[0]:
-            goodness -= 1
-        if popt[2] < area0 / 2:
-            goodness -= 1
-
-        # Calculate parameter errors
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err / popt[j] > 0.5:
-                goodness -= 1
-
-        # Check if the fitting interval is too small in either dimension
-        if minima[2 * dim + 1] - minima[2 * dim] <= gap:
-            goodness -= 1
-
+        ss_res = np.sum(infodict["fvec"] ** 2)
+        ss_tot = np.sum((counts_selection - np.mean(counts_selection)) ** 2)
+        coeff_det_r2 = 1 - ss_res / ss_tot
+    except OptimizeWarning:
+        print("Fit: Optimize warning. ")
+        flag = 0
+        popt = np.empty((3,))
     except RuntimeError:
         print("\tFit: Runtime error. ")
         flag = 0
@@ -322,7 +402,7 @@ def custom_fit(
         print("\tFit: ValueError.")
         flag = 0
         popt = np.empty((3,))
-    return flag, goodness, popt
+    return flag, coeff_det_r2, popt
 
 
 def relabel_states(
@@ -843,7 +923,7 @@ def relabel_states_2d(
                 ):
                     proposed_merge.append([j, i])
 
-    # Find the best merges (merge into the closest candidate)
+    # Find the best merges (merge into the most important candidate)
     best_merge = []
     states_to_be_merged = np.unique([pair[0] for pair in proposed_merge])
     for j in states_to_be_merged:
@@ -854,18 +934,23 @@ def relabel_states_2d(
         if len(candidate_merge) == 1:
             best_merge.append(candidate_merge[0])
         else:
-            list_of_distances = [
-                np.linalg.norm(
-                    sorted_states[pair[1]].mean - sorted_states[pair[0]].mean
-                )
-                for pair in candidate_merge
+            # list_of_distances = [
+            #     np.linalg.norm(
+            #         sorted_states[pair[1]].mean - sorted_states[pair[0]].mean
+            #     )
+            #     for pair in candidate_merge
+            # ]
+            # best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            importance = [
+                sorted_states[pair[1]].perc for pair in candidate_merge
             ]
-            best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            best_merge.append(candidate_merge[np.argmax(importance)])
 
     # Settle merging chains
+    # if [i, j], all the [k, i] become [k, j]
     for pair in best_merge:
         for j, elem in enumerate(best_merge):
-            if elem[1] == pair[0]:
+            if elem[1] == pair[0] and elem[0] != pair[1]:
                 best_merge[j][1] = pair[1]
 
     # Relabel the labels in all_the_labels
