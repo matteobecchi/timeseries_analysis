@@ -938,18 +938,23 @@ def relabel_states_2d(
         if len(candidate_merge) == 1:
             best_merge.append(candidate_merge[0])
         else:
-            list_of_distances = [
-                np.linalg.norm(
-                    sorted_states[pair[1]].mean - sorted_states[pair[0]].mean
-                )
-                for pair in candidate_merge
+            # list_of_distances = [
+            #     np.linalg.norm(
+            #         sorted_states[pair[1]].mean - sorted_states[pair[0]].mean
+            #     )
+            #     for pair in candidate_merge
+            # ]
+            # best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            importance = [
+                sorted_states[pair[1]].perc for pair in candidate_merge
             ]
-            best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            best_merge.append(candidate_merge[np.argmax(importance)])
 
     # Settle merging chains
+    # if [i, j], all the [k, i] become [k, j]
     for pair in best_merge:
         for j, elem in enumerate(best_merge):
-            if elem[1] == pair[0]:
+            if elem[1] == pair[0] and elem[0] != pair[1]:
                 best_merge[j][1] = pair[1]
 
     # Relabel the labels in all_the_labels

@@ -526,7 +526,7 @@ def timeseries_analysis(
         print("* No possible classification was found. ")
         # We need to free the memory otherwise it accumulates
         del tmp_cl_ob
-        return 0, 1.0
+        return 0, 1.0, [1.0]
 
     list_of_pop = [state.perc for state in tmp_cl_ob.states]
     fraction_0 = 1 - np.sum(list_of_pop)
