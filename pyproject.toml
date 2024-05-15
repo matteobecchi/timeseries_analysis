@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "onion_clustering"
-version = "0.2.1"
+version = "0.2.2"
 description = "Code for unsupervised clustering of time-correlated data."
 # license = "MIT"
 maintainers = [

@@ -1,4 +1,3 @@
-.coverage
 .gitignore
 LICENSE
 README.md
