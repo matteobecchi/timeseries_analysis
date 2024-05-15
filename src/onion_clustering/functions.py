@@ -9,6 +9,7 @@ import numpy as np
 import scipy.optimize
 import scipy.signal
 from scipy.integrate import quad
+from scipy.optimize import OptimizeWarning
 
 from onion_clustering.first_classes import Parameters, StateMulti, StateUni
 
@@ -319,7 +320,7 @@ def custom_fit(
     counts: np.ndarray,
     gap: int,
     m_limits: np.ndarray,
-) -> Tuple[int, int, np.ndarray]:
+) -> Tuple[int, float, np.ndarray]:
     """Fit a Gaussian curve to selected data based on provided parameters.
 
     Parameters
@@ -352,17 +353,13 @@ def custom_fit(
     flag : int
         Flag indicating the success (1) or failure (0) of the fitting process.
 
-    goodness : int
-        Goodness value representing the fitting quality (higher is better).
+    coeff_det_r2 : float
+        Determination coefficient of the fit (r^2). Between 0 and 1.
 
     popt : list[float]
         Optimal values for the parameters (mu, sigma, area) of the
         fitted Gaussian.
     """
-    # Initialize flag and goodness variables
-    flag = 1
-    goodness = 5
-
     # Extract relevant data within the specified minima
     edges_selection = edges[minima[2 * dim] : minima[2 * dim + 1]]
     all_axes = tuple(i for i in range(counts.ndim) if i != dim)
@@ -374,9 +371,11 @@ def custom_fit(
     sigma0 = (edges[minima[2 * dim + 1]] - edges[minima[2 * dim]]) / 2
     area0 = max(counts_selection) * np.sqrt(np.pi) * sigma0
 
+    flag = 1
+    coeff_det_r2 = 0
     try:
         # Attempt to fit a Gaussian using curve_fit
-        popt, pcov, _, _, _ = scipy.optimize.curve_fit(
+        popt, _, infodict, _, _ = scipy.optimize.curve_fit(
             gaussian,
             edges_selection,
             counts_selection,
@@ -388,24 +387,13 @@ def custom_fit(
             full_output=True,
         )
 
-        # Check goodness of fit and update the goodness variable
-        if popt[0] < edges_selection[0] or popt[0] > edges_selection[-1]:
-            goodness -= 1
-        if popt[1] > edges_selection[-1] - edges_selection[0]:
-            goodness -= 1
-        if popt[2] < area0 / 2:
-            goodness -= 1
-
-        # Calculate parameter errors
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err / popt[j] > 0.5:
-                goodness -= 1
-
-        # Check if the fitting interval is too small in either dimension
-        if minima[2 * dim + 1] - minima[2 * dim] <= gap:
-            goodness -= 1
-
+        ss_res = np.sum(infodict["fvec"] ** 2)
+        ss_tot = np.sum((counts_selection - np.mean(counts_selection)) ** 2)
+        coeff_det_r2 = 1 - ss_res / ss_tot
+    except OptimizeWarning:
+        print("Fit: Optimize warning. ")
+        flag = 0
+        popt = np.empty((3,))
     except RuntimeError:
         print("\tFit: Runtime error. ")
         flag = 0
@@ -418,7 +406,7 @@ def custom_fit(
         print("\tFit: ValueError.")
         flag = 0
         popt = np.empty((3,))
-    return flag, goodness, popt
+    return flag, coeff_det_r2, popt
 
 
 def relabel_states(

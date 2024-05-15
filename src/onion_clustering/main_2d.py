@@ -73,32 +73,34 @@ def gauss_fit_max(
     """
     Perform Gaussian fit and generate plots based on the provided data.
 
-    Args:
-    - m_clean (np.ndarray): Processed array of cleaned data.
-    - m_limits (list[list[int]]): List containing minimum and maximum
-        values for each dimension.
-    - bins (Union[int, str]): Number of bins for histograms or 'auto'
-        for automatic binning.
-    - filename (str): Name of the output file to save the plot.
+    Parameters
+    ----------
 
-    Returns:
-    - State or None: State object for state identification or None
-        if fitting fails.
+    m_clean : np.ndarray of shape (n_particles, n_timesteps)
+        Processed array of cleaned data.
 
-    This function performs the following steps:
-    1. Generates histograms based on the data and chosen binning strategy.
-    2. Smoothes the histograms.
-    3. Identifies the maximum values in the histograms.
-    4. Finds minima surrounding the maximum values.
-    5. Tries fitting between minima and checks goodness.
-    6. Determines the interval of half height.
-    7. Tries fitting between the half-height interval and checks goodness.
-    8. Chooses the best fit based on goodness and returns the state.
+    m_limits : list[list[int]]
+        List containing minimum and maximum values for each dimension.
 
-    The function then generates plots of the distribution and fitted Gaussians
-    based on the dimensionality of the data. It saves the plot as an image
-    file and returns a State object for further analysis
-    or None if fitting fails.
+    bins : Union[int, str]
+        Number of bins for histograms or 'auto' for automatic binning.
+
+    number_of_sigmas : float
+        To set the thresholds for assigning windows to the state.
+
+    filename : str
+        Name of the output file to save the plot.
+
+    full_out : bool
+        If True, plot all the intermediate histograms with the best fit.
+        Useful for debugging.
+
+    Returns
+    -------
+
+    State : StateMulti
+        Object containing Gaussian fit parameters (mu, sigma, area)
+        or None if the fit fails.
     """
     print("* Gaussian fit...")
     flat_m = m_clean.reshape(
@@ -114,10 +116,10 @@ def gauss_fit_max(
     if np.all(edges_sides > 49):
         # gap = 3
         gap = int(np.min(edges_sides) * 0.02) * 2
-        if gap%2 == 0:
+        if gap % 2 == 0:
             gap += 1
 
-    ### 2. Smoothing with tau = 3 ###
+    ### 2. Smoothing with gap ###
     counts = moving_average_2d(counts, gap)
 
     ### 3. Find the maximum ###
@@ -131,54 +133,52 @@ def gauss_fit_max(
     ### 4. Find the minima surrounding it ###
     minima = find_minima_around_max(counts, max_ind, gap)
 
-    ### 5. Try the fit between the minima and check its goodness ###
+    ### 5. Try the fit between the minima and check its quality ###
     popt_min: List[float] = []
-    goodness_min = 0
+    det_coeff_min = 0.0
     for dim in range(m_clean.shape[2]):
         try:
-            flag_min, goodness, popt = custom_fit(
+            flag_min, r2_min, popt = custom_fit(
                 dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_min.extend(popt)
-            goodness_min += goodness
+            det_coeff_min += r2_min
         except RuntimeError:
             popt_min = []
             flag_min = False
-            goodness_min -= 5
 
     ### 6. Find the interval of half height ###
     minima = find_half_height_around_max(counts, max_ind, gap)
 
-    ### 7. Try the fit between the minima and check its goodness ###
+    ### 7. Try the fit between the minima and check its quality ###
     popt_half: List[float] = []
-    goodness_half = 0
+    det_coeff_half = 0.0
     for dim in range(m_clean.shape[2]):
         try:
-            flag_half, goodness, popt = custom_fit(
+            flag_half, r2_half, popt = custom_fit(
                 dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_half.extend(popt)
-            goodness_half += goodness
+            det_coeff_half += r2_half
         except RuntimeError:
             popt_half = []
             flag_half = False
-            goodness_half -= 5
 
     ### 8. Choose the best fit ###
-    goodness = goodness_min
+    r2 = det_coeff_min
     if flag_min == 1 and flag_half == 0:
         popt = np.array(popt_min)
     elif flag_min == 0 and flag_half == 1:
         popt = np.array(popt_half)
-        goodness = goodness_half
+        r2 = det_coeff_half
     elif flag_min * flag_half == 1:
-        if goodness_min >= goodness_half:
+        if det_coeff_min >= det_coeff_half:
             popt = np.array(popt_min)
         else:
             popt = np.array(popt_half)
-            goodness = goodness_half
+            r2 = det_coeff_half
     else:
         print("\tWARNING: this fit is not converging.")
         return None
@@ -210,7 +210,7 @@ def gauss_fit_max(
                 f" area = {popt[2]:.4f}, {popt[5]:.4f}",
                 file=file,
             )
-            print("\tFit goodness = " + str(goodness), file=file)
+            print(f"\tFit r2 = {r2}", file=file)
 
         if full_out:
             fig, ax = plt.subplots(figsize=(6, 6))
@@ -252,7 +252,7 @@ def gauss_fit_max(
                 f"area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}",
                 file=file,
             )
-            print("\tFit goodness = " + str(goodness), file=file)
+            print(f"\tFit r2 = {r2}", file=file)
 
         if full_out:
             fig, ax = plt.subplots(2, 2, figsize=(6, 6))
