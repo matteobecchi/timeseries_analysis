@@ -17,13 +17,14 @@ from onion_clustering.classes import ClusteringObject2D
 from onion_clustering.first_classes import MultiData, Parameters, StateMulti
 from onion_clustering.functions import (
     custom_fit,
+    find_half_height_around_max,
+    find_minima_around_max,
     moving_average_2d,
     param_grid,
     read_input_data,
     relabel_states_2d,
 )
 
-NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = "states_output.txt"
 
 
@@ -109,8 +110,12 @@ def gauss_fit_max(
         bins = max(int(np.power(m_clean.size, 1 / 3) * 2), 10)
     counts, edges = np.histogramdd(flat_m, bins=bins, density=True)
     gap = 1
-    if np.all([e.size > 40 for e in edges]):
-        gap = 3
+    edges_sides = np.array([e.size for e in edges])
+    if np.all(edges_sides > 49):
+        # gap = 3
+        gap = int(np.min(edges_sides) * 0.02) * 2
+        if gap%2 == 0:
+            gap += 1
 
     ### 2. Smoothing with tau = 3 ###
     counts = moving_average_2d(counts, gap)
@@ -121,61 +126,9 @@ def gauss_fit_max(
         max_indices = np.argwhere(data == max_val)
         return max_indices[0]
 
-    # max_val = counts.max()
     max_ind = find_max_index(counts)
 
     ### 4. Find the minima surrounding it ###
-    def find_minima_around_max(
-        data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-    ):
-        """
-        Find minima surrounding the maximum value in the given data array.
-
-        Args:
-        - data (np.ndarray): Input data array.
-        - max_ind (tuple): Indices of the maximum value in the data.
-        - gap (int): Gap value to determine the search range
-            around the maximum.
-
-        Returns:
-        - list: List of indices representing the minima surrounding
-            the maximum in each dimension.
-        """
-        minima: List[int] = []
-
-        for dim in range(data.ndim):
-            min_id0 = max(max_ind[dim] - gap, 0)
-            min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
-
-            tmp_max1: List[int] = list(max_ind)
-            tmp_max2: List[int] = list(max_ind)
-
-            tmp_max1[dim] = min_id0
-            tmp_max2[dim] = min_id0 - 1
-            while (
-                min_id0 > 0 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
-            ):
-                tmp_max1[dim] -= 1
-                tmp_max2[dim] -= 1
-                min_id0 -= 1
-
-            tmp_max1 = list(max_ind)
-            tmp_max2 = list(max_ind)
-
-            tmp_max1[dim] = min_id1
-            tmp_max2[dim] = min_id1 + 1
-            while (
-                min_id1 < data.shape[dim] - 1
-                and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
-            ):
-                tmp_max1[dim] += 1
-                tmp_max2[dim] += 1
-                min_id1 += 1
-
-            minima.extend([min_id0, min_id1])
-
-        return minima
-
     minima = find_minima_around_max(counts, max_ind, gap)
 
     ### 5. Try the fit between the minima and check its goodness ###
@@ -195,51 +148,6 @@ def gauss_fit_max(
             goodness_min -= 5
 
     ### 6. Find the interval of half height ###
-    def find_half_height_around_max(
-        data: np.ndarray, max_ind: Tuple[int, ...], gap: int
-    ):
-        """
-        Find half-heigth points surrounding the maximum value
-            in the given data array.
-
-        Args:
-        - data (np.ndarray): Input data array.
-        - max_ind (tuple): Indices of the maximum value in the data.
-        - gap (int): Gap value to determine the search range
-            around the maximum.
-
-        Returns:
-        - list: List of indices representing the minima surrounding
-            the maximum in each dimension.
-        """
-        max_val = data.max()
-        minima: List[int] = []
-
-        for dim in range(data.ndim):
-            half_id0 = max(max_ind[dim] - gap, 0)
-            half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
-
-            tmp_max: List[int] = list(max_ind)
-
-            tmp_max[dim] = half_id0
-            while half_id0 > 0 and data[tuple(tmp_max)] > max_val / 2:
-                tmp_max[dim] -= 1
-                half_id0 -= 1
-
-            tmp_max = list(max_ind)
-
-            tmp_max[dim] = half_id1
-            while (
-                half_id1 < data.shape[dim] - 1
-                and data[tuple(tmp_max)] > max_val / 2
-            ):
-                tmp_max[dim] += 1
-                half_id1 += 1
-
-            minima.extend([half_id0, half_id1])
-
-        return minima
-
     minima = find_half_height_around_max(counts, max_ind, gap)
 
     ### 7. Try the fit between the minima and check its goodness ###
@@ -686,7 +594,8 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D, full_out: bool):
 
 
 def main(
-    full_output: bool = True, number_of_sigmas: float = 2.0
+    full_output: bool = True,
+    number_of_sigmas: float = 2.0,
 ) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysi.

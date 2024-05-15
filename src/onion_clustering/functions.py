@@ -215,6 +215,102 @@ def gaussian(
     )
 
 
+def find_minima_around_max(
+    data: np.ndarray, max_ind: Tuple[int, ...], gap: int
+):
+    """
+    Find minima surrounding the maximum value in the given data array.
+
+    Args:
+    - data (np.ndarray): Input data array.
+    - max_ind (tuple): Indices of the maximum value in the data.
+    - gap (int): Gap value to determine the search range
+        around the maximum.
+
+    Returns:
+    - list: List of indices representing the minima surrounding
+        the maximum in each dimension.
+    """
+    minima: List[int] = []
+
+    for dim in range(data.ndim):
+        min_id0 = max(max_ind[dim] - gap, 0)
+        min_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
+
+        tmp_max1: List[int] = list(max_ind)
+        tmp_max2: List[int] = list(max_ind)
+
+        tmp_max1[dim] = min_id0
+        tmp_max2[dim] = min_id0 - 1
+        while min_id0 > 0 and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]:
+            tmp_max1[dim] -= 1
+            tmp_max2[dim] -= 1
+            min_id0 -= 1
+
+        tmp_max1 = list(max_ind)
+        tmp_max2 = list(max_ind)
+
+        tmp_max1[dim] = min_id1
+        tmp_max2[dim] = min_id1 + 1
+        while (
+            min_id1 < data.shape[dim] - 1
+            and data[tuple(tmp_max1)] > data[tuple(tmp_max2)]
+        ):
+            tmp_max1[dim] += 1
+            tmp_max2[dim] += 1
+            min_id1 += 1
+
+        minima.extend([min_id0, min_id1])
+
+    return minima
+
+
+def find_half_height_around_max(
+    data: np.ndarray, max_ind: Tuple[int, ...], gap: int
+):
+    """
+    Find half-heigth points surrounding the maximum value
+        in the given data array.
+
+    Args:
+    - data (np.ndarray): Input data array.
+    - max_ind (tuple): Indices of the maximum value in the data.
+    - gap (int): Gap value to determine the search range
+        around the maximum.
+
+    Returns:
+    - list: List of indices representing the minima surrounding
+        the maximum in each dimension.
+    """
+    max_val = data.max()
+    minima: List[int] = []
+
+    for dim in range(data.ndim):
+        half_id0 = max(max_ind[dim] - gap, 0)
+        half_id1 = min(max_ind[dim] + gap, data.shape[dim] - 1)
+
+        tmp_max: List[int] = list(max_ind)
+
+        tmp_max[dim] = half_id0
+        while half_id0 > 0 and data[tuple(tmp_max)] > max_val / 2:
+            tmp_max[dim] -= 1
+            half_id0 -= 1
+
+        tmp_max = list(max_ind)
+
+        tmp_max[dim] = half_id1
+        while (
+            half_id1 < data.shape[dim] - 1
+            and data[tuple(tmp_max)] > max_val / 2
+        ):
+            tmp_max[dim] += 1
+            half_id1 += 1
+
+        minima.extend([half_id0, half_id1])
+
+    return minima
+
+
 def custom_fit(
     dim: int,
     max_ind: int,
