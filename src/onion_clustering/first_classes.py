@@ -443,13 +443,11 @@ class MultiData:
             elif len(tmp) > 0:
                 env0 = tmp
 
-        print(1)
         center_arr = np.array(center_list)
         np.save(
             "medoid_center.npy",
             center_arr,
         )
-        print(2)
 
         # Create a color palette
         palette = []

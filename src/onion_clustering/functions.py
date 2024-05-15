@@ -927,7 +927,7 @@ def relabel_states_2d(
                 ):
                     proposed_merge.append([j, i])
 
-    # Find the best merges (merge into the closest candidate)
+    # Find the best merges (merge into the most important candidate)
     best_merge = []
     states_to_be_merged = np.unique([pair[0] for pair in proposed_merge])
     for j in states_to_be_merged:

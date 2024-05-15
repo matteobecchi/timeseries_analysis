@@ -56,7 +56,7 @@ def test_output_files():
     tmp.plot_one_trajectory()
     tmp.data.plot_medoids()
     tmp.plot_state_populations()
-    tmp.sankey([0, 10, 20, 30, 40])
+    tmp.sankey([0, 100, 200, 300, 400])
     tmp.print_labels()
 
     # Define the paths to the expected and actual output files
