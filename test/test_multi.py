@@ -26,9 +26,9 @@ def test_output_files():
     TAU_WINDOW = 10
     T_CONV = 200
     T_UNITS = "dt"
-    NUM_TAU_W = 10 #2
-    MAX_TAU_W = 100 #10
-    MAX_T_SMOOTH = 1 #2
+    NUM_TAU_W = 10  # 2
+    MAX_TAU_W = 100  # 10
+    MAX_T_SMOOTH = 1  # 2
     BINS = 50
 
     ### Create the 'data_directory.txt' file ###
@@ -50,6 +50,7 @@ def test_output_files():
 
     # Test the output
     tmp.plot_tra_figure()
+    tmp.plot_pop_fractions()
     tmp.plot_input_data("Fig0")
     tmp.plot_cumulative_figure()
     tmp.plot_one_trajectory()
