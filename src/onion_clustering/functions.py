@@ -557,11 +557,17 @@ def shared_area_between_gaussians(
         )
         return min_values
 
-    area_gaussian_1, _ = quad(gauss_1, mean1 - 3 * sigma1, mean1 + 3 * sigma1)
-    area_gaussian_2, _ = quad(gauss_2, mean2 - 3 * sigma2, mean2 + 3 * sigma2)
-    x_min = np.min(mean1 - 3 * sigma1, mean2 - 3 * sigma2)
-    x_max = np.max(mean1 + 3 * sigma1, mean2 + 3 * sigma2)
+    area_gaussian_1, _ = quad(
+        gauss_1, int(mean1 - 3 * sigma1) - 1, int(mean1 + 3 * sigma1) + 1
+    )
+    area_gaussian_2, _ = quad(
+        gauss_2, int(mean2 - 3 * sigma2) - 1, int(mean2 + 3 * sigma2) + 1
+    )
+
+    x_min = int(np.min([mean1 - 3 * sigma1, mean2 - 3 * sigma2])) - 1
+    x_max = int(np.max([mean1 + 3 * sigma1, mean2 + 3 * sigma2])) + 1
     shared_area, _ = quad(min_of_gaussians, x_min, x_max)
+
     shared_fraction_1 = shared_area / area_gaussian_1
     shared_fraction_2 = shared_area / area_gaussian_2
 
