@@ -560,6 +560,7 @@ def shared_area_between_gaussians(
     area_gaussian_1, _ = quad(gauss_1, -np.inf, np.inf)
     area_gaussian_2, _ = quad(gauss_2, -np.inf, np.inf)
     shared_area, _ = quad(min_of_gaussians, -np.inf, np.inf)
+    print(f"DEBUG: {area_gaussian_1}, {area_gaussian_2}, {shared_area}")
     shared_fraction_1 = shared_area / area_gaussian_1
     shared_fraction_2 = shared_area / area_gaussian_2
 
