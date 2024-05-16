@@ -158,6 +158,7 @@ def perform_gauss_fit(
                 popt[2] *= -1
             popt[2] *= n_data
             perr = np.array([np.sqrt(pcov[i][i]) for i in range(popt.size)])
+            perr[2] *= n_data
             ss_res = np.sum(infodict["fvec"] ** 2)
             ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
             coeff_det_r2 = 1 - ss_res / ss_tot
