@@ -45,21 +45,21 @@ try:
 
     ### Create the 'input_parameter.txt' file ###
     with open("input_parameters.txt", "w+", encoding="utf-8") as file:
-        print("tau_window\t" + str(TAU_WINDOW), file=file)
-        print("t_smooth\t" + str(T_SMOOTH), file=file)
-        print("t_delay\t" + str(T_DELAY), file=file)
-        print("t_conv\t" + str(T_CONV), file=file)
-        print("time_units\t" + TIME_UNITS, file=file)
-        print("example_ID\t" + str(EXAMPLE_ID), file=file)
-        print("num_tau_w\t" + str(NUM_TAU_W), file=file)
-        print("min_tau_w\t" + str(MIN_TAU_W), file=file)
-        print("min_t_smooth\t" + str(MIN_T_SMOOTH), file=file)
-        print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
-        print("step_t_smooth\t" + str(STEP_T_SMOOTH), file=file)
+        print(f"tau_window\t{TAU_WINDOW}", file=file)
+        print(f"t_smooth\t{T_SMOOTH}", file=file)
+        print(f"t_delay\t{T_DELAY}", file=file)
+        print(f"t_conv\t{T_CONV}", file=file)
+        print(f"t_units\t{TIME_UNITS}", file=file)
+        print(f"example_ID\t{EXAMPLE_ID}", file=file)
+        print(f"num_tau_w\t{NUM_TAU_W}", file=file)
+        print(f"min_tau_w\t{MIN_TAU_W}", file=file)
+        print(f"min_t_smooth\t{MIN_T_SMOOTH}", file=file)
+        print(f"max_t_smooth\t{MAX_T_SMOOTH}", file=file)
+        print(f"step_t_smooth\t{STEP_T_SMOOTH}", file=file)
         if MAX_TAU_W != "auto":
-            print("max_tau_w\t" + str(MAX_TAU_W), file=file)
+            print(f"max_tau_w\t{MAX_TAU_W}", file=file)
         if BINS != "auto":
-            print("bins\t" + str(BINS), file=file)
+            print(f"bins\t{BINS}", file=file)
 
     ### Run the code ###
     cl_ob = main_2d.main()
@@ -67,6 +67,7 @@ try:
     ### Plot the output figures in output_figures/ ###
     # Plots number of states and fraction_0 as a function of tau_window
     cl_ob.plot_tra_figure()
+    cl_ob.plot_pop_fractions()
 
     # Plots the raw data
     cl_ob.plot_input_data("Fig0")
