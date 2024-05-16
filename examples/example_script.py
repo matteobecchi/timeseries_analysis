@@ -44,7 +44,7 @@ try:
         print(PATH_TO_INPUT_DATA, file=file)
 
     ### Create the 'input_parameter.txt' file ###
-    with open(f"input_parameters.txt", "w+", encoding="utf-8") as file:
+    with open("input_parameters.txt", "w+", encoding="utf-8") as file:
         print(f"tau_window\t{TAU_WINDOW}", file=file)
         print(f"t_smooth\t{T_SMOOTH}", file=file)
         print(f"t_delay\t{T_DELAY}", file=file)

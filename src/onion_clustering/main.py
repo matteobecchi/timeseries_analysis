@@ -89,7 +89,7 @@ def perform_gauss_fit(
     param: List[int],
     data: List[np.ndarray],
     int_type: str,
-) -> Tuple[bool, float, np.ndarray]:
+) -> Tuple[bool, float, np.ndarray, np.ndarray]:
     """
     Perform Gaussian fit on given data.
 
@@ -123,9 +123,18 @@ def perform_gauss_fit(
     coeff_det_r2 : float
         Coefficient of determination of the fit. Zero if the fit fails.
 
-    popt : np.ndarray or None
-        Parameters of the Gaussian fit if successful, None otherwise.
+    popt : np.ndarray of shape (3,)
+        Parameters of the Gaussian fit if successful, zeros otherwise.
+
+    perr : np.ndarray of shape (3,)
+        Uncertanties on the Gaussian fit if successful, zeros otherwise.
     """
+    ### Initialize return values ###
+    flag = False
+    coeff_det_r2 = 0
+    popt = np.empty(3)
+    perr = np.empty(3)
+
     id0, id1, max_ind, n_data = param
     bins, counts = data
 
@@ -137,7 +146,7 @@ def perform_gauss_fit(
     try:
         with warnings.catch_warnings():
             warnings.filterwarnings("error")
-            popt, _, infodict, _, _ = scipy.optimize.curve_fit(
+            popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
                 gaussian,
                 selected_bins,
                 selected_counts,
@@ -148,46 +157,21 @@ def perform_gauss_fit(
                 popt[1] *= -1
                 popt[2] *= -1
             popt[2] *= n_data
+            perr = np.array([np.sqrt(pcov[i][i]) for i in range(popt.size)])
             ss_res = np.sum(infodict["fvec"] ** 2)
             ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
             coeff_det_r2 = 1 - ss_res / ss_tot
-            return True, coeff_det_r2, popt
+            flag = True
     except OptimizeWarning:
         print(f"\t{int_type} fit: Optimize warning. ")
-        return (
-            False,
-            0,
-            np.empty(
-                3,
-            ),
-        )
     except RuntimeError:
         print(f"\t{int_type} fit: Runtime error. ")
-        return (
-            False,
-            0,
-            np.empty(
-                3,
-            ),
-        )
     except TypeError:
         print(f"\t{int_type} fit: TypeError.")
-        return (
-            False,
-            0,
-            np.empty(
-                3,
-            ),
-        )
     except ValueError:
         print(f"\t{int_type} fit: ValueError.")
-        return (
-            False,
-            0,
-            np.empty(
-                3,
-            ),
-        )
+
+    return flag, coeff_det_r2, popt, perr
 
 
 def gauss_fit_max(
@@ -260,7 +244,9 @@ def gauss_fit_max(
     ### 5. Try the fit between the minima and check its goodness ###
     fit_param = [min_id0, min_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
-    flag_min, r_2_min, popt_min = perform_gauss_fit(fit_param, fit_data, "Min")
+    flag_min, r_2_min, popt_min, perr_min = perform_gauss_fit(
+        fit_param, fit_data, "Min"
+    )
 
     ### 6. Find the inrterval of half height ###
     half_id0 = np.max([max_ind - gap, 0])
@@ -273,7 +259,7 @@ def gauss_fit_max(
     ### 7. Try the fit between the minima and check its goodness ###
     fit_param = [half_id0, half_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
-    flag_half, r_2_half, popt_half = perform_gauss_fit(
+    flag_half, r_2_half, popt_half, perr_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
     )
 
@@ -281,14 +267,18 @@ def gauss_fit_max(
     r_2 = r_2_min
     if flag_min == 1 and flag_half == 0:
         popt = popt_min
+        perr = perr_min
     elif flag_min == 0 and flag_half == 1:
         popt = popt_half
+        perr = perr_half
         r_2 = r_2_half
     elif flag_min * flag_half == 1:
         if r_2_min >= r_2_half:
             popt = popt_min
+            perr = perr_min
         else:
             popt = popt_half
+            perr = perr_half
             r_2 = r_2_half
     else:
         print("\tWARNING: this fit is not converging.")
@@ -300,12 +290,15 @@ def gauss_fit_max(
     with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
         print("\n", file=file)
         print(
-            f"\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},"
-            f" area = {state.area:.4f}"
+            f"\tmu = {state.mean:.4f} ({perr[0]:.4f}), "
+            f"sigma = {state.sigma:.4f} ({perr[1]:.4f}), "
+            f"area = {state.area:.4f} ({perr[2]:.4f})"
         )
+        print(f"\tFit r2 = {r_2}")
         print(
-            f"\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},"
-            f" area = {state.area:.4f}",
+            f"\tmu = {state.mean:.4f} ({perr[0]:.4f}), "
+            f"sigma = {state.sigma:.4f} ({perr[1]:.4f}), "
+            f"area = {state.area:.4f} ({perr[2]:.4f})",
             file=file,
         )
         print(f"\tFit r2 = {r_2}", file=file)
@@ -491,7 +484,7 @@ def solve_batman(
         ### 5. Try the fit between the minima and check its goodness ###
         fit_param = [min_id0, min_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
-        flag_min, r_2_min, popt_min = perform_gauss_fit(
+        flag_min, r_2_min, popt_min, _ = perform_gauss_fit(
             fit_param, fit_data, "Min"
         )
 
@@ -506,7 +499,7 @@ def solve_batman(
         ### 7. Try the fit between the minima and check its goodness ###
         fit_param = [half_id0, half_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
-        flag_half, r_2_half, popt_half = perform_gauss_fit(
+        flag_half, r_2_half, popt_half, _ = perform_gauss_fit(
             fit_param, fit_data, "Half"
         )
 
