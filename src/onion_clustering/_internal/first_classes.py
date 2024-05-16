@@ -2,6 +2,8 @@
 Contains the classes used for storing parameters and system states.
 """
 
+from typing import List, Union
+
 import numpy as np
 
 
@@ -208,7 +210,14 @@ class Parameters:
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
     """
 
-    def __init__(self, tau_window, tau_w_list, bins):
+    def __init__(
+        self,
+        tau_window: int,
+        tau_w_list: List[int],
+        bins: Union[int, str],
+        number_of_sigmas: float,
+    ):
         self.tau_w = tau_window
         self.tau_w_list = tau_w_list
         self.bins = bins
+        self.number_of_sigmas = number_of_sigmas

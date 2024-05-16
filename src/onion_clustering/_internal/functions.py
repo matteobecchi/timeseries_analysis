@@ -8,6 +8,7 @@ import numpy as np
 import scipy.optimize
 import scipy.signal
 from onion_clustering._internal.first_classes import StateMulti, StateUni
+from scipy.integrate import quad
 
 OUTPUT_FILE = "onion_clustering_log.txt"
 
@@ -480,10 +481,128 @@ def find_intersection(st_0: StateUni, st_1: StateUni) -> Tuple[float, int]:
     return th_aver, 2
 
 
+def shared_area_between_gaussians(
+    area1, mean1, sigma1, area2, mean2, sigma2
+) -> Tuple[float, float]:
+    """
+    Computes the shared area between two Gaussians.
+
+    Parameters
+    ----------
+
+    area1, mean1, sigma1 : float
+        The parameters of Gaussian 1.
+
+    area2, mean2, sigma2 : float
+        The parameters of Gaussian 2.
+
+    Returns
+    -------
+
+    shared_fraction_1 : float
+        The fraction of the area of the first Gaussian in common with the
+        second Gaussian.
+
+    shared_fraction_2 : float
+        The fraction of the area of the second Gaussian in common with the
+        first Gaussian.
+    """
+
+    def gauss_1(x):
+        gauss = gaussian(x, mean1, sigma1, area1)
+        return gauss
+
+    def gauss_2(x):
+        gauss = gaussian(x, mean2, sigma2, area2)
+        return gauss
+
+    def min_of_gaussians(x):
+        min_values = np.minimum(
+            gaussian(x, mean1, sigma1, area1),
+            gaussian(x, mean2, sigma2, area2),
+        )
+        return min_values
+
+    area_gaussian_1, _ = quad(
+        gauss_1, int(mean1 - 3 * sigma1) - 1, int(mean1 + 3 * sigma1) + 1
+    )
+    area_gaussian_2, _ = quad(
+        gauss_2, int(mean2 - 3 * sigma2) - 1, int(mean2 + 3 * sigma2) + 1
+    )
+
+    x_min = int(np.min([mean1 - 3 * sigma1, mean2 - 3 * sigma2])) - 1
+    x_max = int(np.max([mean1 + 3 * sigma1, mean2 + 3 * sigma2])) + 1
+    shared_area, _ = quad(min_of_gaussians, x_min, x_max)
+
+    shared_fraction_1 = shared_area / area_gaussian_1
+    shared_fraction_2 = shared_area / area_gaussian_2
+
+    return shared_fraction_1, shared_fraction_2
+
+
+def final_state_settings(
+    list_of_states: List[StateUni],
+    m_range: np.ndarray,
+) -> List[StateUni]:
+    """
+    Final adjustemts and output in the list of identified states.
+
+    Parameters
+    ----------
+
+    list_of_states : list[StateUni]
+        The list of final states.
+
+    m_range : np.ndarray of shape (2,)
+        Range of values in the data matrix.
+
+    Returns
+    -------
+
+    list_of_states : list[StateUni]
+        Now with the correct thresholds asssigned to each state.
+    """
+    # Calculate the final threshold values
+    # and their types based on the intercept between neighboring states.
+    list_of_states[0].th_inf[0] = m_range[0]
+    list_of_states[0].th_inf[1] = 0
+
+    for i in range(len(list_of_states) - 1):
+        th_val, th_type = find_intersection(
+            list_of_states[i], list_of_states[i + 1]
+        )
+        list_of_states[i].th_sup[0] = th_val
+        list_of_states[i].th_sup[1] = th_type
+        list_of_states[i + 1].th_inf[0] = th_val
+        list_of_states[i + 1].th_inf[1] = th_type
+
+    list_of_states[-1].th_sup[0] = m_range[1]
+    list_of_states[-1].th_sup[1] = 0
+
+    # Write the final states and final thresholds to text files.
+    with open("final_states.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
+        print("# Mu \t Sigma \t A \t state_fraction", file=file)
+        for state in list_of_states:
+            print(state.mean, state.sigma, state.area, state.perc, file=file)
+    with open("final_thresholds.txt", "a", encoding="utf-8") as file:
+        print("####################################", file=file)
+        print("# Threshold_value \t Threshold type", file=file)
+        for state in list_of_states:
+            print(state.th_inf[0], state.th_inf[1], file=file)
+        print(
+            list_of_states[-1].th_sup[0],
+            list_of_states[-1].th_sup[1],
+            file=file,
+        )
+
+    return list_of_states
+
+
 def set_final_states(
     list_of_states: List[StateUni],
     all_the_labels: np.ndarray,
-    m_range: np.ndarray,
+    area_max_overlap: float,
 ) -> Tuple[List[StateUni], np.ndarray]:
     """
     Assigns final states and relabels labels based on specific criteria.
@@ -522,12 +641,38 @@ def set_final_states(
     proposed_merge = []
     for i, st_0 in enumerate(list_of_states):
         for j, st_1 in enumerate(list_of_states):
-            if j != i:
-                if (
+            if j > i:
+                # Condition 1: area overlap
+                shared_area_1, shared_area_2 = shared_area_between_gaussians(
+                    st_1.area,
+                    st_1.mean,
+                    st_1.sigma,
+                    st_0.area,
+                    st_0.mean,
+                    st_0.sigma,
+                )
+                thresh = area_max_overlap
+                if shared_area_1 > thresh >= shared_area_2:
+                    proposed_merge.append([j, i])
+                elif shared_area_2 > thresh >= shared_area_1:
+                    proposed_merge.append([i, j])
+                elif shared_area_1 > thresh and shared_area_2 > thresh:
+                    proposed_merge.append(
+                        [j, i] if shared_area_1 > shared_area_2 else [i, j]
+                    )
+                # Condition 2: mean proximity
+                elif (
                     st_0.peak > st_1.peak
-                    and abs(st_1.mean - st_0.mean) < st_0.sigma
+                    and np.abs(st_0.mean - st_1.mean) < st_0.sigma
+                    and st_1.sigma < 2 * st_0.sigma
                 ):
                     proposed_merge.append([j, i])
+                elif (
+                    st_1.peak > st_0.peak
+                    and np.abs(st_0.mean - st_1.mean) < st_1.sigma
+                    and st_0.sigma < 2 * st_1.sigma
+                ):
+                    proposed_merge.append([i, j])
 
     # Find the best merges (merge into the closest candidate)
     best_merge = []
@@ -540,19 +685,16 @@ def set_final_states(
         if len(candidate_merge) == 1:
             best_merge.append(candidate_merge[0])
         else:
-            list_of_distances = [
-                np.linalg.norm(
-                    list_of_states[pair[1]].mean - list_of_states[pair[0]].mean
-                )
-                for pair in candidate_merge
+            importance = [
+                list_of_states[pair[1]].perc for pair in candidate_merge
             ]
-            best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            best_merge.append(candidate_merge[np.argmax(importance)])
 
     # Settle merging chains
     # if [i, j], all the [k, i] become [k, j]
     for pair in best_merge:
         for j, elem in enumerate(best_merge):
-            if elem[1] == pair[0]:
+            if elem[1] == pair[0] and elem[0] != pair[1]:
                 best_merge[j][1] = pair[1]
 
     # Relabel the labels in all_the_labels
@@ -585,40 +727,6 @@ def set_final_states(
         for i, state in enumerate(list_of_states)
         if i not in states_to_remove
     ]
-
-    # Compute the fraction of data points in each state
-    for st_id, state in enumerate(updated_states):
-        num_of_points = np.sum(all_the_labels == st_id + 1)
-        state.perc = num_of_points / all_the_labels.size
-
-    updated_states[0].th_inf[0] = m_range[0]
-    updated_states[0].th_inf[1] = 0
-
-    for i in range(len(updated_states) - 1):
-        th_val, th_type = find_intersection(
-            updated_states[i], updated_states[i + 1]
-        )
-        updated_states[i].th_sup[0] = th_val
-        updated_states[i].th_sup[1] = th_type
-        updated_states[i + 1].th_inf[0] = th_val
-        updated_states[i + 1].th_inf[1] = th_type
-
-    updated_states[-1].th_sup[0] = m_range[1]
-    updated_states[-1].th_sup[1] = 0
-
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("* FINAL STATES AND THRESHOLDS:", file=dump)
-        print("# Mu \t Sigma \t A \t state_fraction", file=dump)
-        for state in updated_states:
-            print(state.mean, state.sigma, state.area, state.perc, file=dump)
-        print("# threshold type", file=dump)
-        for state in updated_states:
-            print(state.th_inf[0], state.th_inf[1], file=dump)
-        print(
-            updated_states[-1].th_sup[0],
-            updated_states[-1].th_sup[1],
-            file=dump,
-        )
 
     return updated_states, all_the_labels
 

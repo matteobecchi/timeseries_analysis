@@ -4,6 +4,7 @@ See the documentation for all the details.
 """
 
 import copy
+import warnings
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -21,16 +22,18 @@ from onion_clustering._internal.functions import (
     relabel_states,
     set_final_states,
 )
+from scipy.optimize import OptimizeWarning
 
-NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = "onion_clustering_log.txt"
+AREA_MAX_OVERLAP = 0.8
 
 
 def all_the_input_stuff(
-    matrix,
-    tau_window,
-    tau_window_list,
-    bins,
+    matrix: np.ndarray,
+    tau_window: int,
+    tau_window_list: List[int],
+    bins: Union[int, str],
+    number_of_sigmas: float,
 ) -> ClusteringObject1D:
     """
     Data preprocessing for the analysis.
@@ -69,7 +72,7 @@ def all_the_input_stuff(
     - Reads input data
     - Creates and returns the ClusteringObject1D for the analysis
     """
-    par = Parameters(tau_window, tau_window_list, bins)
+    par = Parameters(tau_window, tau_window_list, bins, number_of_sigmas)
     data = UniData(matrix)
     clustering_object = ClusteringObject1D(par, data)
 
@@ -78,7 +81,7 @@ def all_the_input_stuff(
 
 def perform_gauss_fit(
     param: List[int], data: List[np.ndarray], int_type: str
-) -> Tuple[bool, int, np.ndarray]:
+) -> Tuple[bool, int, np.ndarray, np.ndarray]:
     """
     Gaussian fit on the data histogram.
 
@@ -119,71 +122,50 @@ def perform_gauss_fit(
     - Computes the fit quality by checking if some requirements are satisfied
     - If the fit fails, returns (False, 5, np.empty(3))
     """
+    ### Initialize return values ###
+    flag = False
+    coeff_det_r2 = 0
+    popt = np.empty(3)
+    perr = np.empty(3)
+
     id0, id1, max_ind, n_data, gap = param
     bins, counts = data
 
-    goodness = 5
     selected_bins = bins[id0:id1]
     selected_counts = counts[id0:id1]
     mu0 = bins[max_ind]
     sigma0 = (bins[id0] - bins[id1]) / 6
     area0 = counts[max_ind] * np.sqrt(np.pi) * sigma0
     try:
-        popt, pcov, _, _, _ = scipy.optimize.curve_fit(
-            gaussian,
-            selected_bins,
-            selected_counts,
-            p0=[mu0, sigma0, area0],
-            full_output=True,
-        )
-        if popt[1] < 0:
-            popt[1] = -popt[1]
-            popt[2] = -popt[2]
-        gauss_max = popt[2] * np.sqrt(np.pi) * popt[1]
-        if gauss_max < area0 / 2:
-            goodness -= 1
-        popt[2] *= n_data
-        if popt[0] < selected_bins[0] or popt[0] > selected_bins[-1]:
-            goodness -= 1
-        if popt[1] > selected_bins[-1] - selected_bins[0]:
-            goodness -= 1
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err / popt[j] > 0.5:
-                goodness -= 1
-        if id1 - id0 <= gap:
-            goodness -= 1
-        return True, goodness, popt
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
+                gaussian,
+                selected_bins,
+                selected_counts,
+                p0=[mu0, sigma0, area0],
+                full_output=True,
+            )
+            if popt[1] < 0:
+                popt[1] = -popt[1]
+                popt[2] = -popt[2]
+            popt[2] *= n_data
+            perr = np.array([np.sqrt(pcov[i][i]) for i in range(popt.size)])
+            perr[2] *= n_data
+            ss_res = np.sum(infodict["fvec"] ** 2)
+            ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
+            coeff_det_r2 = 1 - ss_res / ss_tot
+            flag = True
+    except OptimizeWarning:
+        print(f"\t{int_type} fit: Optimize warning. ")
     except RuntimeError:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\t" + int_type + " fit: Runtime error. ", file=dump)
-        return (
-            False,
-            goodness,
-            np.empty(
-                3,
-            ),
-        )
+        print(f"\t{int_type} fit: Runtime error. ")
     except TypeError:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\t" + int_type + " fit: TypeError.", file=dump)
-        return (
-            False,
-            goodness,
-            np.empty(
-                3,
-            ),
-        )
+        print(f"\t{int_type} fit: TypeError.")
     except ValueError:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\t" + int_type + " fit: ValueError.", file=dump)
-        return (
-            False,
-            goodness,
-            np.empty(
-                3,
-            ),
-        )
+        print(f"\t{int_type} fit: ValueError.")
+
+    return flag, coeff_det_r2, popt, perr
 
 
 def gauss_fit_max(
@@ -226,8 +208,8 @@ def gauss_fit_max(
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
 
     gap = 1
-    if bins.size > 50:
-        gap = 3
+    if bins.size > 49:
+        gap = int(bins.size * 0.02) * 2
     counts = moving_average(counts, gap)
     bins = moving_average(bins, gap)
     if (counts == 0.0).any():
@@ -250,7 +232,7 @@ def gauss_fit_max(
 
     fit_param = [min_id0, min_id1, max_ind, flat_m.size, gap]
     fit_data = [bins, counts]
-    flag_min, goodness_min, popt_min = perform_gauss_fit(
+    flag_min, r_2_min, popt_min, perr_min = perform_gauss_fit(
         fit_param, fit_data, "Min"
     )
 
@@ -263,37 +245,42 @@ def gauss_fit_max(
 
     fit_param = [half_id0, half_id1, max_ind, flat_m.size, gap]
     fit_data = [bins, counts]
-    flag_half, goodness_half, popt_half = perform_gauss_fit(
+    flag_half, r_2_half, popt_half, perr_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
     )
 
-    goodness = goodness_min
+    r_2 = r_2_min
     if flag_min == 1 and flag_half == 0:
         popt = popt_min
+        perr = perr_min
     elif flag_min == 0 and flag_half == 1:
         popt = popt_half
-        goodness = goodness_half
+        perr = perr_half
+        r_2 = r_2_half
     elif flag_min * flag_half == 1:
-        if goodness_min >= goodness_half:
+        if r_2_min >= r_2_half:
             popt = popt_min
+            perr = perr_min
         else:
             popt = popt_half
-            goodness = goodness_half
+            perr = perr_half
+            r_2 = r_2_half
     else:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print("\tWARNING: this fit is not converging.", file=dump)
         return None
 
     state = StateUni(popt[0], popt[1], popt[2])
-    state.build_boundaries(NUMBER_OF_SIGMAS)
+    state.build_boundaries(par.number_of_sigmas)
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
-            f"\tmu = {state.mean:.4f}, sigma = {state.sigma:.4f},"
-            f" area = {state.area:.4f}",
+            f"\tmu = {state.mean:.4f} ({perr[0]:.4f}), "
+            f"sigma = {state.sigma:.4f} ({perr[1]:.4f}), "
+            f"area = {state.area:.4f} ({perr[2]:.4f})",
             file=dump,
         )
-        print("\tFit goodness = " + str(goodness), file=dump)
+        print(f"\tFit r2 = {r_2}", file=dump)
 
     return state
 
@@ -358,9 +345,16 @@ def find_stable_trj(
     mask = mask_unclassified & mask_inf & mask_sup
 
     tmp_labels[mask] = lim + 1
-
     counter = np.sum(mask)
+
+    remaning_data = []
+    mask_remaining = mask_unclassified & ~mask
+    for i, window in np.argwhere(mask_remaining):
+        r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
+        remaning_data.append(r_w)
+
     window_fraction = counter / (tmp_labels.size)
+
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
             f"\tFraction of windows in state {lim + 1}"
@@ -368,13 +362,7 @@ def find_stable_trj(
             file=dump,
         )
 
-    remaning_data = []
-    mask_remaining = mask_unclassified & ~mask
-    for i, window in np.argwhere(mask_remaining):
-        r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
-        remaning_data.append(r_w)
     m2_array = np.array(remaning_data)
-
     env_0 = True
     if len(m2_array) == 0:
         env_0 = False
@@ -439,7 +427,7 @@ def iterative_search(
         if state is None:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "_ Iterations interrupted because "
+                    "- Iterations interrupted because "
                     "fit does not converge.",
                     file=dump,
                 )
@@ -449,10 +437,6 @@ def iterative_search(
             cl_ob, state, tmp_labels, states_counter
         )
 
-        state.perc = counter
-        states_list.append(state)
-        states_counter += 1
-        iteration_id += 1
         if counter <= 0.0:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
@@ -461,6 +445,10 @@ def iterative_search(
                 )
             break
 
+        state.perc = counter
+        states_list.append(state)
+        states_counter += 1
+        iteration_id += 1
         m_copy = m_next
 
     cl_ob.iterations = len(states_list)
@@ -473,7 +461,7 @@ def iterative_search(
 
 def timeseries_analysis(
     cl_ob: ClusteringObject1D, tau_w: int
-) -> Tuple[int, float]:
+) -> Tuple[int, float, List[float]]:
     """
     The clustering analysis to compute the dependence on time resolution.
 
@@ -516,24 +504,27 @@ def timeseries_analysis(
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print("* No possible classification was found.", file=dump)
         del tmp_cl_ob
-        return 1, 1.0
+        return 0, 1.0, [1.0]
 
     tmp_cl_ob.state_list, tmp_cl_ob.data.labels = set_final_states(
-        tmp_cl_ob.state_list, tmp_labels, tmp_cl_ob.data.range
+        tmp_cl_ob.state_list,
+        tmp_labels,
+        AREA_MAX_OVERLAP,
     )
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.state_list])
+    list_of_pop = [state.perc for state in tmp_cl_ob.state_list]
+    fraction_0 = 1 - np.sum(list_of_pop)
+    list_of_pop.insert(0, fraction_0)
     n_states = len(tmp_cl_ob.state_list)
-    if env_0:
-        n_states += 1
+
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
-            f"* Number of states identified: {n_states}, [{fraction_0}]\n",
+            f"* Number of states identified: {n_states} [{fraction_0}]\n",
             file=dump,
         )
 
     del tmp_cl_ob
-    return n_states, fraction_0
+    return n_states, fraction_0, list_of_pop
 
 
 def full_output_analysis(cl_ob: ClusteringObject1D):
@@ -565,7 +556,9 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
             print("* No possible classification was found.", file=dump)
 
     cl_ob.state_list, cl_ob.data.labels = set_final_states(
-        cl_ob.state_list, tmp_labels, cl_ob.data.range
+        cl_ob.state_list,
+        tmp_labels,
+        AREA_MAX_OVERLAP,
     )
     cl_ob.data.labels = cl_ob.create_all_the_labels()
 
@@ -598,20 +591,25 @@ def time_resolution_analysis(cl_ob: ClusteringObject1D):
 
     number_of_states = []
     fraction_0 = []
-    for tau_w in tau_window_list:
-        n_s, f_0 = timeseries_analysis(cl_ob, tau_w)
+    list_of_pop: List[List[float]] = [[] for _ in tau_window_list]
+
+    for i, tau_w in enumerate(tau_window_list):
+        n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w)
         number_of_states.append(n_s)
         fraction_0.append(f_0)
+        list_of_pop[i] = l_pop
 
     cl_ob.number_of_states = np.array(number_of_states)
     cl_ob.fraction_0 = np.array(fraction_0)
+    cl_ob.list_of_pop = list_of_pop
 
 
 def main(
-    matrix,
-    tau_window,
-    tau_window_list,
-    bins,
+    matrix: np.ndarray,
+    tau_window: int,
+    tau_window_list: List[int],
+    bins: Union[int, str],
+    number_of_sigmas: float,
 ) -> ClusteringObject1D:
     """
     Returns the clustering object with the analysis.
@@ -649,7 +647,11 @@ def main(
     - Performs a detailed analysis with the selected tau_window
     """
     clustering_object = all_the_input_stuff(
-        matrix, tau_window, tau_window_list, bins
+        matrix,
+        tau_window,
+        tau_window_list,
+        bins,
+        number_of_sigmas,
     )
 
     time_resolution_analysis(clustering_object)

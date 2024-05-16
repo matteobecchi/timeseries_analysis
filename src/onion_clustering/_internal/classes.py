@@ -52,6 +52,7 @@ class ClusteringObject:
         self.iterations = -1
         self.number_of_states: np.ndarray
         self.fraction_0: np.ndarray
+        self.list_of_pop: List[List[float]]
 
     def create_all_the_labels(self) -> np.ndarray:
         """
