@@ -934,13 +934,6 @@ def relabel_states_2d(
         if len(candidate_merge) == 1:
             best_merge.append(candidate_merge[0])
         else:
-            # list_of_distances = [
-            #     np.linalg.norm(
-            #         sorted_states[pair[1]].mean - sorted_states[pair[0]].mean
-            #     )
-            #     for pair in candidate_merge
-            # ]
-            # best_merge.append(candidate_merge[np.argmin(list_of_distances)])
             importance = [
                 sorted_states[pair[1]].perc for pair in candidate_merge
             ]
