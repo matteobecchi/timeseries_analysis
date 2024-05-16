@@ -22,15 +22,15 @@ from onion_clustering._internal.functions import (
     relabel_states_2d,
 )
 
-NUMBER_OF_SIGMAS = 2.0
 OUTPUT_FILE = "onion_clustering_log.txt"
 
 
 def all_the_input_stuff(
-    matrix,
-    tau_window,
-    tau_window_list,
-    bins,
+    matrix: np.ndarray,
+    tau_window: int,
+    tau_window_list: List[int],
+    bins: Union[int, str],
+    number_of_sigmas: float,
 ) -> ClusteringObject2D:
     """
     Data preprocessing for the analysis.
@@ -70,7 +70,7 @@ def all_the_input_stuff(
     - Creates and returns the ClusteringObject2D for the analysis
     """
 
-    par = Parameters(tau_window, tau_window_list, bins)
+    par = Parameters(tau_window, tau_window_list, bins, number_of_sigmas)
     data = MultiData(matrix)
     clustering_object = ClusteringObject2D(par, data)
 
@@ -81,6 +81,7 @@ def gauss_fit_max(
     m_clean: np.ndarray,
     m_limits: np.ndarray,
     bins: Union[int, str],
+    par: Parameters,
 ) -> Union[StateMulti, None]:
     """
     Selection of the optimal region and parameters in order to fit a state.
@@ -198,7 +199,7 @@ def gauss_fit_max(
         sigma.append(popt[3 * dim + 1])
         area.append(popt[3 * dim + 2])
     state = StateMulti(np.array(mean), np.array(sigma), np.array(area))
-    state.build_boundaries(NUMBER_OF_SIGMAS)
+    state.build_boundaries(par.number_of_sigmas)
 
     if m_clean.shape[2] == 2:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
@@ -357,7 +358,9 @@ def iterative_search(
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print(f"- Iteration {iteration_id - 1}", file=dump)
-        state = gauss_fit_max(m_copy, np.array(cl_ob.data.range), bins)
+        state = gauss_fit_max(
+            m_copy, np.array(cl_ob.data.range), bins, cl_ob.par
+        )
 
         if state is None:
             print("* Iterations interrupted because fit does not converge. ")
@@ -526,10 +529,11 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
 
 
 def main(
-    matrix,
-    tau_window,
-    tau_window_list,
-    bins,
+    matrix: np.ndarray,
+    tau_window: int,
+    tau_window_list: List[int],
+    bins: Union[int, str],
+    number_of_sigmas: float,
 ) -> ClusteringObject2D:
     """
     Returns the clustering object with the analysis.
@@ -570,7 +574,11 @@ def main(
     - Performs a detailed analysis with the selected parameters
     """
     clustering_object = all_the_input_stuff(
-        matrix, tau_window, tau_window_list, bins
+        matrix,
+        tau_window,
+        tau_window_list,
+        bins,
+        number_of_sigmas,
     )
 
     time_resolution_analysis(clustering_object)

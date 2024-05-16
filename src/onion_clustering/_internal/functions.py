@@ -564,6 +564,9 @@ def final_state_settings(
     """
     # Calculate the final threshold values
     # and their types based on the intercept between neighboring states.
+    if len(list_of_states) == 0:
+        return list_of_states
+
     list_of_states[0].th_inf[0] = m_range[0]
     list_of_states[0].th_inf[1] = 0
 
@@ -729,6 +732,134 @@ def set_final_states(
     ]
 
     return updated_states, all_the_labels
+
+
+def find_max_prob_state(
+    windows: np.ndarray,
+    old_labels: np.ndarray,
+    list_of_states: List[StateUni],
+) -> int:
+    """
+    Assign multiple windows to the state for which the belonging
+    is the most probable in a vectorized manner.
+
+    Parameters
+    ----------
+    windows : np.ndarray of shape (num_windows, tau_window)
+        The signal windows to assign to states.
+    old_labels : np.ndarray of shape (num_windows,)
+        The temporary labels for the considered signal windows.
+    list_of_states : List[StateUni]
+        List of the identified states.
+
+    Returns
+    -------
+    new_labels : np.ndarray of shape (num_windows,)
+        The labels for the considered signal windows.
+    """
+    medians = np.median(windows, axis=1)
+
+    # Prepare arrays for Gaussian calculations
+    means = np.array([state.mean for state in list_of_states])
+    sigmas = np.array([state.sigma for state in list_of_states])
+    areas = np.array([state.area for state in list_of_states])
+
+    # Broadcast medians to shape (num_windows, num_states)
+    medians_broadcasted = medians[:, np.newaxis]
+
+    # Calculate Gaussian values for each window's median against all states
+    gaussians = (areas / (sigmas * np.sqrt(2 * np.pi))) * np.exp(
+        -0.5 * ((medians_broadcasted - means) / sigmas) ** 2
+    )
+
+    # Find the state with the maximum Gaussian value for each window
+    new_labels = np.argmax(gaussians, axis=1) + 1
+
+    return new_labels
+
+
+def max_prob_assignment(
+    list_of_states: List[StateUni],
+    matrix: np.ndarray,
+    all_the_labels: np.ndarray,
+    m_range: np.ndarray,
+    tau_window: int,
+    number_of_sigmas: float,
+) -> Tuple[np.ndarray, List[StateUni]]:
+    """
+    After all the states have been identified, assign each window.
+    Each signal window is assigned to the most probable state.
+
+    Parameters
+    ----------
+
+    list_of_states : List[StateUni]
+        List of the identified states.
+
+    matrix : np.ndarray of shape (num_of_particles, num_of_timesteps)
+        The data to cluster.
+
+    all_the_labels : np.ndarray of shape (num_of_particles, num_of_windows)
+        The temporary labels assigned to the signal windows.
+
+    m_range : np.ndarray of shape (2,)
+        Range of values in the data matrix.
+
+    tau_window : int
+        The time resolution of the analysis.
+
+    Returns
+    -------
+
+    final_labels : np.ndarray of shape (num_of_particles, num_of_windows)
+        The definitive labels for all the signal windows.
+
+    updated_states : List[StateUni]
+        List of the identified states, with updated percetages.
+    """
+    N, T = all_the_labels.shape
+    reshaped_matrix = matrix[:, : T * tau_window].reshape(N, T, tau_window)
+    s_ranges = np.array(
+        [number_of_sigmas * state.sigma for state in list_of_states]
+    )
+    final_labels = np.zeros(all_the_labels.shape, dtype=int)
+    mask = all_the_labels > 0
+
+    valid_indices = np.where(mask)
+    windows = reshaped_matrix[valid_indices]
+    old_labels = all_the_labels[valid_indices]
+
+    new_labels = find_max_prob_state(windows, old_labels, list_of_states)
+
+    # Calculate s_range for the new labels
+    s_ranges_selected = s_ranges[new_labels - 1]
+
+    # Check the range condition
+    max_values = np.max(windows, axis=1)
+    min_values = np.min(windows, axis=1)
+    range_conditions = (max_values - min_values) < s_ranges_selected
+
+    # Update final labels based on the range condition
+    final_labels[valid_indices] = np.where(range_conditions, new_labels, 0)
+
+    for i, state in enumerate(list_of_states):
+        num_of_points = np.sum(final_labels == i + 1)
+        state.perc = num_of_points / final_labels.size
+
+    states_to_remove = []
+    for i, state in enumerate(list_of_states):
+        if state.perc == 0.0:
+            states_to_remove.append(i)
+
+    for i in states_to_remove[::-1]:
+        list_of_states.pop(i)
+
+    updated_states = final_state_settings(
+        list_of_states,
+        m_range,
+    )
+
+    return final_labels, updated_states
 
 
 def relabel_states_2d(

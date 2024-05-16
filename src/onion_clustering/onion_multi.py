@@ -12,6 +12,7 @@ def onion_multi(
     tau_window,
     tau_window_list: Union[List[int], None] = None,
     bins: Union[str, int] = "auto",
+    number_of_sigmas: float = 2.0,
 ):
     """Perform onion clustering from data array.
 
@@ -74,6 +75,7 @@ def onion_multi(
         tau_window=tau_window,
         tau_window_list=tau_window_list,
         bins=bins,
+        number_of_sigmas=number_of_sigmas,
     )
     est.fit(matrix)
 
@@ -143,10 +145,12 @@ class OnionMulti:
         tau_window,
         tau_window_list=None,
         bins: Union[str, int] = "auto",
+        number_of_sigmas: float = 2.0,
     ):
         self.tau_window = tau_window
         self.tau_window_list = tau_window_list
         self.bins = bins
+        self.number_of_sigmas = number_of_sigmas
 
     def fit(self, matrix):
         """Perform onion clustering from data array.
@@ -166,6 +170,7 @@ class OnionMulti:
             self.tau_window,
             self.tau_window_list,
             self.bins,
+            self.number_of_sigmas,
         )
 
         self.state_list_ = cl_ob.state_list

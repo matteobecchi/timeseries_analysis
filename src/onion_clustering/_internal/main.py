@@ -17,6 +17,7 @@ from onion_clustering._internal.first_classes import (
 )
 from onion_clustering._internal.functions import (
     gaussian,
+    max_prob_assignment,
     moving_average,
     param_grid,
     relabel_states,
@@ -128,7 +129,7 @@ def perform_gauss_fit(
     popt = np.empty(3)
     perr = np.empty(3)
 
-    id0, id1, max_ind, n_data, gap = param
+    id0, id1, max_ind, n_data = param
     bins, counts = data
 
     selected_bins = bins[id0:id1]
@@ -136,34 +137,39 @@ def perform_gauss_fit(
     mu0 = bins[max_ind]
     sigma0 = (bins[id0] - bins[id1]) / 6
     area0 = counts[max_ind] * np.sqrt(np.pi) * sigma0
-    try:
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error")
-            popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
-                gaussian,
-                selected_bins,
-                selected_counts,
-                p0=[mu0, sigma0, area0],
-                full_output=True,
-            )
-            if popt[1] < 0:
-                popt[1] = -popt[1]
-                popt[2] = -popt[2]
-            popt[2] *= n_data
-            perr = np.array([np.sqrt(pcov[i][i]) for i in range(popt.size)])
-            perr[2] *= n_data
-            ss_res = np.sum(infodict["fvec"] ** 2)
-            ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
-            coeff_det_r2 = 1 - ss_res / ss_tot
-            flag = True
-    except OptimizeWarning:
-        print(f"\t{int_type} fit: Optimize warning. ")
-    except RuntimeError:
-        print(f"\t{int_type} fit: Runtime error. ")
-    except TypeError:
-        print(f"\t{int_type} fit: TypeError.")
-    except ValueError:
-        print(f"\t{int_type} fit: ValueError.")
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("error")
+                popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
+                    gaussian,
+                    selected_bins,
+                    selected_counts,
+                    p0=[mu0, sigma0, area0],
+                    full_output=True,
+                )
+                if popt[1] < 0:
+                    popt[1] = -popt[1]
+                    popt[2] = -popt[2]
+                popt[2] *= n_data
+                perr = np.array(
+                    [np.sqrt(pcov[i][i]) for i in range(popt.size)]
+                )
+                perr[2] *= n_data
+                ss_res = np.sum(infodict["fvec"] ** 2)
+                ss_tot = np.sum(
+                    (selected_counts - np.mean(selected_counts)) ** 2
+                )
+                coeff_det_r2 = 1 - ss_res / ss_tot
+                flag = True
+        except OptimizeWarning:
+            print(f"\t{int_type} fit: Optimize warning.", file=dump)
+        except RuntimeError:
+            print(f"\t{int_type} fit: Runtime error.", file=dump)
+        except TypeError:
+            print(f"\t{int_type} fit: TypeError.", file=dump)
+        except ValueError:
+            print(f"\t{int_type} fit: ValueError.", file=dump)
 
     return flag, coeff_det_r2, popt, perr
 
@@ -212,6 +218,10 @@ def gauss_fit_max(
         gap = int(bins.size * 0.02) * 2
     counts = moving_average(counts, gap)
     bins = moving_average(bins, gap)
+
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print(f"\tNumber of bins = {bins.size}, gap = {gap}", file=dump)
+
     if (counts == 0.0).any():
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print(
@@ -230,7 +240,7 @@ def gauss_fit_max(
     while min_id1 < counts.size - 1 and counts[min_id1] > counts[min_id1 + 1]:
         min_id1 += 1
 
-    fit_param = [min_id0, min_id1, max_ind, flat_m.size, gap]
+    fit_param = [min_id0, min_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
     flag_min, r_2_min, popt_min, perr_min = perform_gauss_fit(
         fit_param, fit_data, "Min"
@@ -243,7 +253,7 @@ def gauss_fit_max(
     while half_id1 < counts.size - 1 and counts[half_id1] > max_val / 2:
         half_id1 += 1
 
-    fit_param = [half_id0, half_id1, max_ind, flat_m.size, gap]
+    fit_param = [half_id0, half_id1, max_ind, flat_m.size]
     fit_data = [bins, counts]
     flag_half, r_2_half, popt_half, perr_half = perform_gauss_fit(
         fit_param, fit_data, "Half"
@@ -370,6 +380,160 @@ def find_stable_trj(
     return m2_array, window_fraction, env_0
 
 
+def fit_local_maxima(
+    cl_ob: ClusteringObject1D,
+    m_clean: np.ndarray,
+    par: Parameters,
+    tmp_labels: np.ndarray,
+    lim: int,
+):
+    """
+    This functions takes care of particular cases where the
+    data points on the tails of a Gaussian are not correctly assigned,
+    creating weird sharp peaks in the hsistogram.
+
+    Parameters
+    ----------
+
+    cl_ob : ClusteringObject1D
+
+    m_clean : np.ndarray
+        Input data for Gaussian fitting.
+
+    par : Parameters
+        Object containing parameters for fitting.
+
+    tmp_labels : np.ndarray
+        Labels indicating window classifications.
+
+    tau_windw : int
+        The time resolution of the analysis.
+
+    lim : int
+        Offset value for classifying stable windows.
+    """
+    flat_m = m_clean.flatten()
+
+    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+    gap = 1
+    if bins.size > 99:
+        gap = int(bins.size * 0.02)
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        print(f"\tNumber of bins = {bins.size}, gap = {gap}", file=dump)
+
+    counts = moving_average(counts, gap)
+    bins = moving_average(bins, gap)
+    if (counts == 0.0).any():
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(
+                "\tWARNING: there are empty bins. "
+                "Consider reducing the number of bins.",
+                file=dump,
+            )
+
+    max_ind, _ = scipy.signal.find_peaks(counts)
+    max_val = np.array([counts[i] for i in max_ind])
+
+    for i, m_ind in enumerate(max_ind[:1]):
+        min_id0 = np.max([m_ind - gap, 0])
+        min_id1 = np.min([m_ind + gap, counts.size - 1])
+        while min_id0 > 0 and counts[min_id0] > counts[min_id0 - 1]:
+            min_id0 -= 1
+        while (
+            min_id1 < counts.size - 1 and counts[min_id1] > counts[min_id1 + 1]
+        ):
+            min_id1 += 1
+
+        fit_param = [min_id0, min_id1, m_ind, flat_m.size]
+        fit_data = [bins, counts]
+        flag_min, r_2_min, popt_min, perr_min = perform_gauss_fit(
+            fit_param, fit_data, "Min"
+        )
+
+        half_id0 = np.max([m_ind - gap, 0])
+        half_id1 = np.min([m_ind + gap, counts.size - 1])
+        while half_id0 > 0 and counts[half_id0] > max_val[i] / 2:
+            half_id0 -= 1
+        while half_id1 < counts.size - 1 and counts[half_id1] > max_val[i] / 2:
+            half_id1 += 1
+
+        fit_param = [half_id0, half_id1, m_ind, flat_m.size]
+        fit_data = [bins, counts]
+        flag_half, r_2_half, popt_half, perr_half = perform_gauss_fit(
+            fit_param, fit_data, "Half"
+        )
+
+        r_2 = r_2_min
+        if flag_min == 1 and flag_half == 0:
+            popt = popt_min
+            perr = perr_min
+        elif flag_min == 0 and flag_half == 1:
+            popt = popt_half
+            perr = perr_half
+            r_2 = r_2_half
+        elif flag_min * flag_half == 1:
+            if r_2_min >= r_2_half:
+                popt = popt_min
+                perr = perr_min
+            else:
+                popt = popt_half
+                perr = perr_half
+                r_2 = r_2_half
+        else:
+            continue
+
+        state = StateUni(popt[0], popt[1], popt[2])
+        state.build_boundaries(par.number_of_sigmas)
+
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(
+                f"\tmu = {state.mean:.4f} ({perr[0]:.4f}), "
+                f"sigma = {state.sigma:.4f} ({perr[1]:.4f}), "
+                f"area = {state.area:.4f} ({perr[2]:.4f})",
+                file=dump,
+            )
+            print(f"\tFit r2 = {r_2}", file=dump)
+
+        number_of_windows = tmp_labels.shape[1]
+
+        mask_unclassified = tmp_labels < 0.5
+        m_reshaped = cl_ob.data.matrix[
+            :, : number_of_windows * par.tau_w
+        ].reshape(cl_ob.data.matrix.shape[0], number_of_windows, par.tau_w)
+        mask_inf = np.min(m_reshaped, axis=2) >= state.th_inf[0]
+        mask_sup = np.max(m_reshaped, axis=2) <= state.th_sup[0]
+        mask = mask_unclassified & mask_inf & mask_sup
+
+        tmp_labels[mask] = lim + 1
+        counter = np.sum(mask)
+
+        remaning_data = []
+        mask_remaining = mask_unclassified & ~mask
+        for i, window in np.argwhere(mask_remaining):
+            r_w = cl_ob.data.matrix[
+                i, window * par.tau_w : (window + 1) * par.tau_w
+            ]
+            remaning_data.append(r_w)
+
+        window_fraction = counter / (tmp_labels.size)
+
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(
+                f"\tFraction of windows in state {lim + 1}"
+                f" = {window_fraction:.3}",
+                file=dump,
+            )
+
+        m2_array = np.array(remaning_data)
+        one_last_state = True
+        if len(m2_array) == 0:
+            one_last_state = False
+
+        return state, m2_array, window_fraction, one_last_state
+
+    return None, None, None, None
+
+
 def iterative_search(
     cl_ob: ClusteringObject1D,
 ) -> Tuple[ClusteringObject1D, np.ndarray, bool]:
@@ -438,12 +602,21 @@ def iterative_search(
         )
 
         if counter <= 0.0:
-            with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-                print(
-                    "- Iterations interrupted because last state " "is empty.",
-                    file=dump,
-                )
-            break
+            state, m_next, counter, env_0 = fit_local_maxima(
+                cl_ob,
+                m_copy,
+                cl_ob.par,
+                tmp_labels,
+                states_counter,
+            )
+
+            if counter == 0 or state is None:
+                with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+                    print(
+                        "- Iterations interrupted because last state is empty.",
+                        file=dump,
+                    )
+                break
 
         state.perc = counter
         states_list.append(state)
@@ -506,10 +679,19 @@ def timeseries_analysis(
         del tmp_cl_ob
         return 0, 1.0, [1.0]
 
-    tmp_cl_ob.state_list, tmp_cl_ob.data.labels = set_final_states(
+    list_of_states, tmp_labels = set_final_states(
         tmp_cl_ob.state_list,
         tmp_labels,
         AREA_MAX_OVERLAP,
+    )
+
+    tmp_cl_ob.data.labels, tmp_cl_ob.state_list = max_prob_assignment(
+        list_of_states,
+        tmp_cl_ob.data.matrix,
+        tmp_labels,
+        tmp_cl_ob.data.range,
+        tau_w,
+        tmp_cl_ob.par.number_of_sigmas,
     )
 
     list_of_pop = [state.perc for state in tmp_cl_ob.state_list]

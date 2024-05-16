@@ -22,13 +22,16 @@ PATH_TO_INPUT_DATA = "onion_example_files/data/univariate_time-series.npy"
 TAU_WINDOW = 5
 
 ### Optional parametrers ###
-TAU_WINDOW_LIST = [2, 4, 6, 8, 10]
-BINS = 100
+tmp_array = np.geomspace(2, 499, 50, dtype=int)
+TAU_WINDOW_LIST = []
+for item in tmp_array:
+    if item not in TAU_WINDOW_LIST:
+        TAU_WINDOW_LIST.append(item)
 #############################################################################
 
 input_data = np.load(PATH_TO_INPUT_DATA)[:, 1:]
 
-state_list, labels, time_res_analysis = onion_uni(
+state_list, labels, time_res_analysis, pop_list = onion_uni(
     input_data,
     tau_window=TAU_WINDOW,
     tau_window_list=TAU_WINDOW_LIST,

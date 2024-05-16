@@ -79,7 +79,7 @@ def onion_uni(
     )
     est.fit(matrix)
 
-    return est.state_list_, est.labels_, est.time_res_analysis_
+    return est.state_list_, est.labels_, est.time_res_analysis_, est.pop_list_
 
 
 class OnionUni:
@@ -178,6 +178,7 @@ class OnionUni:
         self.time_res_analysis_ = np.array(
             [cl_ob.tau_window_list, cl_ob.number_of_states, cl_ob.fraction_0]
         ).T
+        self.pop_list_ = cl_ob.list_of_pop
 
     def fit_predict(self, matrix):
         """Compute clusters from a data matrix and predict labels.

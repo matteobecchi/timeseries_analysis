@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from matplotlib.colors import rgb2hex
 from matplotlib.patches import Ellipse
 from matplotlib.ticker import MaxNLocator
-from onion_clustering.functions import gaussian
+from onion_clustering._internal.functions import gaussian
 
 COLORMAP = "viridis"
 
