@@ -15,13 +15,12 @@ COLORMAP = "viridis"
 
 def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
     """Plots clustering output with Gaussians and threshols."""
-    # Compute histogram of flattened self.data.matrix
+
     flat_m = input_data.flatten()
     counts, bins = np.histogram(flat_m, bins=100, density=True)
     bins -= (bins[1] - bins[0]) / 2
     counts *= flat_m.size
 
-    # Create a 1x2 subplots with shared y-axis
     fig, axes = plt.subplots(
         1,
         2,
@@ -30,12 +29,10 @@ def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
         figsize=(9, 4.8),
     )
 
-    # Plot the histogram on the right subplot (axes[1])
     axes[1].stairs(
         counts, bins, fill=True, orientation="horizontal", alpha=0.5
     )
 
-    # Create a color palette for plotting states
     palette = []
     n_states = len(state_list)
     cmap = plt.get_cmap(COLORMAP, n_states + 1)
@@ -43,16 +40,10 @@ def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
         rgba = cmap(i)
         palette.append(rgb2hex(rgba))
 
-    # Define time and y-axis limits for the left subplot (axes[0])
     y_spread = np.max(input_data) - np.min(input_data)
-    y_lim = [
-        np.min(input_data) - 0.025 * y_spread,
-        np.max(input_data) + 0.025 * y_spread,
-    ]
     t_steps = input_data.shape[1]
     time = np.linspace(0, t_steps - 1, t_steps)
 
-    # Plot the individual trajectories on the left subplot (axes[0])
     step = 1
     if input_data.size > 1e6:
         step = 10
@@ -115,8 +106,6 @@ def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
     # Set plot titles and axis labels
     axes[0].set_ylabel("Signal")
     axes[0].set_xlabel(r"Time [frame]")
-    axes[0].set_xlim([time2[0], time2[-1]])
-    axes[0].set_ylim(y_lim)
     axes[1].set_xticklabels([])
 
     fig.savefig(title, dpi=600)

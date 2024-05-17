@@ -737,11 +737,21 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print("* No possible classification was found.", file=dump)
 
-    cl_ob.state_list, cl_ob.data.labels = set_final_states(
+    list_of_states, tmp_labels = set_final_states(
         cl_ob.state_list,
         tmp_labels,
         AREA_MAX_OVERLAP,
     )
+
+    cl_ob.data.labels, cl_ob.state_list = max_prob_assignment(
+        list_of_states,
+        cl_ob.data.matrix,
+        tmp_labels,
+        cl_ob.data.range,
+        cl_ob.par.tau_w,
+        cl_ob.par.number_of_sigmas,
+    )
+
     cl_ob.data.labels = cl_ob.create_all_the_labels()
 
 
