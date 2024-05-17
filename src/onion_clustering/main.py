@@ -216,6 +216,10 @@ def gauss_fit_max(
     flat_m = m_clean.flatten()
 
     ### 1. Histogram ###
+    kde = gaussian_kde(flat_m)
+    bins = np.linspace(np.min(flat_m), np.max(flat_m), 1000)
+    counts = kde.evaluate(bins)
+
     # counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
     # gap = 1
     # if bins.size > 49:
@@ -231,14 +235,10 @@ def gauss_fit_max(
     #         "Consider reducing the number of bins."
     #     )
 
-    gap = 3
-    kde = gaussian_kde(flat_m)
-    bins = np.linspace(np.min(flat_m), np.max(flat_m), 1000)
-    counts = kde.evaluate(bins)
-
     ### 3. Find the maximum ###
     max_val = counts.max()
     max_ind = counts.argmax()
+    gap = 3
 
     ### 4. Find the minima surrounding it ###
     min_id0 = np.max([max_ind - gap, 0])
@@ -311,7 +311,7 @@ def gauss_fit_max(
         print(f"\tFit r2 = {r_2}", file=file)
 
     if full_out:
-        ### Plot the distribution and the fitted gaussians
+        ### 9. Plot the distribution and the fitted gaussians ###
         y_spread = np.max(m_clean) - np.min(m_clean)
         y_lim = [
             np.min(m_clean) - 0.025 * y_spread,
