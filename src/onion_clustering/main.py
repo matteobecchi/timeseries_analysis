@@ -318,7 +318,7 @@ def gauss_fit_max(
             np.max(m_clean) + 0.025 * y_spread,
         ]
         fig, axes = plt.subplots()
-        plot_histo(axes, counts, bins)
+        plot_histo(axes, counts[:-1], bins)
         axes.set_xlim(y_lim)
         tmp_popt = [state.mean, state.sigma, state.area / flat_m.size]
         axes.plot(
