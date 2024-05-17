@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
 from scipy.optimize import OptimizeWarning
+from scipy.stats import gaussian_kde
 
 from onion_clustering.classes import ClusteringObject1D
 from onion_clustering.first_classes import Parameters, StateUni, UniData
@@ -215,20 +216,24 @@ def gauss_fit_max(
     flat_m = m_clean.flatten()
 
     ### 1. Histogram ###
-    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
-    gap = 1
-    if bins.size > 49:
-        gap = int(bins.size * 0.02) * 2
-    print(f"\tNumber of bins = {bins.size}, gap = {gap}")
+    # counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+    # gap = 1
+    # if bins.size > 49:
+    #     gap = int(bins.size * 0.02) * 2
+    # print(f"\tNumber of bins = {bins.size}, gap = {gap}")
 
-    ### 2. Smoothing with tau = 3 ###
-    counts = moving_average(counts, gap)
-    bins = moving_average(bins, gap)
-    if (counts == 0.0).any():
-        print(
-            "\tWARNING: there are empty bins. "
-            "Consider reducing the number of bins."
-        )
+    # ### 2. Smoothing with tau = 3 ###
+    # counts = moving_average(counts, gap)
+    # bins = moving_average(bins, gap)
+    # if (counts == 0.0).any():
+    #     print(
+    #         "\tWARNING: there are empty bins. "
+    #         "Consider reducing the number of bins."
+    #     )
+
+    kde = gaussian_kde(flat_m, bw_method=0.5)
+    bins = np.linspace(np.min(flat_m), np.max(flat_m), 1000)
+    counts = kde.evaluate(bins)
 
     ### 3. Find the maximum ###
     max_val = counts.max()
