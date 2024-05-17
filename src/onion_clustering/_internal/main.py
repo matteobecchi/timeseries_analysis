@@ -585,7 +585,7 @@ def iterative_search(
     env_0 = False
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print(f"_ Iteration {iteration_id - 1}", file=dump)
+            print(f"- Iteration {iteration_id - 1}", file=dump)
         state = gauss_fit_max(m_copy, cl_ob.par)
 
         if state is None:

@@ -8,6 +8,7 @@ from example_plots import (
     plot_medoids_uni,
     plot_one_trj_uni,
     plot_output_uni,
+    plot_pop_fractions,
     plot_sankey,
     plot_state_populations,
     plot_time_res_analysis,
@@ -44,5 +45,6 @@ plot_one_trj_uni("Fig3.png", 1234, input_data, labels)
 plot_medoids_uni("Fig4.png", TAU_WINDOW, input_data, labels)
 plot_state_populations("Fig5.png", labels)
 plot_sankey("Fig6.png", labels, [100, 200, 300, 400])
+plot_pop_fractions("Fig7.png", pop_list)
 
 plt.show()

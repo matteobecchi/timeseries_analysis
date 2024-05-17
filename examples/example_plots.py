@@ -40,7 +40,6 @@ def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
         rgba = cmap(i)
         palette.append(rgb2hex(rgba))
 
-    y_spread = np.max(input_data) - np.min(input_data)
     t_steps = input_data.shape[1]
     time = np.linspace(0, t_steps - 1, t_steps)
 
@@ -208,12 +207,11 @@ def plot_medoids_uni(
     """
     center_list = []
     std_list = []
+    env0 = []
 
-    missing_zero = 0
     list_of_labels = np.unique(labels)
     if 0 not in list_of_labels:
         list_of_labels = np.insert(list_of_labels, 0, 0)
-        missing_zero = 1
 
     for ref_label in list_of_labels:
         tmp = []
@@ -223,9 +221,13 @@ def plot_medoids_uni(
                 time_1 = (window + 1) * tau_window
                 if label == ref_label:
                     tmp.append(input_data[i][time_0:time_1])
-        if len(tmp) > 0:
+
+        if len(tmp) > 0 and ref_label > 0:
             center_list.append(np.mean(tmp, axis=0))
             std_list.append(np.std(tmp, axis=0))
+        elif len(tmp) > 0:
+            env0 = tmp
+
     center_arr = np.array(center_list)
     std_arr = np.array(std_list)
 
@@ -257,20 +259,31 @@ def plot_medoids_uni(
             err_inf,
             err_sup,
             alpha=0.25,
-            color=palette[center_id + missing_zero],
+            color=palette[center_id + 1],
         )
         axes.plot(
             time_seq,
             center,
-            label=f"ENV{center_id + missing_zero}",
+            label=f"ENV{center_id + 1}",
             marker="o",
-            c=palette[center_id + missing_zero],
+            c=palette[center_id + 1],
         )
+
+        for window in env0:
+            axes.plot(
+                time_seq,
+                window,
+                lw=0.1,
+                c=palette[0],
+                zorder=0,
+                alpha=0.2,
+            )
+
     fig.suptitle("Average time sequence inside each environments")
     axes.set_xlabel(r"Time [frames]")
     axes.set_ylabel(r"Signal")
     axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-    axes.legend()
+    axes.legend(loc="lower left")
     fig.savefig(title, dpi=600)
 
 
@@ -382,6 +395,37 @@ def plot_time_res_analysis(title: str, tra: np.ndarray):
     axesr = axes.twinx()
     axesr.plot(tra[:, 0], tra[:, 2], marker="o", c="#ff7f0e")
     axesr.set_ylabel("Population of env 0", weight="bold", c="#ff7f0e")
+    fig.savefig(title, dpi=600)
+
+
+def plot_pop_fractions(title: str, list_of_pop: List[List[float]]):
+    """
+    Plot, for every time resolution, the populations of the ENVs.
+
+    The bottom state is the ENV0.
+    """
+    max_num_of_states = np.max([len(pop_list) for pop_list in list_of_pop])
+    for _, pop_list in enumerate(list_of_pop):
+        while len(pop_list) < max_num_of_states:
+            pop_list.append(0.0)
+
+    pop_array = np.array(list_of_pop)
+
+    fig, axes = plt.subplots()
+
+    width = 1
+    min_tau_w = 2
+    time = range(min_tau_w, pop_array.shape[0] + min_tau_w)
+    bottom = np.zeros(len(pop_array))
+
+    for _, state in enumerate(pop_array.T):
+        _ = axes.bar(time, state, width, bottom=bottom, edgecolor="black")
+        bottom += state
+
+    axes.set_xlabel(r"Time resolution $\Delta t$ [frames]")
+    axes.set_ylabel(r"Population's fractions")
+    axes.set_xscale("log")
+
     fig.savefig(title, dpi=600)
 
 
