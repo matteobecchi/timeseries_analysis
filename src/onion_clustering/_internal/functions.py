@@ -9,6 +9,7 @@ import scipy.optimize
 import scipy.signal
 from onion_clustering._internal.first_classes import StateMulti, StateUni
 from scipy.integrate import quad
+from scipy.optimize import OptimizeWarning
 
 OUTPUT_FILE = "onion_clustering_log.txt"
 
@@ -269,9 +270,8 @@ def custom_fit(
     minima: list[int],
     edges: np.ndarray,
     counts: np.ndarray,
-    gap: int,
     m_limits: np.ndarray,
-) -> Tuple[int, int, np.ndarray]:
+) -> Tuple[int, float, np.ndarray]:
     """
     Fit a Gaussian curve to selected multivarite data.
 
@@ -293,9 +293,6 @@ def custom_fit(
     counts : ndarray
         Array containing histogram counts.
 
-    gap : int
-        Minimum allowed gap size for fitting intervals.
-
     m_limits : List[List[int]]
         List of min and max of the data along each dimension.
 
@@ -305,26 +302,13 @@ def custom_fit(
     flag : int
         Flag indicating the success (1) or failure (0) of the fitting process.
 
-    goodness : int
-        Goodness value representing the fitting quality (5 is the maximum).
+    coeff_det_r2 : float
+        Determination coefficient of the fit (r^2). Between 0 and 1.
 
-    popt : ndarray
-        Optimal values for the parameters (mu, sigma, area) of the fitted
-        Gaussian.
-
-    Notes
-    -----
-
-    - Initializes flag and goodness variables
-    - Selects the data on which the fit will be performed
-    - Compute initial guess for the params
-    - Tries the fit. If it converges:
-        - computes the fit quality by checking some requirements
-        - else, returns (0, 5, np.empty(3))
+    popt : list[float]
+        Optimal values for the parameters (mu, sigma, area) of the
+        fitted Gaussian.
     """
-    flag = 1
-    goodness = 5
-
     edges_selection = edges[minima[2 * dim] : minima[2 * dim + 1]]
     all_axes = tuple(i for i in range(counts.ndim) if i != dim)
     counts_selection = np.sum(counts, axis=all_axes)
@@ -334,50 +318,47 @@ def custom_fit(
     sigma0 = (edges[minima[2 * dim + 1]] - edges[minima[2 * dim]]) / 2
     area0 = max(counts_selection) * np.sqrt(np.pi) * sigma0
 
-    try:
-        popt, pcov, _, _, _ = scipy.optimize.curve_fit(
-            gaussian,
-            edges_selection,
-            counts_selection,
-            p0=[mu0, sigma0, area0],
-            bounds=(
-                [m_limits[dim][0], 0.0, 0.0],
-                [m_limits[dim][1], np.inf, np.inf],
-            ),
-            full_output=True,
-        )
+    flag = 1
+    coeff_det_r2 = 0.0
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+        try:
+            popt, _, infodict, _, _ = scipy.optimize.curve_fit(
+                gaussian,
+                edges_selection,
+                counts_selection,
+                p0=[mu0, sigma0, area0],
+                bounds=(
+                    [m_limits[dim][0], 0.0, 0.0],
+                    [m_limits[dim][1], np.inf, np.inf],
+                ),
+                full_output=True,
+            )
 
-        # Check goodness of fit and update the goodness variable
-        if popt[0] < edges_selection[0] or popt[0] > edges_selection[-1]:
-            goodness -= 1
-        if popt[1] > edges_selection[-1] - edges_selection[0]:
-            goodness -= 1
-        if popt[2] < area0 / 2:
-            goodness -= 1
-
-        # Calculate parameter errors
-        perr = np.sqrt(np.diag(pcov))
-        for j, par_err in enumerate(perr):
-            if par_err / popt[j] > 0.5:
-                goodness -= 1
-
-        # Check if the fitting interval is too small in either dimension
-        if minima[2 * dim + 1] - minima[2 * dim] <= gap:
-            goodness -= 1
-    except RuntimeError:
-        print("\tFit: Runtime error. ")
-        flag = 0
-        popt = np.empty((3,))
-    except TypeError:
-        print("\tFit: TypeError.")
-        flag = 0
-        popt = np.empty((3,))
-    except ValueError:
-        print("\tFit: ValueError.")
-        flag = 0
-        popt = np.empty((3,))
-
-    return flag, goodness, popt
+            ss_res = np.sum(infodict["fvec"] ** 2)
+            ss_tot = np.sum(
+                (counts_selection - np.mean(counts_selection)) ** 2
+            )
+            if ss_tot > 0.0:
+                coeff_det_r2 = 1.0 - ss_res / ss_tot
+            else:
+                coeff_det_r2 = 0.0
+        except OptimizeWarning:
+            print("\tFit: Optimize warning.", file=dump)
+            flag = 0
+            popt = np.empty((3,))
+        except RuntimeError:
+            print("\tFit: Runtime error.", file=dump)
+            flag = 0
+            popt = np.empty((3,))
+        except TypeError:
+            print("\tFit: TypeError.", file=dump)
+            flag = 0
+            popt = np.empty((3,))
+        except ValueError:
+            print("\tFit: ValueError.", file=dump)
+            flag = 0
+            popt = np.empty((3,))
+    return flag, coeff_det_r2, popt
 
 
 def relabel_states(
@@ -940,18 +921,15 @@ def relabel_states_2d(
         if len(candidate_merge) == 1:
             best_merge.append(candidate_merge[0])
         else:
-            list_of_distances = [
-                np.linalg.norm(
-                    sorted_states[pair[1]].mean - sorted_states[pair[0]].mean
-                )
-                for pair in candidate_merge
+            importance = [
+                sorted_states[pair[1]].perc for pair in candidate_merge
             ]
-            best_merge.append(candidate_merge[np.argmin(list_of_distances)])
+            best_merge.append(candidate_merge[np.argmax(importance)])
 
     # Settle merging chains
     for pair in best_merge:
         for j, elem in enumerate(best_merge):
-            if elem[1] == pair[0]:
+            if elem[1] == pair[0] and elem[0] != pair[1]:
                 best_merge[j][1] = pair[1]
 
     # Relabel the labels in all_the_labels
@@ -993,14 +971,14 @@ def relabel_states_2d(
         print("- FINAL STATES:", file=dump)
         print("# center_coords, semiaxis, fraction_of_data", file=dump)
         for state in updated_states:
-            centers = "[" + str(state.mean[0]) + ", "
+            centers = f"[{state.mean[0]}, "
             for tmp in state.mean[1:-1]:
-                centers += str(tmp) + ", "
-            centers += str(state.mean[-1]) + "]"
-            axis = "[" + str(state.axis[0]) + ", "
+                centers += f"{tmp}, "
+            centers += f"{state.mean[-1]}]"
+            axis = f"[{state.axis[0]}, "
             for tmp in state.axis[1:-1]:
-                axis += str(tmp) + ", "
-            axis += str(state.axis[-1]) + "]"
+                axis += f"{tmp}, "
+            axis += f"{state.axis[-1]}]"
             print(centers, axis, state.perc, file=dump)
 
     return all_the_labels, updated_states

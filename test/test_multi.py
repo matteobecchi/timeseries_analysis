@@ -36,7 +36,7 @@ def test_output_files(setup_test_environment):
     )
     tmp.fit_predict(input_data)
 
-    _, labels, time_res_analysis = onion_multi(
+    _, labels, time_res_analysis, _ = onion_multi(
         input_data,
         tau_window=TAU_WINDOW,
         tau_window_list=TAU_WINDOW_LIST,
@@ -51,6 +51,9 @@ def test_output_files(setup_test_environment):
     expected_output_path_2 = (
         original_dir + "output_multi/time_res_analysis.txt"
     )
+
+    # np.save(expected_output_path_1, labels)
+    # np.savetxt(expected_output_path_2, time_res_analysis)
 
     # Compare the contents of the expected and actual output
     expected_output_1 = np.load(expected_output_path_1)

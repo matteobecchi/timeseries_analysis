@@ -37,6 +37,11 @@ def onion_multi(
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
 
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
+
     Returns
     -------
     state_list : List[StateUni]
@@ -50,6 +55,12 @@ def onion_multi(
         For each analyzed value of `tau_window`, it contains tau_window,
         the number of clusters identified and the fraction of unclassified
         data points.
+
+    pop_list : List[List[float]]
+        For each analyzed value in `tau_window_list`, it contains
+        the fraction of data points contained in each state. So pop_list[i][j]
+        is the fraction of data points classified in the j-th state using the
+        i-th value of tau_window_list.
 
     Notes
     -----
@@ -79,7 +90,7 @@ def onion_multi(
     )
     est.fit(matrix)
 
-    return est.state_list_, est.labels_, est.time_res_analysis_
+    return est.state_list_, est.labels_, est.time_res_analysis_, est.pop_list_
 
 
 class OnionMulti:
@@ -106,6 +117,11 @@ class OnionMulti:
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
 
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
+
     Attributes
     ----------
     state_list_ : List[StateUni]
@@ -119,6 +135,12 @@ class OnionMulti:
         For each analyzed value of `tau_window`, it contains tau_window,
         the number of clusters identified and the fraction of unclassified
         data points.
+
+    pop_list_ : List[List[float]]
+        For each analyzed value in `tau_window_list`, it contains
+        the fraction of data points contained in each state. So pop_list[i][j]
+        is the fraction of data points classified in the j-th state using the
+        i-th value of tau_window_list.
 
     Notes
     -----
@@ -178,6 +200,7 @@ class OnionMulti:
         self.time_res_analysis_ = np.array(
             [cl_ob.tau_window_list, cl_ob.number_of_states, cl_ob.fraction_0]
         ).T
+        self.pop_list_ = cl_ob.list_of_pop
 
     def fit_predict(self, matrix):
         """Compute clusters from a data matrix and predict labels.

@@ -127,8 +127,12 @@ def gauss_fit_max(
     counts, edges = np.histogramdd(flat_m, bins=bins, density=True)
 
     gap = 1
-    if np.all([e.size > 40 for e in edges]):
-        gap = 3
+    edges_sides = np.array([e.size for e in edges])
+    if np.all(edges_sides > 49):
+        gap = int(np.min(edges_sides) * 0.02) * 2
+        if gap % 2 == 0:
+            gap += 1
+
     counts = moving_average_2d(counts, gap)
 
     def find_max_index(data: np.ndarray):
@@ -141,49 +145,47 @@ def gauss_fit_max(
     minima = find_minima_around_max(counts, max_ind, gap)
 
     popt_min: List[float] = []
-    goodness_min = 0
+    cumulative_r2_min = 0.0
     for dim in range(m_clean.shape[2]):
         try:
-            flag_min, goodness, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
+            flag_min, r_2, popt = custom_fit(
+                dim, max_ind[dim], minima, edges[dim], counts, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_min.extend(popt)
-            goodness_min += goodness
+            cumulative_r2_min += r_2
         except RuntimeError:
             popt_min = []
             flag_min = False
-            goodness_min -= 5
 
     minima = find_half_height_around_max(counts, max_ind, gap)
 
     popt_half: List[float] = []
-    goodness_half = 0
+    cumulative_r2_half = 0.0
     for dim in range(m_clean.shape[2]):
         try:
-            flag_half, goodness, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, gap, m_limits
+            flag_half, r_2, popt = custom_fit(
+                dim, max_ind[dim], minima, edges[dim], counts, m_limits
             )
             popt[2] *= flat_m.T[0].size
             popt_half.extend(popt)
-            goodness_half += goodness
+            cumulative_r2_half += r_2
         except RuntimeError:
             popt_half = []
             flag_half = False
-            goodness_half -= 5
 
-    goodness = goodness_min
+    r_2 = cumulative_r2_min
     if flag_min == 1 and flag_half == 0:
         popt = np.array(popt_min)
     elif flag_min == 0 and flag_half == 1:
         popt = np.array(popt_half)
-        goodness = goodness_half
+        r_2 = cumulative_r2_half
     elif flag_min * flag_half == 1:
-        if goodness_min >= goodness_half:
+        if cumulative_r2_min >= cumulative_r2_half:
             popt = np.array(popt_min)
         else:
             popt = np.array(popt_half)
-            goodness = goodness_half
+            r_2 = cumulative_r2_half
     else:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print("\tWARNING: this fit is not converging.", file=dump)
@@ -209,7 +211,7 @@ def gauss_fit_max(
                 f" area = {popt[2]:.4f}, {popt[5]:.4f}",
                 file=dump,
             )
-            print("\tFit goodness = " + str(goodness), file=dump)
+            print(f"\tFit coeff r^2 = {r_2}", file=dump)
     elif m_clean.shape[2] == 3:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print(
@@ -218,7 +220,7 @@ def gauss_fit_max(
                 f"area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}",
                 file=dump,
             )
-            print("\tFit goodness = " + str(goodness), file=dump)
+            print(f"\tFit coeff r^2 = {r_2}", file=dump)
 
     return state
 
@@ -363,7 +365,10 @@ def iterative_search(
         )
 
         if state is None:
-            print("* Iterations interrupted because fit does not converge. ")
+            with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+                print(
+                    "- Iterations interrupted because fit does not converge."
+                )
             break
 
         m_new, counter, env_0 = find_stable_trj(
@@ -378,7 +383,7 @@ def iterative_search(
         if counter <= 0.0:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "- Iterations interrupted because last state " "is empty.",
+                    "- Iterations interrupted because last state is empty.",
                     file=dump,
                 )
             break
@@ -403,7 +408,7 @@ def iterative_search(
 
 def timeseries_analysis(
     cl_ob: ClusteringObject2D, tau_w: int
-) -> Tuple[int, float]:
+) -> Tuple[int, float, List[float]]:
     """
     The clustering analysis to compute the dependence on time resolution.
 
@@ -445,12 +450,13 @@ def timeseries_analysis(
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print("* No possible classification was found.\n", file=dump)
         del tmp_cl_ob
-        return 1, 1.0
+        return 0, 1.0, [1.0]
 
-    fraction_0 = 1 - np.sum([state.perc for state in tmp_cl_ob.state_list])
+    list_of_pop = [state.perc for state in tmp_cl_ob.state_list]
+    fraction_0 = 1 - np.sum(list_of_pop)
+    list_of_pop.insert(0, fraction_0)
     n_states = len(tmp_cl_ob.state_list)
-    if one_last_state:
-        n_states += 1
+
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
             f"- Number of states identified: {n_states}, [{fraction_0}]\n",
@@ -458,7 +464,7 @@ def timeseries_analysis(
         )
 
     del tmp_cl_ob
-    return n_states, fraction_0
+    return n_states, fraction_0, list_of_pop
 
 
 def full_output_analysis(cl_ob: ClusteringObject2D):
@@ -519,13 +525,17 @@ def time_resolution_analysis(cl_ob: ClusteringObject2D):
 
     number_of_states = []
     fraction_0 = []
-    for tau_w in tau_window_list:
-        n_s, f_0 = timeseries_analysis(cl_ob, tau_w)
+    list_of_pop: List[List[float]] = [[] for _ in tau_window_list]
+
+    for i, tau_w in enumerate(tau_window_list):
+        n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w)
         number_of_states.append(n_s)
         fraction_0.append(f_0)
+        list_of_pop[i] = l_pop
 
     cl_ob.number_of_states = np.array(number_of_states)
     cl_ob.fraction_0 = np.array(fraction_0)
+    cl_ob.list_of_pop = list_of_pop
 
 
 def main(

@@ -37,6 +37,11 @@ def onion_uni(
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
 
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
+
     Returns
     -------
     state_list : List[StateUni]
@@ -50,6 +55,12 @@ def onion_uni(
         For each analyzed value in `tau_window_list`, it contains
         the number of clusters identified and the fraction of unclassified
         data points.
+
+    pop_list : List[List[float]]
+        For each analyzed value in `tau_window_list`, it contains
+        the fraction of data points contained in each state. So pop_list[i][j]
+        is the fraction of data points classified in the j-th state using the
+        i-th value of tau_window_list.
 
     Notes
     -----
@@ -106,6 +117,11 @@ class OnionUni:
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
 
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
+
     Attributes
     ----------
     state_list_ : List[StateUni]
@@ -119,6 +135,12 @@ class OnionUni:
         For each analyzed value in `tau_window_list`, it contains
         the number of clusters identified and the fraction of unclassified
         data points.
+
+    pop_list_ : List[List[float]]
+        For each analyzed value in `tau_window_list`, it contains
+        the fraction of data points contained in each state. So pop_list[i][j]
+        is the fraction of data points classified in the j-th state using the
+        i-th value of tau_window_list.
 
     Notes
     -----

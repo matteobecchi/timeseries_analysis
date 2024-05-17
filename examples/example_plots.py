@@ -448,13 +448,12 @@ def plot_medoids_multi(
         print("plot_medoids_multi() does not work with 3D data.")
         return
 
-    missing_zero = 0
     list_of_labels = np.unique(labels)
     if 0 not in list_of_labels:
         list_of_labels = np.insert(list_of_labels, 0, 0)
-        missing_zero = 1
 
     center_list = []
+    env0 = []
 
     for ref_label in list_of_labels:
         tmp = []
@@ -464,14 +463,25 @@ def plot_medoids_multi(
                 t_1 = (j + 1) * tau_window
                 if label == ref_label:
                     tmp.append(input_data.transpose(1, 2, 0)[i][t_0:t_1])
-        center_list.append(np.mean(tmp, axis=0))
+
+        if len(tmp) > 0 and ref_label > 0:
+            center_list.append(np.mean(tmp, axis=0))
+        elif len(tmp) > 0:
+            env0 = tmp
+
+    center_arr = np.array(center_list)
+    np.save(
+        "medoid_center.npy",
+        center_arr,
+    )
 
     palette = []
-    cmap = plt.get_cmap(COLORMAP, np.unique(labels).size)
+    cmap = plt.get_cmap(COLORMAP, list_of_labels.size)
     palette.append(rgb2hex(cmap(0)))
     for i in range(1, cmap.N):
         rgba = cmap(i)
         palette.append(rgb2hex(rgba))
+
     fig, axes = plt.subplots()
     for id_c, center in enumerate(center_list):
         sig_x = center[:, 0]
@@ -479,10 +489,20 @@ def plot_medoids_multi(
         axes.plot(
             sig_x,
             sig_y,
-            label=f"ENV{id_c + missing_zero}",
+            label=f"ENV{id_c + 1}",
             marker="o",
-            c=palette[id_c + missing_zero],
+            c=palette[id_c + 1],
         )
+    for window in env0:
+        axes.plot(
+            window.T[0],
+            window.T[1],
+            lw=0.1,
+            c=palette[0],
+            zorder=0,
+            alpha=0.25,
+        )
+
     fig.suptitle("Average time sequence inside each environments")
     axes.set_xlabel(r"Signal 1")
     axes.set_ylabel(r"Signal 2")
