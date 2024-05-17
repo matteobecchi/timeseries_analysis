@@ -232,7 +232,7 @@ def gauss_fit_max(
     #     )
 
     gap = 3
-    kde = gaussian_kde(flat_m, bw_method=0.5)
+    kde = gaussian_kde(flat_m)
     bins = np.linspace(np.min(flat_m), np.max(flat_m), 1000)
     counts = kde.evaluate(bins)
 
