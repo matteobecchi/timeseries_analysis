@@ -33,11 +33,11 @@ def test_output_files(setup_test_environment):
 
     ### Create the 'input_parameter.txt' file ###
     with open("input_parameters.txt", "w+", encoding="utf-8") as file:
-        print("tau_window\t" + str(TAU_WINDOW), file=file)
-        print("t_delay\t" + str(T_DELAY), file=file)
-        print("num_tau_w\t" + str(NUM_TAU_W), file=file)
-        print("max_tau_w\t" + str(MAX_TAU_W), file=file)
-        print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
+        print(f"tau_window\t{TAU_WINDOW}", file=file)
+        print(f"t_delay\t{T_DELAY}", file=file)
+        print(f"num_tau_w\t{NUM_TAU_W}", file=file)
+        print(f"max_tau_w\t{MAX_TAU_W}", file=file)
+        print(f"max_t_smooth\t{MAX_T_SMOOTH}", file=file)
 
     # Call your code to generate the output files
     tmp = onion.main(False)
