@@ -223,6 +223,7 @@ def gauss_fit_max(
     ### 3. Find the maximum ###
     max_val = counts.max()
     max_ind = counts.argmax()
+    gap = 3
 
     ### 4. Find the minima surrounding it ###
     min_id0 = np.max([max_ind - gap, 0])
