@@ -800,6 +800,62 @@ def find_max_prob_state(
     return new_label
 
 
+def find_max_prob_state_2d(
+    window: np.ndarray,
+    old_label: int,
+    list_of_states: List[StateMulti],
+) -> int:
+    """
+    Assign a single window to the state for which the belonging
+    is the most probable.
+
+    Parameters
+    ----------
+
+    window : np.ndarray of shape (tau_window, n_dim)
+        The signal window to assign to a state.
+
+    old_label : int
+        The temporary label for the considered signal window.
+
+    list_of_states : List[StateMulti]
+        List of the identified states.
+
+    Returns
+    -------
+
+    new_label : int
+        The label for the considered signal window.
+
+    Notes
+    -----
+
+    I am using the meadian here, instead of the mean, because it's more
+    robust against outliers. Not sure if this is the best chioce.
+    """
+    median_x = np.median(window, axis=0)
+    new_label = old_label
+    state = list_of_states[old_label - 1]
+    gauss_max = [
+        gaussian(median_x[k], state.mean[k], state.sigma[k], state.area[k])
+        for k in range(median_x.size)
+    ]
+    max_val = 1.0
+    for g_comp in gauss_max:
+        max_val *= float(g_comp)
+    for i, state in enumerate(list_of_states):
+        gauss = [
+            gaussian(median_x[k], state.mean[k], state.sigma[k], state.area[k])
+            for k in range(median_x.size)
+        ]
+        gauss_val = 1.0
+        for g_comp in gauss:
+            gauss_val *= float(g_comp)
+        if gauss_val > max_val:
+            new_label = i + 1
+    return new_label
+
+
 def max_prob_assignment(
     list_of_states: List[StateUni],
     matrix: np.ndarray,
@@ -873,6 +929,92 @@ def max_prob_assignment(
     )
 
     return final_labels, updated_states
+
+
+def max_prob_assignment_2d(
+    list_of_states: List[StateMulti],
+    matrix: np.ndarray,
+    all_the_labels: np.ndarray,
+    tau_window: int,
+    number_of_sigmas: float,
+) -> Tuple[np.ndarray, List[StateMulti]]:
+    """
+    After all the states have been identified, assign each window.
+    Each signal window is assigned to the most probable state.
+
+    Parameters
+    ----------
+
+    list_of_states : List[StateMulti]
+        List of the identified states.
+
+    matrix : np.ndarray of shape (num_of_particles, num_of_timesteps, n_dim)
+        The data to cluster.
+
+    all_the_labels : np.ndarray of shape (num_of_particles, num_of_windows)
+        The temporary labels assigned to the signal windows.
+
+    tau_window : int
+        The time resolution of the analysis.
+
+    Returns
+    -------
+
+    final_labels : np.ndarray of shape (num_of_particles, num_of_windows)
+        The definitive labels for all the signal windows.
+
+    updated_states : List[StateMulti]
+        List of the identified states, with updated percetages.
+    """
+    final_labels = np.zeros(all_the_labels.shape, dtype=int)
+    for i, mol in enumerate(all_the_labels):
+        for j, old_label in enumerate(mol):
+            if old_label > 0:
+                window = matrix[i][tau_window * j : tau_window * (j + 1)]
+                new_label = find_max_prob_state_2d(
+                    window, old_label, list_of_states
+                )
+                s_range = (
+                    2.0
+                    * number_of_sigmas
+                    * list_of_states[new_label - 1].sigma
+                )
+                if np.all(
+                    [
+                        np.max(window[:, k]) - np.min(window[:, k])
+                        < s_range[k]
+                        for k in range(window.shape[1])
+                    ]
+                ):
+                    final_labels[i][j] = new_label
+
+    for i, state in enumerate(list_of_states):
+        num_of_points = np.sum(final_labels == i + 1)
+        state.perc = num_of_points / final_labels.size
+
+    states_to_remove = []
+    for i, state in enumerate(list_of_states):
+        if state.perc == 0.0:
+            states_to_remove.append(i)
+
+    for i in states_to_remove[::-1]:
+        list_of_states.pop(i)
+
+    ### Print informations on the final states ###
+    with open("final_states.txt", "w", encoding="utf-8") as file:
+        print("#center_coords, semiaxis, fraction_of_data", file=file)
+        for state in list_of_states:
+            centers = "[" + str(state.mean[0]) + ", "
+            for tmp in state.mean[1:-1]:
+                centers += str(tmp) + ", "
+            centers += str(state.mean[-1]) + "]"
+            axis = "[" + str(state.axis[0]) + ", "
+            for tmp in state.axis[1:-1]:
+                axis += str(tmp) + ", "
+            axis += str(state.axis[-1]) + "]"
+            print(centers, axis, state.perc, file=file)
+
+    return final_labels, list_of_states
 
 
 def relabel_states_2d(
@@ -988,19 +1130,5 @@ def relabel_states_2d(
     for st_id, state in enumerate(updated_states):
         num_of_points = np.sum(all_the_labels == st_id + 1)
         state.perc = num_of_points / all_the_labels.size
-
-    ### Step 4: print informations on the final states
-    with open("final_states.txt", "w", encoding="utf-8") as file:
-        print("#center_coords, semiaxis, fraction_of_data", file=file)
-        for state in updated_states:
-            centers = "[" + str(state.mean[0]) + ", "
-            for tmp in state.mean[1:-1]:
-                centers += str(tmp) + ", "
-            centers += str(state.mean[-1]) + "]"
-            axis = "[" + str(state.axis[0]) + ", "
-            for tmp in state.axis[1:-1]:
-                axis += str(tmp) + ", "
-            axis += str(state.axis[-1]) + "]"
-            print(centers, axis, state.perc, file=file)
 
     return all_the_labels, updated_states

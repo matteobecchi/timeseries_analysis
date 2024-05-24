@@ -19,6 +19,7 @@ from onion_clustering.functions import (
     custom_fit,
     find_half_height_around_max,
     find_minima_around_max,
+    max_prob_assignment_2d,
     moving_average_2d,
     param_grid,
     read_input_data,
@@ -473,6 +474,18 @@ def iterative_search(
 
     cl_ob.iterations = len(states_list)
     all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
+
+    ############################################
+    ### Here to insert probab_reassigmnet_2d ###
+    all_the_labels, list_of_states = max_prob_assignment_2d(
+        list_of_states,
+        cl_ob.data.matrix,
+        all_the_labels,
+        tau_w,
+        cl_ob.number_of_sigmas,
+    )
+    ############################################
+
     cl_ob.data.labels = all_the_labels
     cl_ob.states = list_of_states
     return cl_ob, one_last_state
