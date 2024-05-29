@@ -50,14 +50,13 @@ The `main_2d.py` algorithm works in a similar fashion, taking as input 2D or 3D 
 `matplotlib`, `numpy`, `plotly`, `scipy`. 
 
 ## Gaussian fitting procedure
-1. The histogram of the time-series is computed, using the `bins='auto'` numpy option (unless a different `bins` is passed as imput parameter). 
-2. The histogram is smoothed with moving average with a window proportional to the number of bins (unless there are less that 50 bins, in wich case no smoothing occurs). 
-3. The absolute maximum of the histogram is found. 
-4. Two Gaussian fits are performed:
+1. The histogram of the time-series is estimated using scipy.stats.gauss_kde.
+2. The absolute maximum of the histogram is found. 
+3. Two Gaussian fits are performed:
  * The first one inside the interval between the two minima surrounding the maximum. 
  * The second one inside the interval where the peak around the maxima has its half height. 
-5. Both fits, if converged, are evaluated according to the coefficinet of determination r^2. 
-6. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops, returning a warning message. 
+4. Both fits, if converged, are evaluated according to the coefficinet of determination r^2. 
+5. Finally, the fit with the best score is chosen. If only one of the two converged, that one is chosen. If none of the fits converges, the iterative procedure stops, returning a warning message. 
 
 ## Aknowledgements
 Thanks to Andrew Tarzia for all the help with the code formatting and documentation, and to Domiziano Doria, Chiara Lionello and Simone Martino for the beta-testing. Writing all this code wouldn't have been possible without the help of ChatGPT. 
