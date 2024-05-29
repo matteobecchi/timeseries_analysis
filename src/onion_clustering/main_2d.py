@@ -418,9 +418,10 @@ def find_stable_trj(
 
     # Convert the list of non-stable windows to a NumPy array
     m_new_arr = np.array(m_new)
-    m_new_arr = m_new_arr.reshape(
-        m_new_arr.shape[0] * m_new_arr.shape[1], m_new_arr.shape[2]
-    )
+    if m_new_arr.size > 0:
+        m_new_arr = m_new_arr.reshape(
+            m_new_arr.shape[0] * m_new_arr.shape[1], m_new_arr.shape[2]
+        )
     one_last_state = True
     if len(m_new_arr) == 0:
         one_last_state = False
