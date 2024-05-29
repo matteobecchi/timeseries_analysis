@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.image import NonUniformImage
 from matplotlib.patches import Ellipse
+from scipy.stats import gaussian_kde
 
 from onion_clustering.classes import ClusteringObject2D
 from onion_clustering.first_classes import MultiData, Parameters, StateMulti
@@ -20,7 +21,6 @@ from onion_clustering.functions import (
     find_half_height_around_max,
     find_minima_around_max,
     max_prob_assignment_2d,
-    moving_average_2d,
     param_grid,
     read_input_data,
     relabel_states_2d,
@@ -104,26 +104,46 @@ def gauss_fit_max(
         or None if the fit fails.
     """
     print("* Gaussian fit...")
-    flat_m = m_clean.reshape(
-        (m_clean.shape[0] * m_clean.shape[1], m_clean.shape[2])
-    )
 
-    ### 1. Histogram with 'auto' binning ###
-    if bins == "auto":
-        bins = max(int(np.power(m_clean.size, 1 / 3) * 2), 10)
-    counts, edges = np.histogramdd(flat_m, bins=bins, density=True)
-    gap = 1
-    edges_sides = np.array([e.size for e in edges])
-    if np.all(edges_sides > 49):
-        # gap = 3
-        gap = int(np.min(edges_sides) * 0.02) * 2
-        if gap % 2 == 0:
-            gap += 1
+    ### 1. Create the histogram with KDE estimator ###
+    if m_clean.ndim == 3:
+        flat_m = m_clean.reshape(
+            m_clean.shape[0] * m_clean.shape[1], m_clean.shape[2]
+        ).T
+    elif m_clean.ndim == 2:
+        flat_m = m_clean.T
 
-    ### 2. Smoothing with gap ###
-    counts = moving_average_2d(counts, gap)
+    lims = np.zeros((flat_m.shape[0], 2))
+    for i, data in enumerate(flat_m):
+        lims[i][0] = np.min(data)
+        lims[i][1] = np.max(data)
 
-    ### 3. Find the maximum ###
+    try:
+        if flat_m.shape[0] == 2:
+            X, Y = np.mgrid[
+                lims[0][0] : lims[0][1] : 100j, lims[1][0] : lims[1][1] : 100j
+            ]
+            edges = np.array([X[:, 0], Y[0, :]])
+            positions = np.vstack([X.ravel(), Y.ravel()])
+            values = np.vstack([flat_m[0], flat_m[1]])
+            kernel = gaussian_kde(values)
+            counts = np.reshape(kernel(positions).T, X.shape)
+        elif flat_m.shape[0] == 3:
+            X, Y, Z = np.mgrid[
+                lims[0][0] : lims[0][1] : 100j,
+                lims[1][0] : lims[1][1] : 100j,
+                lims[2][0] : lims[2][1] : 100j,
+            ]
+            edges = np.array([X[:, :, 0], Y[:, 0, :], Z[0, :, :]])
+            positions = np.vstack([X.ravel(), Y.ravel(), Z.ravel()])
+            values = np.vstack([flat_m[0], flat_m[1], flat_m[2]])
+            kernel = gaussian_kde(values)
+            counts = np.reshape(kernel(positions).T, X.shape)
+    except np.linalg.LinAlgError:
+        print("\tWARNING: not enough data for KDE.")
+        return None
+
+    ### 2. Find the maximum ###
     def find_max_index(data: np.ndarray):
         max_val = data.max()
         max_indices = np.argwhere(data == max_val)
@@ -131,43 +151,40 @@ def gauss_fit_max(
 
     max_ind = find_max_index(counts)
 
-    ### 4. Find the minima surrounding it ###
+    ### 3. Find the minima surrounding it ###
+    gap = 3
     minima = find_minima_around_max(counts, max_ind, gap)
 
-    ### 5. Try the fit between the minima and check its quality ###
+    ### 4. Try the fit between the minima and check its quality ###
     popt_min: List[float] = []
-    det_coeff_min = 0.0
-    for dim in range(m_clean.shape[2]):
-        try:
-            flag_min, r2_min, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, m_limits
-            )
-            popt[2] *= flat_m.T[0].size
-            popt_min.extend(popt)
-            det_coeff_min += r2_min
-        except RuntimeError:
-            popt_min = []
-            flag_min = False
+    det_coeff_min = 1.0
+    flag_min = 1
+    for dim in range(flat_m.shape[0]):
+        tmp_flag_min, r2_min, popt = custom_fit(
+            dim, max_ind[dim], minima, edges[dim], counts, lims
+        )
+        popt[2] *= flat_m[0].size
+        popt_min.extend(popt)
+        det_coeff_min *= r2_min
+        flag_min *= tmp_flag_min
 
-    ### 6. Find the interval of half height ###
+    ### 5. Find the interval of half height ###
     minima = find_half_height_around_max(counts, max_ind, gap)
 
-    ### 7. Try the fit between the minima and check its quality ###
+    ### 6. Try the fit between the minima and check its quality ###
     popt_half: List[float] = []
-    det_coeff_half = 0.0
-    for dim in range(m_clean.shape[2]):
-        try:
-            flag_half, r2_half, popt = custom_fit(
-                dim, max_ind[dim], minima, edges[dim], counts, m_limits
-            )
-            popt[2] *= flat_m.T[0].size
-            popt_half.extend(popt)
-            det_coeff_half += r2_half
-        except RuntimeError:
-            popt_half = []
-            flag_half = False
+    det_coeff_half = 1.0
+    flag_half = 1
+    for dim in range(flat_m.shape[0]):
+        tmp_flag_half, r2_half, popt = custom_fit(
+            dim, max_ind[dim], minima, edges[dim], counts, lims
+        )
+        popt[2] *= flat_m[0].size
+        popt_half.extend(popt)
+        det_coeff_half *= r2_half
+        flag_half *= tmp_flag_half
 
-    ### 8. Choose the best fit ###
+    ### 7. Choose the best fit ###
     r2 = det_coeff_min
     if flag_min == 1 and flag_half == 0:
         popt = np.array(popt_min)
@@ -184,13 +201,13 @@ def gauss_fit_max(
         print("\tWARNING: this fit is not converging.")
         return None
 
-    if len(popt) != m_clean.shape[2] * 3:
+    if len(popt) != flat_m.shape[0] * 3:
         print("\tWARNING: this fit is not converging.")
         return None
 
     ### Find the tresholds for state identification
     mean, sigma, area = [], [], []
-    for dim in range(m_clean.shape[2]):
+    for dim in range(flat_m.shape[0]):
         mean.append(popt[3 * dim])
         sigma.append(popt[3 * dim + 1])
         area.append(popt[3 * dim + 2])
@@ -198,7 +215,7 @@ def gauss_fit_max(
     state.build_boundaries(number_of_sigmas)
 
     ### Plot the distribution and the fitted Gaussians
-    if m_clean.shape[2] == 2:
+    if flat_m.shape[0] == 2:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
             print("\n", file=file)
             print(
@@ -216,8 +233,8 @@ def gauss_fit_max(
         if full_out:
             fig, ax = plt.subplots(figsize=(6, 6))
             img = NonUniformImage(ax, interpolation="nearest")
-            xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-            ycenters = (edges[1][:-1] + edges[1][1:]) / 2
+            xcenters = (edges[0] + edges[0]) / 2
+            ycenters = (edges[1] + edges[1]) / 2
             img.set_data(xcenters, ycenters, counts.T)
             ax.add_image(img)
             ax.scatter(mean[0], mean[1], s=8.0, c="red")
@@ -239,7 +256,7 @@ def gauss_fit_max(
             fig.savefig(filename + ".png", dpi=600)
             plt.close(fig)
 
-    elif m_clean.shape[2] == 3:
+    elif flat_m.shape[0] == 3:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as file:
             print("\n", file=file)
             print(
@@ -257,9 +274,9 @@ def gauss_fit_max(
 
         if full_out:
             fig, ax = plt.subplots(2, 2, figsize=(6, 6))
-            xcenters = (edges[0][:-1] + edges[0][1:]) / 2
-            ycenters = (edges[1][:-1] + edges[1][1:]) / 2
-            zcenters = (edges[2][:-1] + edges[2][1:]) / 2
+            xcenters = (edges[0] + edges[0]) / 2
+            ycenters = (edges[1] + edges[1]) / 2
+            zcenters = (edges[2] + edges[2]) / 2
 
             img = NonUniformImage(ax[0][0], interpolation="nearest")
             img.set_data(xcenters, ycenters, np.sum(counts, axis=0))
@@ -401,6 +418,9 @@ def find_stable_trj(
 
     # Convert the list of non-stable windows to a NumPy array
     m_new_arr = np.array(m_new)
+    m_new_arr = m_new_arr.reshape(
+        m_new_arr.shape[0] * m_new_arr.shape[1], m_new_arr.shape[2]
+    )
     one_last_state = True
     if len(m_new_arr) == 0:
         one_last_state = False
