@@ -20,7 +20,6 @@ from onion_clustering.first_classes import Parameters, StateUni, UniData
 from onion_clustering.functions import (
     gaussian,
     max_prob_assignment,
-    moving_average,
     param_grid,
     plot_histo,
     read_input_data,
@@ -217,7 +216,7 @@ def gauss_fit_max(
 
     ### 1. Histogram ###
     kde = gaussian_kde(flat_m)
-    bins = np.linspace(np.min(flat_m), np.max(flat_m), 1000)
+    bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
     counts = kde.evaluate(bins)
 
     ### 3. Find the maximum ###
@@ -443,24 +442,30 @@ def solve_batman(
     flat_m = m_clean.flatten()
 
     ### 1. Histogram ###
-    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
-    gap = 1
-    if bins.size > 99:
-        gap = int(bins.size * 0.02)
-    print(f"\tNumber of bins = {bins.size}, gap = {gap}")
+    kde = gaussian_kde(flat_m)
+    bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
+    counts = kde.evaluate(bins)
 
-    ### 2. Smoothing with tau = 3 ###
-    counts = moving_average(counts, gap)
-    bins = moving_average(bins, gap)
-    if (counts == 0.0).any():
-        print(
-            "\tWARNING: there are empty bins. "
-            "Consider reducing the number of bins."
-        )
+    # ### 1. Histogram ###
+    # counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+    # gap = 1
+    # if bins.size > 99:
+    #     gap = int(bins.size * 0.02)
+    # print(f"\tNumber of bins = {bins.size}, gap = {gap}")
+
+    # ### 2. Smoothing with tau = 3 ###
+    # counts = moving_average(counts, gap)
+    # bins = moving_average(bins, gap)
+    # if (counts == 0.0).any():
+    #     print(
+    #         "\tWARNING: there are empty bins. "
+    #         "Consider reducing the number of bins."
+    #     )
 
     ### 3. Find the maxima ###
     max_ind, _ = scipy.signal.find_peaks(counts)
     max_val = np.array([counts[i] for i in max_ind])
+    gap = 3
 
     for i, m_ind in enumerate(max_ind[:1]):
         ### 4. Find the minima surrounding it ###

@@ -340,7 +340,7 @@ def custom_fit(
     counts : np.ndarray
         Array containing histogram counts.
 
-    m_limits : list[list[int]]
+    m_limits : np.ndarray of shape (n_dims, 2)
         List of min and max limits for each dimension.
 
     Returns
