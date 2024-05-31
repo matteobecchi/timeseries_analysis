@@ -216,7 +216,7 @@ def gauss_fit_max(
 
     ### 1. Histogram ###
     kde = gaussian_kde(flat_m)
-    bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
+    bins = np.linspace(np.min(flat_m), np.max(flat_m), par.bins)
     counts = kde.evaluate(bins)
 
     ### 3. Find the maximum ###
@@ -446,29 +446,13 @@ def solve_batman(
     bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
     counts = kde.evaluate(bins)
 
-    # ### 1. Histogram ###
-    # counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
-    # gap = 1
-    # if bins.size > 99:
-    #     gap = int(bins.size * 0.02)
-    # print(f"\tNumber of bins = {bins.size}, gap = {gap}")
-
-    # ### 2. Smoothing with tau = 3 ###
-    # counts = moving_average(counts, gap)
-    # bins = moving_average(bins, gap)
-    # if (counts == 0.0).any():
-    #     print(
-    #         "\tWARNING: there are empty bins. "
-    #         "Consider reducing the number of bins."
-    #     )
-
-    ### 3. Find the maxima ###
+    ### 2. Find the maxima ###
     max_ind, _ = scipy.signal.find_peaks(counts)
     max_val = np.array([counts[i] for i in max_ind])
     gap = 3
 
     for i, m_ind in enumerate(max_ind[:1]):
-        ### 4. Find the minima surrounding it ###
+        ### 3. Find the minima surrounding it ###
         min_id0 = np.max([m_ind - gap, 0])
         min_id1 = np.min([m_ind + gap, counts.size - 1])
         while min_id0 > 0 and counts[min_id0] > counts[min_id0 - 1]:
@@ -478,14 +462,14 @@ def solve_batman(
         ):
             min_id1 += 1
 
-        ### 5. Try the fit between the minima and check its goodness ###
+        ### 4. Try the fit between the minima and check its goodness ###
         fit_param = [min_id0, min_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
         flag_min, r_2_min, popt_min, _ = perform_gauss_fit(
             fit_param, fit_data, "Min"
         )
 
-        ### 6. Find the inrterval of half height ###
+        ### 5. Find the inrterval of half height ###
         half_id0 = np.max([m_ind - gap, 0])
         half_id1 = np.min([m_ind + gap, counts.size - 1])
         while half_id0 > 0 and counts[half_id0] > max_val[i] / 2:
@@ -493,14 +477,14 @@ def solve_batman(
         while half_id1 < counts.size - 1 and counts[half_id1] > max_val[i] / 2:
             half_id1 += 1
 
-        ### 7. Try the fit between the minima and check its goodness ###
+        ### 6. Try the fit between the minima and check its goodness ###
         fit_param = [half_id0, half_id1, m_ind, flat_m.size]
         fit_data = [bins, counts]
         flag_half, r_2_half, popt_half, _ = perform_gauss_fit(
             fit_param, fit_data, "Half"
         )
 
-        ### 8. Choose the best fit ###
+        ### 7. Choose the best fit ###
         if flag_min == 1 and flag_half == 0:
             popt = popt_min
         elif flag_min == 0 and flag_half == 1:

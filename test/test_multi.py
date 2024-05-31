@@ -3,6 +3,18 @@ import os
 import pytest
 from onion_clustering import main_2d
 
+### Set all the analysis parameters ###
+PATH_TO_INPUT_DATA = (
+    "/Users/mattebecchi/00_signal_analysis/data/"
+    "synthetic_2D/3D_synthetic_data.npy"
+)
+TAU_WINDOW = 10
+T_CONV = 200
+T_UNITS = "dt"
+NUM_TAU_W = 2
+MAX_TAU_W = 10
+MAX_T_SMOOTH = 2
+
 
 # Define a fixture to set up the test environment
 @pytest.fixture
@@ -18,32 +30,18 @@ def setup_test_environment(tmpdir):
 
 # Define the actual test
 def test_output_files(setup_test_environment):
-    ### Set all the analysis parameters ###
-    PATH_TO_INPUT_DATA = (
-        "/Users/mattebecchi/00_signal_analysis/data/"
-        "synthetic_2D/3D_synthetic_data.npy"
-    )
-    TAU_WINDOW = 10
-    T_CONV = 200
-    T_UNITS = "dt"
-    NUM_TAU_W = 2
-    MAX_TAU_W = 10
-    MAX_T_SMOOTH = 2
-    BINS = 50
-
     ### Create the 'data_directory.txt' file ###
     with open("data_directory.txt", "w+", encoding="utf-8") as file:
         print(PATH_TO_INPUT_DATA, file=file)
 
     ### Create the 'input_parameter.txt' file ###
     with open("input_parameters.txt", "w+", encoding="utf-8") as file:
-        print("tau_window\t" + str(TAU_WINDOW), file=file)
-        print("t_conv\t" + str(T_CONV), file=file)
-        print("t_units\t" + T_UNITS, file=file)
-        print("num_tau_w\t" + str(NUM_TAU_W), file=file)
-        print("max_tau_w\t" + str(MAX_TAU_W), file=file)
-        print("max_t_smooth\t" + str(MAX_T_SMOOTH), file=file)
-        print("bins\t" + str(BINS), file=file)
+        print(f"tau_window\t{TAU_WINDOW}", file=file)
+        print(f"t_conv\t{T_CONV}", file=file)
+        print(f"t_units\t{T_UNITS}", file=file)
+        print(f"num_tau_w\t{NUM_TAU_W}", file=file)
+        print(f"max_tau_w\t{MAX_TAU_W}", file=file)
+        print(f"max_t_smooth\t{MAX_T_SMOOTH}", file=file)
 
     # Call your code to generate the output files
     tmp = main_2d.main()

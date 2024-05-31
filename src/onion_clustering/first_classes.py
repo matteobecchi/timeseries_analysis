@@ -3,7 +3,6 @@ Contains the classes used for storing parameters and system states.
 """
 
 import copy
-from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -508,7 +507,7 @@ class Parameters:
         self.t_conv = 1.0
         self.t_units = "[frames]"
         self.example_id = 0
-        self.bins: Union[str, int] = "auto"
+        self.bins = 100
         self.num_tau_w = 20
         self.min_tau_w = 2
         self.max_tau_w = -1

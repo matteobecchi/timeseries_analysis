@@ -66,7 +66,7 @@ def all_the_input_stuff(number_of_sigmas: float) -> ClusteringObject2D:
 def gauss_fit_max(
     m_clean: np.ndarray,
     m_limits: np.ndarray,
-    bins: Union[int, str],
+    bins: int,
     number_of_sigmas: float,
     filename: str,
     full_out: bool,
@@ -83,8 +83,8 @@ def gauss_fit_max(
     m_limits : list[list[int]]
         List containing minimum and maximum values for each dimension.
 
-    bins : Union[int, str]
-        Number of bins for histograms or 'auto' for automatic binning.
+    bins : int
+        Number of bins for histograms.
 
     number_of_sigmas : float
         To set the thresholds for assigning windows to the state.
@@ -121,7 +121,8 @@ def gauss_fit_max(
     try:
         if flat_m.shape[0] == 2:
             X, Y = np.mgrid[
-                lims[0][0] : lims[0][1] : 100j, lims[1][0] : lims[1][1] : 100j
+                lims[0][0] : lims[0][1] : complex(0, bins),
+                lims[1][0] : lims[1][1] : complex(0, bins),
             ]
             edges = np.array([X[:, 0], Y[0, :]])
             positions = np.vstack([X.ravel(), Y.ravel()])
@@ -130,9 +131,9 @@ def gauss_fit_max(
             counts = np.reshape(kernel(positions).T, X.shape)
         elif flat_m.shape[0] == 3:
             X, Y, Z = np.mgrid[
-                lims[0][0] : lims[0][1] : 100j,
-                lims[1][0] : lims[1][1] : 100j,
-                lims[2][0] : lims[2][1] : 100j,
+                lims[0][0] : lims[0][1] : complex(0, bins),
+                lims[1][0] : lims[1][1] : complex(0, bins),
+                lims[2][0] : lims[2][1] : complex(0, bins),
             ]
             edges = np.array([X[:, :, 0], Y[:, 0, :], Z[0, :, :]])
             positions = np.vstack([X.ravel(), Y.ravel(), Z.ravel()])
@@ -185,18 +186,18 @@ def gauss_fit_max(
         flag_half *= tmp_flag_half
 
     ### 7. Choose the best fit ###
-    r2 = det_coeff_min
+    r_2 = det_coeff_min
     if flag_min == 1 and flag_half == 0:
         popt = np.array(popt_min)
     elif flag_min == 0 and flag_half == 1:
         popt = np.array(popt_half)
-        r2 = det_coeff_half
+        r_2 = det_coeff_half
     elif flag_min * flag_half == 1:
         if det_coeff_min >= det_coeff_half:
             popt = np.array(popt_min)
         else:
             popt = np.array(popt_half)
-            r2 = det_coeff_half
+            r_2 = det_coeff_half
     else:
         print("\tWARNING: this fit is not converging.")
         return None
@@ -228,7 +229,7 @@ def gauss_fit_max(
                 f" area = {popt[2]:.4f}, {popt[5]:.4f}",
                 file=file,
             )
-            print(f"\tFit r2 = {r2}", file=file)
+            print(f"\tFit r2 = {r_2}", file=file)
 
         if full_out:
             fig, ax = plt.subplots(figsize=(6, 6))
@@ -270,7 +271,7 @@ def gauss_fit_max(
                 f"area = {popt[2]:.4f}, {popt[5]:.4f}, {popt[8]:.4f}",
                 file=file,
             )
-            print(f"\tFit r2 = {r2}", file=file)
+            print(f"\tFit r2 = {r_2}", file=file)
 
         if full_out:
             fig, ax = plt.subplots(2, 2, figsize=(6, 6))
