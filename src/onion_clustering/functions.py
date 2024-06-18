@@ -216,6 +216,39 @@ def gaussian(
     )
 
 
+def gaussian_2d(
+    r_points: np.ndarray, r_mean: np.ndarray, sigma: np.ndarray, peak: float
+) -> np.ndarray:
+    """Compute the bi-dimensional Gaussian function at given point 'r'.
+
+    Parameters
+    ----------
+
+    x_points : np.ndarray
+        Array of input values.
+
+    x_mean : np.ndarray
+        Mean (x, y) value of the Gaussian function.
+
+    sigma : np.ndarray
+        S_00^2, S_11^2 and S_01^2 coefficients of the Gaussian function.
+
+    peak : float
+        Maximum value of the Gaussian curve.
+
+    Returns
+    -------
+
+    np.ndarray
+        Gaussian function values computed at the input points.
+    """
+    r_shift = r_points - r_mean
+    exponent = r_shift[0]**2 / sigma[0]
+    exponent += r_shift[1]**2 / sigma[1]
+    exponent += 2 * r_shift[0]*r_shift[1] / sigma[2]
+    return np.exp(-exponent) * peak
+
+
 def find_minima_around_max(
     data: np.ndarray, max_ind: Tuple[int, ...], gap: int
 ):
