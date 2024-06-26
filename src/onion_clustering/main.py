@@ -216,7 +216,10 @@ def gauss_fit_max(
 
     ### 1. Histogram ###
     kde = gaussian_kde(flat_m)
-    bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
+    if par.bins == "auto":
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
+    else:
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), int(par.bins))
     counts = kde.evaluate(bins)
 
     ### 3. Find the maximum ###

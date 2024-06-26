@@ -12,6 +12,7 @@ from matplotlib.colors import rgb2hex
 from matplotlib.patches import Ellipse
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.stats import gaussian_kde
 
 from onion_clustering.first_classes import (
     MultiData,
@@ -393,16 +394,17 @@ class ClusteringObject1D(ClusteringObject):
         # Flatten the m_clean matrix and compute histogram counts and bins
         m_clean = self.data.matrix
         flat_m = m_clean.flatten()
-        binning = self.par.bins
-        counts, bins = np.histogram(flat_m, bins=binning, density=True)
+
+        kde = gaussian_kde(flat_m)
+        if self.par.bins == "auto":
+            n_bins = 100
+        else:
+            n_bins = int(self.par.bins)
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), n_bins)
+        counts = kde.evaluate(bins)
+
         bins -= (bins[1] - bins[0]) / 2
         counts *= flat_m.size
-
-        gap = 1
-        if bins.size > 49:
-            gap = int(bins.size * 0.02) * 2
-        counts = moving_average(counts, gap)
-        bins = moving_average(bins, gap)
 
         # Create a plot with two subplots (side-by-side)
         fig, axes = plt.subplots(
@@ -414,7 +416,8 @@ class ClusteringObject1D(ClusteringObject):
         )
 
         # Plot histogram in the second subplot (right side)
-        axes[1].stairs(counts, bins, fill=True, orientation="horizontal")
+        width = bins[1] - bins[0]
+        axes[1].stairs(counts[:-1], bins, fill=True, orientation="horizontal")
 
         # Plot the individual trajectories in the first subplot (left side)
         time = self.par.print_time(m_clean.shape[1])
@@ -426,9 +429,10 @@ class ClusteringObject1D(ClusteringObject):
 
         # Set labels and titles for the plots
         axes[0].set_ylabel("Signal")
-        axes[0].set_xlabel(r"Simulation time $t$ " + self.par.t_units)
+        axes[0].set_xlabel(rf"Simulation time $t$ {self.par.t_units}")
         axes[1].set_xticklabels([])
 
+        plt.show()
         fig.savefig("output_figures/Fig0.png", dpi=600)
         plt.close(fig)
 
