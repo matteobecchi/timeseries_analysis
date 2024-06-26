@@ -567,13 +567,14 @@ class ClusteringObject1D(ClusteringObject):
                 color=palette[state_id],
                 alpha=0.25,
             )
-        axes[1].hlines(
-            self.states[-1].th_sup[0],
-            xmin=0.0,
-            xmax=np.amax(counts),
-            linestyle=linestyle,
-            color="black",
-        )
+        if len(self.states) > 0:
+            axes[1].hlines(
+                self.states[-1].th_sup[0],
+                xmin=0.0,
+                xmax=np.amax(counts),
+                linestyle=linestyle,
+                color="black",
+            )
 
         # Set plot titles and axis labels
         axes[0].set_ylabel("Signal")
