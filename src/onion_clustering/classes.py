@@ -253,7 +253,7 @@ class ClusteringObject:
                         )
                     i += num_of_particles + 2
         else:
-            print("No " + trj_file + " found for coloring the trajectory.")
+            print(f"No {trj_file} found for coloring the trajectory.")
 
     def print_labels(self):
         """
