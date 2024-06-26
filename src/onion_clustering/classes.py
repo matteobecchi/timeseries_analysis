@@ -23,7 +23,6 @@ from onion_clustering.first_classes import (
 )
 from onion_clustering.functions import (
     gaussian,
-    moving_average,
 )
 
 COLORMAP = "viridis"
@@ -416,7 +415,6 @@ class ClusteringObject1D(ClusteringObject):
         )
 
         # Plot histogram in the second subplot (right side)
-        width = bins[1] - bins[0]
         axes[1].stairs(counts[:-1], bins, fill=True, orientation="horizontal")
 
         # Plot the individual trajectories in the first subplot (left side)
@@ -432,7 +430,6 @@ class ClusteringObject1D(ClusteringObject):
         axes[0].set_xlabel(rf"Simulation time $t$ {self.par.t_units}")
         axes[1].set_xticklabels([])
 
-        plt.show()
         fig.savefig("output_figures/Fig0.png", dpi=600)
         plt.close(fig)
 
@@ -481,15 +478,24 @@ class ClusteringObject1D(ClusteringObject):
 
         # Compute histogram of flattened self.data.matrix
         flat_m = self.data.matrix.flatten()
-        counts, bins = np.histogram(flat_m, bins=self.par.bins, density=True)
+
+        kde = gaussian_kde(flat_m)
+        if self.par.bins == "auto":
+            n_bins = 100
+        else:
+            n_bins = int(self.par.bins)
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), n_bins)
+        counts = kde.evaluate(bins)
+
+        # counts, bins = np.histogram(flat_m, bins=self.par.bins, density=True)
         bins -= (bins[1] - bins[0]) / 2
         counts *= flat_m.size
 
-        gap = 1
-        if bins.size > 49:
-            gap = int(bins.size * 0.02) * 2
-        counts = moving_average(counts, gap)
-        bins = moving_average(bins, gap)
+        # gap = 1
+        # if bins.size > 49:
+        #     gap = int(bins.size * 0.02) * 2
+        # counts = moving_average(counts, gap)
+        # bins = moving_average(bins, gap)
 
         # Create a 1x2 subplots with shared y-axis
         fig, axes = plt.subplots(
@@ -502,7 +508,7 @@ class ClusteringObject1D(ClusteringObject):
 
         # Plot the histogram on the right subplot (axes[1])
         axes[1].stairs(
-            counts, bins, fill=True, orientation="horizontal", alpha=0.5
+            counts[:-1], bins, fill=True, orientation="horizontal", alpha=0.5
         )
 
         # Create a color palette for plotting states
