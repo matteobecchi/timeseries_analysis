@@ -138,8 +138,9 @@ class UniData:
         self.matrix = matrix
         self.num_of_particles = self.matrix.shape[0]
         self.num_of_steps = self.matrix.shape[1]
-        self.range = np.array([np.min(self.matrix), np.max(self.matrix)])
         self.labels = np.array([])
+        if matrix.size > 0:
+            self.range = np.array([np.min(self.matrix), np.max(self.matrix)])
 
 
 class MultiData:

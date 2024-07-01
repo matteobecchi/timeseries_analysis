@@ -18,7 +18,7 @@ def setup_test_environment(tmpdir):
 
 
 # Define the actual test
-def test_output_files(setup_test_environment):
+def test_output_files():
     ### Set all the analysis parameters ###
     FILE = "water_coex_100ps_1nm_LENS.npy"
     PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/" + FILE

@@ -1,0 +1,29 @@
+* Tau_w used: [2, 3] 
+
+* tau_window = 2
+- Iteration 0
+	Number of bins = 8, gap = 1
+	Min fit: Optimize warning.
+	mu = 1.5049 (0.0658), sigma = 0.7495 (0.1189), area = 41.4461 (5.0393)
+	Fit r2 = 0.9242586439254704
+	Fraction of windows in state 1 = 1.0
+- Iteration 1
+	WARNING: not able to compute histogram.
+- Iterations interrupted because fit does not converge.
+* Number of states identified: 1 [0.25]
+
+* tau_window = 3
+- Iteration 0
+	Number of bins = 8, gap = 1
+	Min fit: Optimize warning.
+	mu = 1.5049 (0.0658), sigma = 0.7495 (0.1189), area = 41.4461 (5.0393)
+	Fit r2 = 0.9242586439254704
+	Fraction of windows in state 1 = 1.0
+- Iteration 1
+	WARNING: not able to compute histogram.
+- Iterations interrupted because fit does not converge.
+* Number of states identified: 1 [0.5]
+
+* Complete analysis, tau_window = 10
+
+* No possible classification was found.

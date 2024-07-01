@@ -211,7 +211,12 @@ def gauss_fit_max(
     - Prints State's information to file
     """
     flat_m = m_clean.flatten()
-    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+    if flat_m.size == 0:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\tWARNING: not able to compute histogram.", file=dump)
+        return None
+    else:
+        counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
 
     gap = 1
     if bins.size > 49:
@@ -230,6 +235,10 @@ def gauss_fit_max(
                 file=dump,
             )
 
+    if counts.size == 0:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print("\tWARNING: not able to compute histogram.", file=dump)
+        return None
     max_val = counts.max()
     max_ind = counts.argmax()
 
@@ -363,7 +372,10 @@ def find_stable_trj(
         r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
         remaning_data.append(r_w)
 
-    window_fraction = counter / (tmp_labels.size)
+    if tmp_labels.size == 0:
+        return None, 0.0, False
+    else:
+        window_fraction = counter / tmp_labels.size
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
@@ -415,6 +427,7 @@ def fit_local_maxima(
     flat_m = m_clean.flatten()
 
     counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+
     gap = 1
     if bins.size > 99:
         gap = int(bins.size * 0.02)
@@ -515,7 +528,10 @@ def fit_local_maxima(
             ]
             remaning_data.append(r_w)
 
-        window_fraction = counter / (tmp_labels.size)
+        if tmp_labels.size == 0:
+            return None, None, None, None
+
+        window_fraction = counter / tmp_labels.size
 
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print(
@@ -572,7 +588,6 @@ def iterative_search(
     - Calls "relable_states" to sort and clean the state list, and updates
     the clustering object
     """
-
     num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
     tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
         int
@@ -583,6 +598,11 @@ def iterative_search(
     iteration_id = 1
     states_counter = 0
     env_0 = False
+
+    if m_copy.shape[1] < cl_ob.par.tau_w:
+        cl_ob.state_list = []
+        return cl_ob, tmp_labels, env_0
+
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print(f"- Iteration {iteration_id - 1}", file=dump)
