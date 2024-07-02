@@ -175,12 +175,12 @@ class OnionUni:
         self.bins = bins
         self.number_of_sigmas = number_of_sigmas
 
-    def fit(self, matrix, y=None):
+    def fit(self, X, y=None):
         """Perform onion clustering from data array.
 
         Parameters
         ----------
-        matrix : ndarray of shape (n_particles, n_frames)
+        X : ndarray of shape (n_particles, n_frames)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -188,68 +188,68 @@ class OnionUni:
         self : object
             Returns a fitted instance of self.
         """
-        if matrix.shape[1] == 0:
+        if X.shape[1] == 0:
             # Check for empty dataset
             raise ValueError(
                 "0 feature(s) (shape=(%d, 0)) while a minimum of %d is required."
-                % (matrix.shape[0], 1)
-            )
-        else:
-            # Check for complex input
-            if not (
-                np.issubdtype(matrix.dtype, np.floating)
-                or np.issubdtype(matrix.dtype, np.integer)
-            ):
-                raise ValueError("Complex data not supported")
-
-            # Check if the intpu dataset is sparse
-            if scipy.sparse.issparse(matrix):
-                raise TypeError(
-                    "Sparse input is not supported. Please provide a dense matrix."
-                )
-
-            # Check for infs on NaNs in the dataset
-            if np.any(np.isnan(matrix)) or np.any(np.isinf(matrix)):
-                raise ValueError("Input matrix contains NaN or inf values.")
-
-            if matrix.ndim != 2:
-                raise ValueError("Expected 2-dimensional input data.")
-
-            # Check if there is only one particle
-            if matrix.shape[0] <= 1:
-                raise ValueError("n_samples = 1")
-
-            # Check if there is only one timestep
-            if matrix.shape[1] <= 1:
-                raise ValueError("n_features = 1")
-
-            cl_ob = onion_inner(
-                matrix,
-                self.tau_window,
-                self.tau_window_list,
-                self.bins,
-                self.number_of_sigmas,
+                % (X.shape[0], 1)
             )
 
-            self.state_list_ = cl_ob.state_list
-            self.labels_ = cl_ob.data.labels
-            self.time_res_analysis_ = np.array(
-                [
-                    cl_ob.tau_window_list,
-                    cl_ob.number_of_states,
-                    cl_ob.fraction_0,
-                ]
-            ).T
-            self.pop_list_ = cl_ob.list_of_pop
+        # Check for complex input
+        if not (
+            np.issubdtype(X.dtype, np.floating)
+            or np.issubdtype(X.dtype, np.integer)
+        ):
+            raise ValueError("Complex data not supported")
+
+        # Check if the intpu dataset is sparse
+        if scipy.sparse.issparse(X):
+            raise TypeError(
+                "Sparse input is not supported. Please provide a dense matrix."
+            )
+
+        # Check for infs on NaNs in the dataset
+        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
+            raise ValueError("Input matrix contains NaN or inf values.")
+
+        if X.ndim != 2:
+            raise ValueError("Expected 2-dimensional input data.")
+
+        # Check if there is only one particle
+        if X.shape[0] <= 1:
+            raise ValueError("n_samples = 1")
+
+        # Check if there is only one timestep
+        if X.shape[1] <= 1:
+            raise ValueError("n_features = 1")
+
+        cl_ob = onion_inner(
+            X,
+            self.tau_window,
+            self.tau_window_list,
+            self.bins,
+            self.number_of_sigmas,
+        )
+
+        self.state_list_ = cl_ob.state_list
+        self.labels_ = cl_ob.data.labels
+        self.time_res_analysis_ = np.array(
+            [
+                cl_ob.tau_window_list,
+                cl_ob.number_of_states,
+                cl_ob.fraction_0,
+            ]
+        ).T
+        self.pop_list_ = cl_ob.list_of_pop
 
         return self
 
-    def fit_predict(self, matrix, y=None):
+    def fit_predict(self, X, y=None):
         """Compute clusters from a data matrix and predict labels.
 
         Parameters
         ----------
-        matrix : ndarray of shape (n_particles, n_frames)
+        X : ndarray of shape (n_particles, n_frames)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -257,7 +257,7 @@ class OnionUni:
         labels_ : ndarray of shape (n_samples,)
             Cluster labels. Unclassified points are given the label 0.
         """
-        self.fit(matrix)
+        self.fit(X)
         return self.labels_
 
     def get_params(self, deep=True):

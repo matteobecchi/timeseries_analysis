@@ -18,12 +18,12 @@ from onion_clustering._internal.first_classes import (
 from onion_clustering._internal.functions import (
     gaussian,
     max_prob_assignment,
-    moving_average,
     param_grid,
     relabel_states,
     set_final_states,
 )
 from scipy.optimize import OptimizeWarning
+from scipy.stats import gaussian_kde
 
 OUTPUT_FILE = "onion_clustering_log.txt"
 AREA_MAX_OVERLAP = 0.8
@@ -211,34 +211,15 @@ def gauss_fit_max(
     - Prints State's information to file
     """
     flat_m = m_clean.flatten()
-    if flat_m.size == 0:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\tWARNING: not able to compute histogram.", file=dump)
-        return None
+
+    kde = gaussian_kde(flat_m)
+    if par.bins == "auto":
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
     else:
-        counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), int(par.bins))
+    counts = kde.evaluate(bins)
 
-    gap = 1
-    if bins.size > 49:
-        gap = int(bins.size * 0.02) * 2
-    counts = moving_average(counts, gap)
-    bins = moving_average(bins, gap)
-
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print(f"\tNumber of bins = {bins.size}, gap = {gap}", file=dump)
-
-    if (counts == 0.0).any():
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print(
-                "\tWARNING: there are empty bins. "
-                "Consider reducing the number of bins.",
-                file=dump,
-            )
-
-    if counts.size == 0:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\tWARNING: not able to compute histogram.", file=dump)
-        return None
+    gap = 3
     max_val = counts.max()
     max_ind = counts.argmax()
 
@@ -371,9 +352,10 @@ def find_stable_trj(
     for i, window in np.argwhere(mask_remaining):
         r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
         remaning_data.append(r_w)
+    m2_array = np.array(remaning_data)
 
     if tmp_labels.size == 0:
-        return None, 0.0, False
+        return m2_array, 0.0, False
     else:
         window_fraction = counter / tmp_labels.size
 
@@ -384,7 +366,6 @@ def find_stable_trj(
             file=dump,
         )
 
-    m2_array = np.array(remaning_data)
     env_0 = True
     if len(m2_array) == 0:
         env_0 = False
@@ -426,23 +407,14 @@ def fit_local_maxima(
     """
     flat_m = m_clean.flatten()
 
-    counts, bins = np.histogram(flat_m, bins=par.bins, density=True)
+    kde = gaussian_kde(flat_m)
+    if par.bins == "auto":
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
+    else:
+        bins = np.linspace(np.min(flat_m), np.max(flat_m), int(par.bins))
+    counts = kde.evaluate(bins)
 
-    gap = 1
-    if bins.size > 99:
-        gap = int(bins.size * 0.02)
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print(f"\tNumber of bins = {bins.size}, gap = {gap}", file=dump)
-
-    counts = moving_average(counts, gap)
-    bins = moving_average(bins, gap)
-    if (counts == 0.0).any():
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print(
-                "\tWARNING: there are empty bins. "
-                "Consider reducing the number of bins.",
-                file=dump,
-            )
+    gap = 3
 
     max_ind, _ = scipy.signal.find_peaks(counts)
     max_val = np.array([counts[i] for i in max_ind])
