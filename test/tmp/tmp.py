@@ -4,18 +4,15 @@ from sklearn.utils.estimator_checks import check_estimator
 
 # Define the actual test
 def check_things():
-    TAU_WINDOW = 10  # time resolution of the analysis
-
-    checks = check_estimator(
-        OnionUni(tau_window=TAU_WINDOW), generate_only=True
-    )
+    checks = check_estimator(OnionUni(), generate_only=True)
 
     for check in checks:
         try:
-            check[1](OnionUni(tau_window=TAU_WINDOW))
-            print(f"{check[1]}: PASSED")
+            function_name = getattr(check[1], "__name__", str(check[1]))
+            check[1](OnionUni())
+            print(f"{function_name}: PASSED")
         except Exception as e:
-            print(f"{check[1]}: FAILED\n{e}")
+            print(f"{function_name}: FAILED\n{e}")
 
 
 check_things()
