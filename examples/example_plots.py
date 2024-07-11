@@ -123,13 +123,13 @@ def plot_one_trj_uni(
     unique_labels = np.unique(labels)
     # If there are no assigned window, we still need the "0" state
     # for consistency:
-    if 0 not in unique_labels:
-        unique_labels = np.insert(unique_labels, 0, 0)
+    if -1 not in unique_labels:
+        unique_labels = np.insert(unique_labels, 0, -1)
 
     cmap = plt.get_cmap(
         COLORMAP, np.max(unique_labels) - np.min(unique_labels) + 1
     )
-    color = labels[example_id]
+    color = labels[example_id] + 1
     axes.plot(time, signal, c="black", lw=0.1)
 
     axes.scatter(
@@ -137,8 +137,8 @@ def plot_one_trj_uni(
         signal,
         c=color,
         cmap=cmap,
-        vmin=np.min(unique_labels),
-        vmax=np.max(unique_labels),
+        vmin=np.min(unique_labels) + 1,
+        vmax=np.max(unique_labels) + 1,
         s=1.0,
     )
 
@@ -164,8 +164,8 @@ def plot_state_populations(title: str, labels: np.ndarray):
     num_part = labels.shape[0]
 
     unique_labels = np.unique(labels)
-    if 0 not in unique_labels:
-        unique_labels = np.insert(unique_labels, 0, 0)
+    if -1 not in unique_labels:
+        unique_labels = np.insert(unique_labels, 0, -1)
 
     list_of_populations = []
     for label in unique_labels:
@@ -210,8 +210,8 @@ def plot_medoids_uni(
     env0 = []
 
     list_of_labels = np.unique(labels)
-    if 0 not in list_of_labels:
-        list_of_labels = np.insert(list_of_labels, 0, 0)
+    if -1 not in list_of_labels:
+        list_of_labels = np.insert(list_of_labels, 0, -1)
 
     for ref_label in list_of_labels:
         tmp = []
@@ -222,7 +222,7 @@ def plot_medoids_uni(
                 if label == ref_label:
                     tmp.append(input_data[i][time_0:time_1])
 
-        if len(tmp) > 0 and ref_label > 0:
+        if len(tmp) > 0 and ref_label > -1:
             center_list.append(np.mean(tmp, axis=0))
             std_list.append(np.std(tmp, axis=0))
         elif len(tmp) > 0:

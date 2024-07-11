@@ -39,12 +39,12 @@ state_list, labels, time_res_analysis, pop_list = onion_uni(
 )
 
 ### These functions are examples of how to visualize the results
-plot_time_res_analysis("Fig1.png", time_res_analysis)
-plot_output_uni("Fig2.png", input_data, state_list)
+# plot_time_res_analysis("Fig1.png", time_res_analysis)
+# plot_output_uni("Fig2.png", input_data, state_list)
 plot_one_trj_uni("Fig3.png", 1234, input_data, labels)
 plot_medoids_uni("Fig4.png", TAU_WINDOW, input_data, labels)
-plot_state_populations("Fig5.png", labels)
-plot_sankey("Fig6.png", labels, [100, 200, 300, 400])
-plot_pop_fractions("Fig7.png", pop_list)
+# plot_state_populations("Fig5.png", labels)
+# plot_sankey("Fig6.png", labels, [100, 200, 300, 400])
+# plot_pop_fractions("Fig7.png", pop_list)
 
 plt.show()

@@ -827,6 +827,9 @@ def max_prob_assignment(
         num_of_points = np.sum(final_labels == i + 1)
         state.perc = num_of_points / final_labels.size
 
+    ### To conform to scikit convention, noise has to be labelled "-1"
+    final_labels -= 1
+
     states_to_remove = []
     for i, state in enumerate(list_of_states):
         if state.perc == 0.0:
