@@ -1,9 +1,16 @@
+"""
+Temporary script to run the sklearn check_estimator().
+
+https://scikit-learn.org/stable/modules/generated/
+    sklearn.utils.estimator_checks.check_estimator.html
+"""
+
 from onion_clustering.onion_uni import OnionUni
 from sklearn.utils.estimator_checks import check_estimator
 
 
-# Define the actual test
-def check_things():
+def run_the_checks():
+    """Run check_estimator and return the results."""
     checks = check_estimator(OnionUni(), generate_only=True)
 
     for check in checks:
@@ -15,4 +22,4 @@ def check_things():
             print(f"{function_name}: FAILED\n{e}")
 
 
-check_things()
+run_the_checks()

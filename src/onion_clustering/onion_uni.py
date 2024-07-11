@@ -99,9 +99,6 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
     Parameters
     ----------
-    matrix : ndarray of shape (n_particles, n_frames)
-        The values of the signal for each particle at each frame.
-
     tau_window : int
         The time resolution for the clustering, corresponding to the length
         of the windows in which the time-series are segmented.
@@ -159,8 +156,8 @@ class OnionUni(BaseEstimator, ClusterMixin):
     --------
 
     >>> from sklearn.something import OnionUni
-    >>> matrix = array_with_timeseries_data
-    >>> clustering = OnionUni(matrix, tau_window=10).fit(matrix)
+    >>> X = array_with_timeseries_data
+    >>> clustering = OnionUni().fit(X)
     """
 
     def __init__(
