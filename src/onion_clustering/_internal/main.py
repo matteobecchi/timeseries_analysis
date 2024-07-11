@@ -212,7 +212,13 @@ def gauss_fit_max(
     """
     flat_m = m_clean.flatten()
 
-    kde = gaussian_kde(flat_m)
+    try:
+        kde = gaussian_kde(flat_m)
+    except ValueError as err_msg:
+        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
+            print(f"\tWARNING: {err_msg}.", file=dump)
+        return None
+
     if par.bins == "auto":
         bins = np.linspace(np.min(flat_m), np.max(flat_m), 100)
     else:

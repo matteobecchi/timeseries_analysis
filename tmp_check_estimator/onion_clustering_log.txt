@@ -1,8 +1,0 @@
-* Tau_w used: [2, 3] 
-
-* tau_window = 2
-- Iteration 0
-	mu = 1.6285 (0.0140), sigma = 1.5959 (0.0291), area = 67.0941 (0.9347)
-	Fit r2 = 0.9099664922534688
-	Fraction of windows in state 1 = 1.0
-- Iteration 1
