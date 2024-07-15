@@ -3,13 +3,14 @@
 from typing import List, Union
 
 import numpy as np
+from sklearn.base import BaseEstimator, ClusterMixin
 
 from onion_clustering._internal.main_2d import main as onion_inner
 
 
 def onion_multi(
     matrix,
-    tau_window,
+    tau_window: int = 2,
     tau_window_list: Union[List[int], None] = None,
     bins: Union[str, int] = "auto",
     number_of_sigmas: float = 2.0,
@@ -93,14 +94,11 @@ def onion_multi(
     return est.state_list_, est.labels_, est.time_res_analysis_, est.pop_list_
 
 
-class OnionMulti:
+class OnionMulti(BaseEstimator, ClusterMixin):
     """Perform onion clustering from data array.
 
     Parameters
     ----------
-    matrix : ndarray of shape (dims, n_particles, n_frames)
-        The values of the signal for each particle at each frame.
-
     tau_window : int
         The time resolution for the clustering, corresponding to the lwngth
         of the windows in which the time-series are segmented.
@@ -158,13 +156,13 @@ class OnionMulti:
     --------
 
     >>> from sklearn.something import OnionUni
-    >>> matrix = array_with_timeseries_data
-    >>> clustering = OnionUni(matrix, tau_window=10).fit(matrix)
+    >>> X = array_with_timeseries_data
+    >>> clustering = OnionUni().fit(X)
     """
 
     def __init__(
         self,
-        tau_window,
+        tau_window: int = 2,
         tau_window_list=None,
         bins: Union[str, int] = "auto",
         number_of_sigmas: float = 2.0,
@@ -174,12 +172,12 @@ class OnionMulti:
         self.bins = bins
         self.number_of_sigmas = number_of_sigmas
 
-    def fit(self, matrix):
+    def fit(self, X, y=None):
         """Perform onion clustering from data array.
 
         Parameters
         ----------
-        matrix : ndarray of shape (n_particles, n_frames)
+        X : ndarray of shape (n_particles, n_frames)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -187,8 +185,28 @@ class OnionMulti:
         self : object
             Returns a fitted instance of self.
         """
+        # X = self._validate_data(X, accept_sparse=False)
+
+        if X.ndim != 3:
+            raise ValueError("Expected 3-dimensional input data.")
+
+        if X.shape[0] <= 1:
+            raise ValueError("n_samples = 1")
+
+        if X.shape[1] <= 1:
+            raise ValueError("n_features = 1")
+
+        # Check for complex input
+        if not (
+            np.issubdtype(X.dtype, np.floating)
+            or np.issubdtype(X.dtype, np.integer)
+        ):
+            raise ValueError("Complex data not supported")
+
+        X = X.copy()  # copy to avoid in-place modification
+
         cl_ob = onion_inner(
-            matrix,
+            X,
             self.tau_window,
             self.tau_window_list,
             self.bins,
@@ -202,12 +220,14 @@ class OnionMulti:
         ).T
         self.pop_list_ = cl_ob.list_of_pop
 
-    def fit_predict(self, matrix):
+        return self
+
+    def fit_predict(self, X, y=None):
         """Compute clusters from a data matrix and predict labels.
 
         Parameters
         ----------
-        matrix : ndarray of shape (n_particles, n_frames)
+        X : ndarray of shape (n_particles, n_frames)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -215,5 +235,17 @@ class OnionMulti:
         labels : ndarray of shape (n_samples,)
             Cluster labels. Unclassified points are given the label 0.
         """
-        self.fit(matrix)
-        return self.labels_
+        return self.fit(X).labels_
+
+    def get_params(self, deep=True):
+        return {
+            "tau_window": self.tau_window,
+            "tau_window_list": self.tau_window_list,
+            "bins": self.bins,
+            "number_of_sigmas": self.number_of_sigmas,
+        }
+
+    def set_params(self, **params):
+        for param, value in params.items():
+            setattr(self, param, value)
+        return self

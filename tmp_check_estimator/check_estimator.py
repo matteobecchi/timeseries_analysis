@@ -6,10 +6,11 @@ https://scikit-learn.org/stable/modules/generated/
 """
 
 from onion_clustering.onion_uni import OnionUni
+from onion_clustering.onion_multi import OnionMulti
 from sklearn.utils.estimator_checks import check_estimator
 
 
-def run_the_checks():
+def run_the_checks_1():
     """Run check_estimator and return the results."""
     _ = check_estimator(OnionUni())
     # checks = check_estimator(OnionUni(), generate_only=True)
@@ -22,5 +23,10 @@ def run_the_checks():
     #     except Exception as e:
     #         print(f"{function_name}: FAILED\n{e}")
 
+def run_the_checks_2():
+    """Run check_estimator and return the results."""
+    _ = check_estimator(OnionMulti())
 
-run_the_checks()
+
+# run_the_checks_1()
+run_the_checks_2()
