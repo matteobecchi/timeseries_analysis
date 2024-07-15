@@ -953,18 +953,4 @@ def relabel_states_2d(
         num_of_points = np.sum(all_the_labels == st_id + 1)
         state.perc = num_of_points / all_the_labels.size
 
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print("- FINAL STATES:", file=dump)
-        print("# center_coords, semiaxis, fraction_of_data", file=dump)
-        for state in updated_states:
-            centers = f"[{state.mean[0]}, "
-            for tmp in state.mean[1:-1]:
-                centers += f"{tmp}, "
-            centers += f"{state.mean[-1]}]"
-            axis = f"[{state.axis[0]}, "
-            for tmp in state.axis[1:-1]:
-                axis += f"{tmp}, "
-            axis += f"{state.axis[-1]}]"
-            print(centers, axis, state.perc, file=dump)
-
     return all_the_labels, updated_states
