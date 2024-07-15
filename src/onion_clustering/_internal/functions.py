@@ -563,23 +563,6 @@ def final_state_settings(
     list_of_states[-1].th_sup[0] = m_range[1]
     list_of_states[-1].th_sup[1] = 0
 
-    # Write the final states and final thresholds to text files.
-    with open("final_states.txt", "a", encoding="utf-8") as file:
-        print("####################################", file=file)
-        print("# Mu \t Sigma \t A \t state_fraction", file=file)
-        for state in list_of_states:
-            print(state.mean, state.sigma, state.area, state.perc, file=file)
-    with open("final_thresholds.txt", "a", encoding="utf-8") as file:
-        print("####################################", file=file)
-        print("# Threshold_value \t Threshold type", file=file)
-        for state in list_of_states:
-            print(state.th_inf[0], state.th_inf[1], file=file)
-        print(
-            list_of_states[-1].th_sup[0],
-            list_of_states[-1].th_sup[1],
-            file=file,
-        )
-
     return list_of_states
 
 

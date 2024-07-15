@@ -2,7 +2,7 @@
 Contains the classes used for storing parameters and system states.
 """
 
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -198,11 +198,6 @@ class Parameters:
         The time resolution for the clustering, corresponding to the length
         of the windows in which the time-series are segmented.
 
-    tau_w_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
-
     bins: Union[str, int]
         The number of bins used for the construction of the histograms.
         Can be an integer value, or "auto".
@@ -214,11 +209,9 @@ class Parameters:
     def __init__(
         self,
         tau_window: int,
-        tau_w_list: List[int],
         bins: Union[int, str],
         number_of_sigmas: float,
     ):
         self.tau_w = tau_window
-        self.tau_w_list = tau_w_list
         self.bins = bins
         self.number_of_sigmas = number_of_sigmas

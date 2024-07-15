@@ -3,7 +3,6 @@ Code for clustering of univariate time-series data.
 See the documentation for all the details.
 """
 
-import copy
 import warnings
 from typing import List, Tuple, Union
 
@@ -18,7 +17,7 @@ from onion_clustering._internal.first_classes import (
 from onion_clustering._internal.functions import (
     gaussian,
     max_prob_assignment,
-    param_grid,
+    # param_grid,
     relabel_states,
     set_final_states,
 )
@@ -31,8 +30,7 @@ AREA_MAX_OVERLAP = 0.8
 
 def all_the_input_stuff(
     matrix: np.ndarray,
-    tau_window: int,
-    tau_window_list: List[int],
+    n_windows: int,
     bins: Union[int, str],
     number_of_sigmas: float,
 ) -> ClusteringObject1D:
@@ -42,17 +40,11 @@ def all_the_input_stuff(
     Parameters
     ----------
 
-    matrix : ndarray of shape (n_particles, n_frames)
+    matrix : ndarray of shape (n_particles * n_windows, tau_window)
         The values of the signal for each particle at each frame.
 
-    tau_window : int
-        The time resolution for the clustering, corresponding to the length
-        of the windows in which the time-series are segmented.
-
-    tau_window_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
+    n_windows : int
+        Number of time windows in the simulation.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -60,6 +52,11 @@ def all_the_input_stuff(
         If "auto", the default of numpy.histogram_bin_edges is used
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
+
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
 
     Returns
     -------
@@ -73,8 +70,12 @@ def all_the_input_stuff(
     - Reads input data
     - Creates and returns the ClusteringObject1D for the analysis
     """
-    par = Parameters(tau_window, tau_window_list, bins, number_of_sigmas)
-    data = UniData(matrix)
+    tau_window = matrix.shape[1]
+    n_particles = int(matrix.shape[0] / n_windows)
+    reshaped_matrix = np.reshape(matrix, (n_particles, n_windows * tau_window))
+
+    par = Parameters(tau_window, bins, number_of_sigmas)
+    data = UniData(reshaped_matrix)
     clustering_object = ClusteringObject1D(par, data)
 
     return clustering_object
@@ -630,83 +631,6 @@ def iterative_search(
     return cl_ob, atl, env_0
 
 
-def timeseries_analysis(
-    cl_ob: ClusteringObject1D, tau_w: int
-) -> Tuple[int, float, List[float]]:
-    """
-    The clustering analysis to compute the dependence on time resolution.
-
-    Parameters
-    ----------
-
-    cl_ob : ClusteringObject1D
-        The clustering object.
-
-    tau_w : int
-        The time resolution for the analysis.
-
-    Returns
-    -------
-
-    n_states : int
-        Number of identified states.
-
-    fraction_0 : float
-        Fraction of unclassified data points.
-
-    Notes
-    -----
-
-    - Creates a copy of the clustering object and of the parameters
-    - Performs the clustering with the iterative search and classification
-    - If no classification is found, cleans the memory and return
-    - Otherwise, final states are identified by "set_final_states"
-    - Number of states and fraction of unclassified points are computed
-    """
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print(f"* tau_window = {tau_w}", file=dump)
-
-    tmp_cl_ob = copy.deepcopy(cl_ob)
-    tmp_cl_ob.par.tau_w = tau_w
-
-    tmp_cl_ob, tmp_labels, env_0 = iterative_search(tmp_cl_ob)
-
-    if len(tmp_cl_ob.state_list) == 0:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("* No possible classification was found.", file=dump)
-        del tmp_cl_ob
-        return 0, 1.0, [1.0]
-
-    list_of_states, tmp_labels = set_final_states(
-        tmp_cl_ob.state_list,
-        tmp_labels,
-        AREA_MAX_OVERLAP,
-    )
-
-    tmp_cl_ob.data.labels, tmp_cl_ob.state_list = max_prob_assignment(
-        list_of_states,
-        tmp_cl_ob.data.matrix,
-        tmp_labels,
-        tmp_cl_ob.data.range,
-        tau_w,
-        tmp_cl_ob.par.number_of_sigmas,
-    )
-
-    list_of_pop = [state.perc for state in tmp_cl_ob.state_list]
-    fraction_0 = 1 - np.sum(list_of_pop)
-    list_of_pop.insert(0, fraction_0)
-    n_states = len(tmp_cl_ob.state_list)
-
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print(
-            f"* Number of states identified: {n_states} [{fraction_0}]\n",
-            file=dump,
-        )
-
-    del tmp_cl_ob
-    return n_states, fraction_0, list_of_pop
-
-
 def full_output_analysis(cl_ob: ClusteringObject1D):
     """
     The complete clustering analysis with the input parameters.
@@ -716,13 +640,6 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
 
     cl_ob : ClusteringObject1D
         The clustering object.
-
-    Notes
-    -----
-
-    - Performs the clustering with the iterative search and classification
-    - If no classification is found, return
-    - Otherwise, final states are identified by "set_final_states"
     """
 
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
@@ -753,51 +670,9 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
     cl_ob.data.labels = cl_ob.create_all_the_labels()
 
 
-def time_resolution_analysis(cl_ob: ClusteringObject1D):
-    """
-    Explore parameter space and compute the dependence on time resolution.
-
-    Parameters
-    ----------
-
-    cl_ob : ClusteringObject1D
-        The clustering object.
-
-    Notes
-    -----
-
-    - Generates the parameters' grid
-    - Performs and stores the clustering for all the parameters' combinations
-    - Updates the clustering object with the analysis results
-    """
-    if cl_ob.par.tau_w_list is None:
-        tau_window_list = param_grid(cl_ob.data.num_of_steps)
-    else:
-        tau_window_list = cl_ob.par.tau_w_list
-
-    cl_ob.tau_window_list = tau_window_list
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as dump:
-        print("* Tau_w used:", tau_window_list, "\n", file=dump)
-
-    number_of_states = []
-    fraction_0 = []
-    list_of_pop: List[List[float]] = [[] for _ in tau_window_list]
-
-    for i, tau_w in enumerate(tau_window_list):
-        n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w)
-        number_of_states.append(n_s)
-        fraction_0.append(f_0)
-        list_of_pop[i] = l_pop
-
-    cl_ob.number_of_states = np.array(number_of_states)
-    cl_ob.fraction_0 = np.array(fraction_0)
-    cl_ob.list_of_pop = list_of_pop
-
-
 def main(
     matrix: np.ndarray,
-    tau_window: int,
-    tau_window_list: List[int],
+    n_windows: int,
     bins: Union[int, str],
     number_of_sigmas: float,
 ) -> ClusteringObject1D:
@@ -806,17 +681,11 @@ def main(
 
     Parameters
     ----------
-    matrix : ndarray of shape (n_particles, n_frames)
+    matrix : ndarray of shape (n_particles * n_windows, tau_window)
         The values of the signal for each particle at each frame.
 
-    tau_window : int
-        The time resolution for the clustering, corresponding to the length
-        of the windows in which the time-series are segmented.
-
-    tau_window_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
+    n_windows : int
+        Number of time windows in the simulation.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -825,26 +694,22 @@ def main(
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
 
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
+
     Returns
     -------
     clustering_object : ClusteringObject1D
         The final clustering object.
-
-    Notes
-    -----
-    - Reads the data and the parameters
-    - Performs the quick analysis for all the values in tau_window_list
-    - Performs a detailed analysis with the selected tau_window
     """
     clustering_object = all_the_input_stuff(
         matrix,
-        tau_window,
-        tau_window_list,
+        n_windows,
         bins,
         number_of_sigmas,
     )
-
-    time_resolution_analysis(clustering_object)
 
     full_output_analysis(clustering_object)
 

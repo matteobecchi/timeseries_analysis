@@ -27,36 +27,21 @@ class ClusteringObject:
     data : ndarray of shape (n_particles, n_frames)
         The values of the signal for each particle at each frame.
 
-    tau_window_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
-
     Attributes
     ----------
 
     iterations : int
         The number of iterations the algorithm performed.
-
-    number_of_states : np.ndarray
-        For every value of tau_window_list.
-
-    fraction_0 : np.ndarray
-        For every value of tau_window_list.
     """
 
     def __init__(self, par: Parameters, data: Union[UniData, MultiData]):
         self.par = par
         self.data = data
-        self.tau_window_list: List[int]
         self.iterations = -1
-        self.number_of_states: np.ndarray
-        self.fraction_0: np.ndarray
-        self.list_of_pop: List[List[float]]
 
     def create_all_the_labels(self) -> np.ndarray:
         """
-        Assigns labels to individual frames by repeating the existing labels.
+        Assigns labels to the signal windows.
 
         Returns
         -------
@@ -66,7 +51,7 @@ class ClusteringObject:
             by repeating the existing labels.
 
         """
-        all_the_labels = np.repeat(self.data.labels, self.par.tau_w, axis=1)
+        all_the_labels = np.reshape(self.data.labels, (self.data.labels.size,))
         return all_the_labels
 
 

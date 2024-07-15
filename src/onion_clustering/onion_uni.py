@@ -1,6 +1,6 @@
 """onion-clustering for univariate time-series."""
 
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
@@ -10,8 +10,7 @@ from onion_clustering._internal.main import main as onion_inner
 
 def onion_uni(
     matrix,
-    tau_window: int = 2,
-    tau_window_list: Union[List[int], None] = None,
+    n_windows: int = 1,
     bins: Union[str, int] = "auto",
     number_of_sigmas: float = 2.0,
 ):
@@ -19,17 +18,11 @@ def onion_uni(
 
     Parameters
     ----------
-    matrix : ndarray of shape (n_particles, n_frames)
+    matrix : ndarray of shape (n_particles * n_windows, tau_window)
         The values of the signal for each particle at each frame.
 
-    tau_window : int
-        The time resolution for the clustering, corresponding to the length
-        of the windows in which the time-series are segmented.
-
-    tau_window_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
+    n_windows : int
+        The number of windows in which the signal is divided for the analysis.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -52,25 +45,6 @@ def onion_uni(
         Cluster labels for each point. Unclassified points
         are given the label 0.
 
-    time_res_analysis : np.ndarray of shape (len(tau_window_list), 2)
-        For each analyzed value in `tau_window_list`, it contains
-        the number of clusters identified and the fraction of unclassified
-        data points.
-
-    pop_list : List[List[float]]
-        For each analyzed value in `tau_window_list`, it contains
-        the fraction of data points contained in each state. So pop_list[i][j]
-        is the fraction of data points classified in the j-th state using the
-        i-th value of tau_window_list.
-
-    Notes
-    -----
-    The complete results of the clustering (the labels and the list of states)
-    is given for the selected value of `tau_window`.
-    Only the number of states and the fraction of unclassified data points are
-    returned for the list of time resolutions analysed. This is a tool to
-    help inform the choice of `tau_window`.
-
     References
     ----------
     https://arxiv.org/abs/2402.07786
@@ -84,14 +58,13 @@ def onion_uni(
     """
 
     est = OnionUni(
-        tau_window=tau_window,
-        tau_window_list=tau_window_list,
+        n_windows=n_windows,
         bins=bins,
         number_of_sigmas=number_of_sigmas,
     )
     est.fit(matrix)
 
-    return est.state_list_, est.labels_, est.time_res_analysis_, est.pop_list_
+    return est.state_list_, est.labels_
 
 
 class OnionUni(BaseEstimator, ClusterMixin):
@@ -99,14 +72,9 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
     Parameters
     ----------
-    tau_window : int
-        The time resolution for the clustering, corresponding to the length
-        of the windows in which the time-series are segmented.
 
-    tau_window_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
+    n_windows : int
+        The number of windows in which the signal is divided for the analysis.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -129,25 +97,6 @@ class OnionUni(BaseEstimator, ClusterMixin):
         Cluster labels for each point. Unclassified points
         are given the label 0.
 
-    time_res_analysis_ : np.ndarray of shape (len(tau_window_list), 2)
-        For each analyzed value in `tau_window_list`, it contains
-        the number of clusters identified and the fraction of unclassified
-        data points.
-
-    pop_list_ : List[List[float]]
-        For each analyzed value in `tau_window_list`, it contains
-        the fraction of data points contained in each state. So pop_list[i][j]
-        is the fraction of data points classified in the j-th state using the
-        i-th value of tau_window_list.
-
-    Notes
-    -----
-    The complete results of the clustering (the labels and the list of states)
-    is given for the selected value of `tau_window`.
-    Only the number of states and the fraction of unclassified data points are
-    returned for the list of time resolutions analysed. This is a tool to
-    help inform the choice of `tau_window`.
-
     References
     ----------
     https://arxiv.org/abs/2402.07786
@@ -162,13 +111,11 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
     def __init__(
         self,
-        tau_window: int = 2,
-        tau_window_list=None,
+        n_windows: int = 1,
         bins: Union[str, int] = "auto",
         number_of_sigmas: float = 2.0,
     ):
-        self.tau_window = tau_window
-        self.tau_window_list = tau_window_list
+        self.n_windows = n_windows
         self.bins = bins
         self.number_of_sigmas = number_of_sigmas
 
@@ -177,7 +124,7 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
         Parameters
         ----------
-        X : ndarray of shape (n_particles, n_frames)
+        X : ndarray of shape (n_particles * n_windows, tau_window)
             The values of the signal for each particle at each frame.
 
         Returns
@@ -207,22 +154,13 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
         cl_ob = onion_inner(
             X,
-            self.tau_window,
-            self.tau_window_list,
+            self.n_windows,
             self.bins,
             self.number_of_sigmas,
         )
 
         self.state_list_ = cl_ob.state_list
         self.labels_ = cl_ob.data.labels
-        self.time_res_analysis_ = np.array(
-            [
-                cl_ob.tau_window_list,
-                cl_ob.number_of_states,
-                cl_ob.fraction_0,
-            ]
-        ).T
-        self.pop_list_ = cl_ob.list_of_pop
 
         return self
 
@@ -231,20 +169,19 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
         Parameters
         ----------
-        X : ndarray of shape (n_particles, n_frames)
+        X : ndarray of shape (n_particles * n_windows, tau_window)
             The values of the signal for each particle at each frame.
 
         Returns
         -------
-        labels_ : ndarray of shape (n_samples,)
-            Cluster labels. Unclassified points are given the label 0.
+        labels_ : ndarray of shape (n_particles * n_windows,)
+            Cluster labels. Unclassified points are given the label -1.
         """
         return self.fit(X).labels_
 
     def get_params(self, deep=True):
         return {
-            "tau_window": self.tau_window,
-            "tau_window_list": self.tau_window_list,
+            "n_windows": self.n_windows,
             "bins": self.bins,
             "number_of_sigmas": self.number_of_sigmas,
         }

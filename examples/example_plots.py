@@ -13,8 +13,17 @@ from onion_clustering._internal.functions import gaussian
 COLORMAP = "viridis"
 
 
-def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
+def plot_output_uni(
+    title: str,
+    input_data: np.ndarray,
+    n_windows: int,
+    state_list: List,
+):
     """Plots clustering output with Gaussians and threshols."""
+
+    n_particles = int(input_data.shape[0] / n_windows)
+    n_frames = n_windows * input_data.shape[1]
+    input_data = np.reshape(input_data, (n_particles, n_frames))
 
     flat_m = input_data.flatten()
     counts, bins = np.histogram(flat_m, bins=100, density=True)
@@ -111,10 +120,22 @@ def plot_output_uni(title: str, input_data: np.ndarray, state_list: List):
 
 
 def plot_one_trj_uni(
-    title: str, example_id: int, input_data: np.ndarray, labels: np.ndarray
+    title: str,
+    example_id: int,
+    input_data: np.ndarray,
+    labels: np.ndarray,
+    n_windows: int,
 ):
     """Plots the colored trajectory of one example particle."""
-    example_id = example_id
+
+    tau_window = input_data.shape[1]
+    n_particles = int(input_data.shape[0] / n_windows)
+    n_frames = n_windows * tau_window
+
+    input_data = np.reshape(input_data, (n_particles, n_frames))
+    labels = np.reshape(labels, (n_particles, n_windows))
+    labels = np.repeat(labels, tau_window, axis=1)
+
     signal = input_data[example_id][: labels.shape[1]]
     t_steps = labels.shape[1]
     time = np.linspace(0, t_steps - 1, t_steps)
@@ -150,7 +171,11 @@ def plot_one_trj_uni(
     fig.savefig(title, dpi=600)
 
 
-def plot_state_populations(title: str, labels: np.ndarray):
+def plot_state_populations(
+    title: str,
+    n_windows: int,
+    labels: np.ndarray,
+):
     """
     Plot the populations of states over time.
 
@@ -161,7 +186,8 @@ def plot_state_populations(title: str, labels: np.ndarray):
     - Plots the results to Fig5.png
 
     """
-    num_part = labels.shape[0]
+    n_particles = int(labels.shape[0] / n_windows)
+    labels = np.reshape(labels, (n_particles, n_windows))
 
     unique_labels = np.unique(labels)
     if -1 not in unique_labels:
@@ -170,7 +196,7 @@ def plot_state_populations(title: str, labels: np.ndarray):
     list_of_populations = []
     for label in unique_labels:
         population = np.sum(labels == label, axis=0)
-        list_of_populations.append(population / num_part)
+        list_of_populations.append(population / n_particles)
 
     palette = []
     n_states = unique_labels.size
@@ -192,7 +218,9 @@ def plot_state_populations(title: str, labels: np.ndarray):
 
 
 def plot_medoids_uni(
-    title: str, tau_window: int, input_data: np.ndarray, labels: np.ndarray
+    title: str,
+    input_data: np.ndarray,
+    labels: np.ndarray,
 ):
     """
     Compute and plot the average signal sequence inside each state.
@@ -215,12 +243,9 @@ def plot_medoids_uni(
 
     for ref_label in list_of_labels:
         tmp = []
-        for i, mol in enumerate(labels[:, ::tau_window]):
-            for window, label in enumerate(mol):
-                time_0 = window * tau_window
-                time_1 = (window + 1) * tau_window
-                if label == ref_label:
-                    tmp.append(input_data[i][time_0:time_1])
+        for i, label in enumerate(labels):
+            if label == ref_label:
+                tmp.append(input_data[i])
 
         if len(tmp) > 0 and ref_label > -1:
             center_list.append(np.mean(tmp, axis=0))
@@ -250,7 +275,7 @@ def plot_medoids_uni(
         palette.append(rgb2hex(rgba))
 
     fig, axes = plt.subplots()
-    time_seq = range(tau_window)
+    time_seq = range(input_data.shape[1])
     for center_id, center in enumerate(center_list):
         err_inf = center - std_list[center_id]
         err_sup = center + std_list[center_id]
@@ -287,7 +312,9 @@ def plot_medoids_uni(
     fig.savefig(title, dpi=600)
 
 
-def plot_sankey(title: str, labels: np.ndarray, tmp_frame_list: list[int]):
+def plot_sankey(
+    title: str, labels: np.ndarray, n_windows: int, tmp_frame_list: list[int]
+):
     """
     Plots the Sankey diagram at the desired frames.
 
@@ -301,12 +328,13 @@ def plot_sankey(title: str, labels: np.ndarray, tmp_frame_list: list[int]):
         for the Sankey diagram
 
     """
-    all_the_labels = labels
+    n_particles = int(labels.shape[0] / n_windows)
+    all_the_labels = np.reshape(labels, (n_particles, n_windows))
     frame_list = np.array(tmp_frame_list)
     unique_labels = np.unique(all_the_labels)
 
-    if 0 not in unique_labels:
-        unique_labels = np.insert(unique_labels, 0, 0)
+    if -1 not in unique_labels:
+        unique_labels = np.insert(unique_labels, 0, -1)
     n_states = unique_labels.size
 
     source = np.empty((frame_list.size - 1) * n_states**2)
@@ -328,7 +356,7 @@ def plot_sankey(title: str, labels: np.ndarray, tmp_frame_list: list[int]):
         # Iterate through the current time window and increment
         # the transition counts in trans_mat
         for label in all_the_labels:
-            trans_mat[label[t_0]][label[t_0 + t_jump]] += 1
+            trans_mat[label[t_0] + 1][label[t_0 + t_jump] + 1] += 1
 
         # Store the source, target, and value for the Sankey diagram
         # based on trans_mat
@@ -341,10 +369,10 @@ def plot_sankey(title: str, labels: np.ndarray, tmp_frame_list: list[int]):
 
         # Calculate the starting and ending fractions for each state
         # and store node labels
-        for j in range(n_states):
+        for j in range(-1, n_states - 1):
             start_fr = np.sum(trans_mat[j]) / np.sum(trans_mat)
             end_fr = np.sum(trans_mat.T[j]) / np.sum(trans_mat)
-            if i == 0:
+            if i == -1:
                 tmp_label1.append(f"State {j}: {start_fr * 100:.2f}%")
             tmp_label2.append(f"State {j}: {end_fr * 100:.2f}%")
 
