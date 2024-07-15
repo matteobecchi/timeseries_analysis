@@ -9,8 +9,8 @@ from onion_clustering._internal.main import main as onion_inner
 
 
 def onion_uni(
-    matrix,
-    n_windows: int = 1,
+    matrix: np.ndarray,
+    n_windows: int = 2,
     bins: Union[str, int] = "auto",
     number_of_sigmas: float = 2.0,
 ):
@@ -54,7 +54,7 @@ def onion_uni(
 
     >>> from sklearn.something import onion_uni
     >>> matrix = array_with_timeseries_data
-    >>> state_list, labels = onion_uni(matrix, tau_window=10)
+    >>> state_list, labels = onion_uni(matrix)
     """
 
     est = OnionUni(
@@ -111,7 +111,7 @@ class OnionUni(BaseEstimator, ClusterMixin):
 
     def __init__(
         self,
-        n_windows: int = 1,
+        n_windows: int = 2,
         bins: Union[str, int] = "auto",
         number_of_sigmas: float = 2.0,
     ):

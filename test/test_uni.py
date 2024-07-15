@@ -22,7 +22,7 @@ def test_output_files(setup_test_environment):
     ### Set all the analysis parameters ###
     FILE = "water_coex_100ps_1nm_LENS.npy"
     PATH_TO_INPUT_DATA = "/Users/mattebecchi/00_signal_analysis/data/" + FILE
-    N_WINDOWS = 50  # number of time windows for the analysis
+    N_WINDOWS = 50
 
     input_data = np.load(PATH_TO_INPUT_DATA)
     reshaped_input_data = np.reshape(input_data, (2048 * N_WINDOWS, -1))

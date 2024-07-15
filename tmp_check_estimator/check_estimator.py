@@ -26,8 +26,16 @@ def run_the_checks_1():
 
 def run_the_checks_2():
     """Run check_estimator and return the results."""
-    _ = check_estimator(OnionMulti())
+    # _ = check_estimator(OnionMulti())
+    checks = check_estimator(OnionMulti(), generate_only=True)
+
+    for check in checks:
+        try:
+            function_name = getattr(check[1], "__name__", str(check[1]))
+            check[1](OnionMulti())
+        except Exception as e:
+            print(f"{function_name}: FAILED\n{e}")
 
 
-run_the_checks_1()
-# run_the_checks_2()
+# run_the_checks_1()
+run_the_checks_2()

@@ -3,7 +3,6 @@ Code for clustering of multivariate (2- or 3-dimensional) time-series data.
 See the documentation for all the details.
 """
 
-import copy
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -18,7 +17,6 @@ from onion_clustering._internal.functions import (
     find_half_height_around_max,
     find_minima_around_max,
     moving_average_2d,
-    param_grid,
     relabel_states_2d,
 )
 
@@ -27,8 +25,8 @@ OUTPUT_FILE = "onion_clustering_log.txt"
 
 def all_the_input_stuff(
     matrix: np.ndarray,
-    tau_window: int,
-    tau_window_list: List[int],
+    n_windows: int,
+    ndims: int,
     bins: Union[int, str],
     number_of_sigmas: float,
 ) -> ClusteringObject2D:
@@ -38,12 +36,14 @@ def all_the_input_stuff(
     Parameters
     ----------
 
-    matrix : ndarray of shape (dims, n_particles, n_frames)
+    matrix : ndarray of shape (n_particles * n_windows, tau_window * dims)
         The values of the signal for each particle at each frame.
 
-    tau_window : int
-        The time resolution for the clustering, corresponding to the lwngth
-        of the windows in which the time-series are segmented.
+    n_windows : int
+        Number of time windows in the simulation.
+
+    ndims : int
+        Number of components. Must be 2 or 3.
 
     tau_window_list : List[int]
         The list of time resolutions at which the fast analysis will
@@ -69,9 +69,14 @@ def all_the_input_stuff(
     - Reads input raw data
     - Creates and returns the ClusteringObject2D for the analysis
     """
+    tau_window = int(matrix.shape[1] / ndims)
+    n_particles = int(matrix.shape[0] / n_windows)
+    reshaped_matrix = np.reshape(
+        matrix, (ndims, n_particles, n_windows * tau_window)
+    )
 
-    par = Parameters(tau_window, tau_window_list, bins, number_of_sigmas)
-    data = MultiData(matrix)
+    par = Parameters(tau_window, bins, number_of_sigmas)
+    data = MultiData(reshaped_matrix)
     clustering_object = ClusteringObject2D(par, data)
 
     return clustering_object
@@ -367,7 +372,8 @@ def iterative_search(
         if state is None:
             with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
                 print(
-                    "- Iterations interrupted because fit does not converge."
+                    "- Iterations interrupted because fit does not converge.",
+                    file=dump,
                 )
             break
 
@@ -400,71 +406,10 @@ def iterative_search(
     cl_ob.iterations = len(states_list)
 
     all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
-    cl_ob.data.labels = all_the_labels
+    cl_ob.data.labels = np.reshape(all_the_labels, (all_the_labels.size,))
     cl_ob.state_list = list_of_states
 
     return cl_ob, env_0
-
-
-def timeseries_analysis(
-    cl_ob: ClusteringObject2D, tau_w: int
-) -> Tuple[int, float, List[float]]:
-    """
-    The clustering analysis to compute the dependence on time resolution.
-
-    Parameters
-    ----------
-
-    cl_ob : ClusteringObject2D
-        The clustering object.
-
-    Returns
-    -------
-
-    n_states : int
-        Number of identified states.
-
-    fraction_0 : float
-        Fraction of unclassified data points.
-
-    Notes
-    -----
-
-    - Creates a copy of the clustering object and of the parameters
-        on which the analysis will be performed
-    - Preprocesses the data with the selected parameters
-    - Performs the clustering with the iterative search and classification
-    - If no classification is found, cleans the memory and return
-    - Number of states and fraction of unclassified points are computed
-    """
-
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print(f"* tau_window = {tau_w}\n", file=dump)
-
-    tmp_cl_ob = copy.deepcopy(cl_ob)
-    tmp_cl_ob.par.tau_w = tau_w
-
-    tmp_cl_ob, one_last_state = iterative_search(tmp_cl_ob)
-
-    if len(tmp_cl_ob.state_list) == 0:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("* No possible classification was found.\n", file=dump)
-        del tmp_cl_ob
-        return 0, 1.0, [1.0]
-
-    list_of_pop = [state.perc for state in tmp_cl_ob.state_list]
-    fraction_0 = 1 - np.sum(list_of_pop)
-    list_of_pop.insert(0, fraction_0)
-    n_states = len(tmp_cl_ob.state_list)
-
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        print(
-            f"- Number of states identified: {n_states}, [{fraction_0}]\n",
-            file=dump,
-        )
-
-    del tmp_cl_ob
-    return n_states, fraction_0, list_of_pop
 
 
 def full_output_analysis(cl_ob: ClusteringObject2D):
@@ -496,52 +441,10 @@ def full_output_analysis(cl_ob: ClusteringObject2D):
             print("* No possible classification was found.", file=dump)
 
 
-def time_resolution_analysis(cl_ob: ClusteringObject2D):
-    """
-    Explore parameter space and compute the dependence on time resolution.
-
-    Parameters
-    ----------
-
-    cl_ob : ClusteringObject2D
-        The clustering object.
-
-    Notes
-    -----
-
-    - Generates the parameters' grid
-    - Performs and stores the clustering for all the parameters' combinations
-    - Updates the clustering object with the analysis results
-    """
-
-    if cl_ob.par.tau_w_list is None:
-        tau_window_list = param_grid(cl_ob.data.num_of_steps)
-    else:
-        tau_window_list = cl_ob.par.tau_w_list
-
-    cl_ob.tau_window_list = tau_window_list
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as dump:
-        print("* Tau_w used:", tau_window_list, "\n", file=dump)
-
-    number_of_states = []
-    fraction_0 = []
-    list_of_pop: List[List[float]] = [[] for _ in tau_window_list]
-
-    for i, tau_w in enumerate(tau_window_list):
-        n_s, f_0, l_pop = timeseries_analysis(cl_ob, tau_w)
-        number_of_states.append(n_s)
-        fraction_0.append(f_0)
-        list_of_pop[i] = l_pop
-
-    cl_ob.number_of_states = np.array(number_of_states)
-    cl_ob.fraction_0 = np.array(fraction_0)
-    cl_ob.list_of_pop = list_of_pop
-
-
 def main(
     matrix: np.ndarray,
-    tau_window: int,
-    tau_window_list: List[int],
+    n_windows: int,
+    ndims: int,
     bins: Union[int, str],
     number_of_sigmas: float,
 ) -> ClusteringObject2D:
@@ -554,14 +457,11 @@ def main(
     matrix : ndarray of shape (dims, n_particles, n_frames)
         The values of the signal for each particle at each frame.
 
-    tau_window : int
-        The time resolution for the clustering, corresponding to the lwngth
-        of the windows in which the time-series are segmented.
+    n_windows : int
+        The number of windows in which the signal is divided for the analysis.
 
-    tau_window_list : List[int]
-        The list of time resolutions at which the fast analysis will
-        be performed. If None (default), use a logspaced list between 2 and
-        the entire trajectory length.
+    n_dims : int
+        Number of components. Must be 2 or 3.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -569,6 +469,11 @@ def main(
         If "auto", the default of numpy.histogram_bin_edges is used
         (see https://numpy.org/doc/stable/reference/generated/
         numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).
+
+    number_of_sigma : float = 2.0
+        Sets the thresholds for classifing a signal window inside a state:
+        the window is contained in the state if it is entirely contained
+        inside number_of_sigma * state.sigms times from state.mean.
 
     Returns
     -------
@@ -585,13 +490,11 @@ def main(
     """
     clustering_object = all_the_input_stuff(
         matrix,
-        tau_window,
-        tau_window_list,
+        n_windows,
+        ndims,
         bins,
         number_of_sigmas,
     )
-
-    time_resolution_analysis(clustering_object)
 
     full_output_analysis(clustering_object)
 
