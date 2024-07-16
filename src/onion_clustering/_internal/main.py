@@ -71,11 +71,12 @@ def all_the_input_stuff(
     - Creates and returns the ClusteringObject1D for the analysis
     """
     tau_window = matrix.shape[1]
-    n_particles = int(matrix.shape[0] / n_windows)
-    reshaped_matrix = np.reshape(matrix, (n_particles, n_windows * tau_window))
+    # n_particles = int(matrix.shape[0] / n_windows)
+    # reshaped_matrix = np.reshape(matrix, (n_particles, n_windows * tau_window))
 
     par = Parameters(tau_window, bins, number_of_sigmas)
-    data = UniData(reshaped_matrix)
+    data = UniData(matrix)
+    # data = UniData(reshaped_matrix)
     clustering_object = ClusteringObject1D(par, data)
 
     return clustering_object
@@ -339,26 +340,18 @@ def find_stable_trj(
     - Sets the value of env_0 to signal still unclassified data points
     """
 
-    number_of_windows = tmp_labels.shape[1]
     m_clean = cl_ob.data.matrix
-    tau_window = cl_ob.par.tau_w
 
     mask_unclassified = tmp_labels < 0.5
-    m_reshaped = m_clean[:, : number_of_windows * tau_window].reshape(
-        m_clean.shape[0], number_of_windows, tau_window
-    )
-    mask_inf = np.min(m_reshaped, axis=2) >= state.th_inf[0]
-    mask_sup = np.max(m_reshaped, axis=2) <= state.th_sup[0]
+    mask_inf = np.min(m_clean, axis=1) >= state.th_inf[0]
+    mask_sup = np.max(m_clean, axis=1) <= state.th_sup[0]
     mask = mask_unclassified & mask_inf & mask_sup
 
     tmp_labels[mask] = lim + 1
     counter = np.sum(mask)
 
-    remaning_data = []
     mask_remaining = mask_unclassified & ~mask
-    for i, window in np.argwhere(mask_remaining):
-        r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
-        remaning_data.append(r_w)
+    remaning_data = m_clean[mask_remaining]
     m2_array = np.array(remaning_data)
 
     if tmp_labels.size == 0:
@@ -486,26 +479,19 @@ def fit_local_maxima(
             )
             print(f"\tFit r2 = {r_2}", file=dump)
 
-        number_of_windows = tmp_labels.shape[1]
+        m_clean = cl_ob.data.matrix
 
         mask_unclassified = tmp_labels < 0.5
-        m_reshaped = cl_ob.data.matrix[
-            :, : number_of_windows * par.tau_w
-        ].reshape(cl_ob.data.matrix.shape[0], number_of_windows, par.tau_w)
-        mask_inf = np.min(m_reshaped, axis=2) >= state.th_inf[0]
-        mask_sup = np.max(m_reshaped, axis=2) <= state.th_sup[0]
+        mask_inf = np.min(m_clean, axis=1) >= state.th_inf[0]
+        mask_sup = np.max(m_clean, axis=1) <= state.th_sup[0]
         mask = mask_unclassified & mask_inf & mask_sup
 
         tmp_labels[mask] = lim + 1
         counter = np.sum(mask)
 
-        remaning_data = []
         mask_remaining = mask_unclassified & ~mask
-        for i, window in np.argwhere(mask_remaining):
-            r_w = cl_ob.data.matrix[
-                i, window * par.tau_w : (window + 1) * par.tau_w
-            ]
-            remaning_data.append(r_w)
+        remaning_data = m_clean[mask_remaining]
+        m2_array = np.array(remaning_data)
 
         if tmp_labels.size == 0:
             return None, None, None, None
@@ -519,7 +505,6 @@ def fit_local_maxima(
                 file=dump,
             )
 
-        m2_array = np.array(remaning_data)
         one_last_state = True
         if len(m2_array) == 0:
             one_last_state = False
@@ -567,10 +552,8 @@ def iterative_search(
     - Calls "relable_states" to sort and clean the state list, and updates
     the clustering object
     """
-    num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
-    tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
-        int
-    )
+    # num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
+    tmp_labels = np.zeros((cl_ob.data.matrix.shape[0],)).astype(int)
 
     states_list = []
     m_copy = cl_ob.data.matrix
@@ -578,9 +561,9 @@ def iterative_search(
     states_counter = 0
     env_0 = False
 
-    if m_copy.shape[1] < cl_ob.par.tau_w:
-        cl_ob.state_list = []
-        return cl_ob, tmp_labels, env_0
+    # if m_copy.shape[1] < cl_ob.par.tau_w:
+    #     cl_ob.state_list = []
+    #     return cl_ob, tmp_labels, env_0
 
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:

@@ -5,7 +5,12 @@ Example script for running onion_clustering
 import matplotlib.pyplot as plt
 import numpy as np
 from example_plots import (
+    plot_medoids_uni,
+    plot_one_trj_uni,
+    plot_output_uni,
     plot_pop_fractions,
+    plot_sankey,
+    plot_state_populations,
     plot_time_res_analysis,
 )
 from onion_clustering.onion_uni import onion_uni
@@ -35,11 +40,11 @@ state_list, labels = onion_uni(
 )
 
 ### These functions are examples of how to visualize the results
-# plot_output_uni("Fig1.png", reshaped_data, N_WINDOWS, state_list)
-# plot_one_trj_uni("Fig2.png", 1234, reshaped_data, labels, N_WINDOWS)
-# plot_medoids_uni("Fig3.png", reshaped_data, labels)
-# plot_state_populations("Fig4.png", N_WINDOWS, labels)
-# plot_sankey("Fig5.png", labels, N_WINDOWS, [10, 20, 30, 40])
+plot_output_uni("Fig1.png", reshaped_data, N_WINDOWS, state_list)
+plot_one_trj_uni("Fig2.png", 1234, reshaped_data, labels, N_WINDOWS)
+plot_medoids_uni("Fig3.png", reshaped_data, labels)
+plot_state_populations("Fig4.png", N_WINDOWS, labels)
+plot_sankey("Fig5.png", labels, N_WINDOWS, [10, 20, 30, 40])
 
 ### Clustering at all the possible time resolution ###
 TMP_LIST = np.geomspace(2, 249, num=20, dtype=int)

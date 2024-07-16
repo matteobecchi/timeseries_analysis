@@ -683,9 +683,8 @@ def set_final_states(
     final_map = np.zeros(max(np.unique(all_the_labels)) + 1, dtype=int)
     for i, el in enumerate(np.unique(all_the_labels)):
         final_map[el] = i + 1 * (1 - if_env0)
-    for i, particle in enumerate(all_the_labels):
-        for j, el in enumerate(particle):
-            all_the_labels[i][j] = final_map[el]
+    for i, _ in enumerate(all_the_labels):
+        all_the_labels[i] = final_map[el]
 
     # Remove merged states from the state list
     states_to_remove = set(s0 for s0, s1 in best_merge)
@@ -781,8 +780,8 @@ def max_prob_assignment(
     updated_states : List[StateUni]
         List of the identified states, with updated percetages.
     """
-    N, T = all_the_labels.shape
-    reshaped_matrix = matrix[:, : T * tau_window].reshape(N, T, tau_window)
+    # N, T = all_the_labels.shape
+    # reshaped_matrix = matrix[:, : T * tau_window].reshape(N, T, tau_window)
     s_ranges = np.array(
         [number_of_sigmas * state.sigma for state in list_of_states]
     )
@@ -790,7 +789,7 @@ def max_prob_assignment(
     mask = all_the_labels > 0
 
     valid_indices = np.where(mask)
-    windows = reshaped_matrix[valid_indices]
+    windows = matrix[valid_indices]
     old_labels = all_the_labels[valid_indices]
 
     new_labels = find_max_prob_state(windows, old_labels, list_of_states)
