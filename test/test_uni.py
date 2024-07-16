@@ -28,15 +28,10 @@ def test_output_files(setup_test_environment):
     reshaped_input_data = np.reshape(input_data, (2048 * N_WINDOWS, -1))
 
     # Call your code to generate the output files
-    tmp = OnionUni(
-        n_windows=N_WINDOWS,
-    )
+    tmp = OnionUni()
     tmp.fit_predict(reshaped_input_data)
 
-    _, labels = onion_uni(
-        reshaped_input_data,
-        n_windows=N_WINDOWS,
-    )
+    _, labels = onion_uni(reshaped_input_data)
 
     # Define the paths to the expected output files
     original_dir = (

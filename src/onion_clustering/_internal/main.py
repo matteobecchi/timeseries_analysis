@@ -30,7 +30,6 @@ AREA_MAX_OVERLAP = 0.8
 
 def all_the_input_stuff(
     matrix: np.ndarray,
-    n_windows: int,
     bins: Union[int, str],
     number_of_sigmas: float,
 ) -> ClusteringObject1D:
@@ -42,9 +41,6 @@ def all_the_input_stuff(
 
     matrix : ndarray of shape (n_particles * n_windows, tau_window)
         The values of the signal for each particle at each frame.
-
-    n_windows : int
-        Number of time windows in the simulation.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -71,12 +67,9 @@ def all_the_input_stuff(
     - Creates and returns the ClusteringObject1D for the analysis
     """
     tau_window = matrix.shape[1]
-    # n_particles = int(matrix.shape[0] / n_windows)
-    # reshaped_matrix = np.reshape(matrix, (n_particles, n_windows * tau_window))
 
     par = Parameters(tau_window, bins, number_of_sigmas)
     data = UniData(matrix)
-    # data = UniData(reshaped_matrix)
     clustering_object = ClusteringObject1D(par, data)
 
     return clustering_object
@@ -655,7 +648,6 @@ def full_output_analysis(cl_ob: ClusteringObject1D):
 
 def main(
     matrix: np.ndarray,
-    n_windows: int,
     bins: Union[int, str],
     number_of_sigmas: float,
 ) -> ClusteringObject1D:
@@ -666,9 +658,6 @@ def main(
     ----------
     matrix : ndarray of shape (n_particles * n_windows, tau_window)
         The values of the signal for each particle at each frame.
-
-    n_windows : int
-        Number of time windows in the simulation.
 
     bins: Union[str, int] = "auto"
         The number of bins used for the construction of the histograms.
@@ -689,7 +678,6 @@ def main(
     """
     clustering_object = all_the_input_stuff(
         matrix,
-        n_windows,
         bins,
         number_of_sigmas,
     )

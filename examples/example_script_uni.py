@@ -34,10 +34,7 @@ reshaped_data = np.reshape(
     input_data[:, :-frames_in_excess], (n_particles * N_WINDOWS, tau_window)
 )
 
-state_list, labels = onion_uni(
-    reshaped_data,
-    n_windows=N_WINDOWS,
-)
+state_list, labels = onion_uni(reshaped_data)
 
 ### These functions are examples of how to visualize the results
 plot_output_uni("Fig1.png", reshaped_data, N_WINDOWS, state_list)
@@ -61,10 +58,7 @@ for i, n_windows in enumerate(N_WINDOWS_LIST):
         (n_particles * n_windows, tau_window),
     )
 
-    state_list, labels = onion_uni(
-        reshaped_data,
-        n_windows=n_windows,
-    )
+    state_list, labels = onion_uni(reshaped_data)
 
     pop_list = [state.perc for state in state_list]
     pop_list.insert(0, 1 - np.sum(np.array(pop_list)))
