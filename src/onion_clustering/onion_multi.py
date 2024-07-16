@@ -10,7 +10,6 @@ from onion_clustering._internal.main_2d import main as onion_inner
 
 def onion_multi(
     matrix: np.ndarray,
-    n_windows: int = 2,
     n_dims: int = 2,
     bins: Union[str, int] = "auto",
     number_of_sigmas: float = 2.0,
@@ -21,9 +20,6 @@ def onion_multi(
     ----------
     matrix : ndarray of shape (dims, n_particles, n_frames)
         The values of the signal for each particle at each frame.
-
-    n_windows : int
-        The number of windows in which the signal is divided for the analysis.
 
     n_dims : int = 2
         Number of components. Must be 2 or 3.
@@ -62,7 +58,6 @@ def onion_multi(
     """
 
     est = OnionMulti(
-        n_windows=n_windows,
         bins=bins,
         number_of_sigmas=number_of_sigmas,
     )
@@ -76,9 +71,6 @@ class OnionMulti(BaseEstimator, ClusterMixin):
 
     Parameters
     ----------
-    n_windows : int
-        The number of windows in which the signal is divided for the analysis.
-
     n_dims : int = 2
         Number of components. Must be 2 or 3.
 
@@ -117,14 +109,12 @@ class OnionMulti(BaseEstimator, ClusterMixin):
 
     def __init__(
         self,
-        n_windows: int = 2,
         ndims: int = 2,
         bins: Union[str, int] = "auto",
         number_of_sigmas: float = 2.0,
     ):
-        self.n_windows = n_windows
-        self.bins = bins
         self.ndims = ndims
+        self.bins = bins
         self.number_of_sigmas = number_of_sigmas
 
     def fit(self, X, y=None):
@@ -161,17 +151,12 @@ class OnionMulti(BaseEstimator, ClusterMixin):
         X = X.copy()  # copy to avoid in-place modification
 
         # Check compatibility of array shapes
-        n_particles = int(X.shape[0] / self.n_windows)
-        if X.shape[0] > n_particles * self.n_windows:
-            X = X[: n_particles * self.n_windows]
-
         tau_window = int(X.shape[1] / self.ndims)
         if X.shape[1] > tau_window * self.ndims:
             X = X[:, : tau_window * self.ndims]
 
         cl_ob = onion_inner(
             X,
-            self.n_windows,
             self.ndims,
             self.bins,
             self.number_of_sigmas,
@@ -199,7 +184,6 @@ class OnionMulti(BaseEstimator, ClusterMixin):
 
     def get_params(self, deep=True):
         return {
-            "n_windows": self.n_windows,
             "ndims": self.ndims,
             "bins": self.bins,
             "number_of_sigmas": self.number_of_sigmas,

@@ -38,7 +38,6 @@ def all_the_input_stuff(
 
     Parameters
     ----------
-
     matrix : ndarray of shape (n_particles * n_windows, tau_window)
         The values of the signal for each particle at each frame.
 

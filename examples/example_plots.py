@@ -472,32 +472,33 @@ def plot_medoids_multi(
     - Plots the results to Fig4.png
 
     """
-    if input_data.shape[0] > 2:
+    ndims = int(input_data.shape[1] / tau_window)
+    if ndims > 2:
         print("plot_medoids_multi() does not work with 3D data.")
         return
 
     list_of_labels = np.unique(labels)
-    if 0 not in list_of_labels:
-        list_of_labels = np.insert(list_of_labels, 0, 0)
+    if -1 not in list_of_labels:
+        list_of_labels = np.insert(list_of_labels, 0, -1)
 
     center_list = []
     env0 = []
 
     for ref_label in list_of_labels:
         tmp = []
-        for i, mol in enumerate(labels):
-            for j, label in enumerate(mol):
-                t_0 = j * tau_window
-                t_1 = (j + 1) * tau_window
-                if label == ref_label:
-                    tmp.append(input_data.transpose(1, 2, 0)[i][t_0:t_1])
+        for i, label in enumerate(labels):
+            if label == ref_label:
+                print(input_data[i].reshape((ndims, tau_window)))
+                print("\n")
+                tmp.append(input_data[i].reshape((ndims, tau_window)))
 
-        if len(tmp) > 0 and ref_label > 0:
-            center_list.append(np.mean(tmp, axis=0))
+        if len(tmp) > 0 and ref_label > -1:
+            center_list.append(np.mean(tmp, axis=1))
         elif len(tmp) > 0:
             env0 = tmp
 
     center_arr = np.array(center_list)
+    print(center_arr)
     np.save(
         "medoid_center.npy",
         center_arr,
@@ -552,8 +553,11 @@ def plot_output_multi(
     tmp = plt.get_cmap(COLORMAP, n_states)
     colors_from_cmap = tmp(np.arange(0, 1, 1 / n_states))
     colors_from_cmap[-1] = tmp(1.0)
+
     m_clean = input_data.transpose(1, 2, 0)
-    all_the_labels = np.repeat(labels, tau_window, axis=1)
+    n_windows = int(m_clean.shape[1] / tau_window)
+    tmp_labels = labels.reshape((m_clean.shape[0], n_windows))
+    all_the_labels = np.repeat(tmp_labels, tau_window, axis=1)
 
     if m_clean.shape[2] == 3:
         fig, ax = plt.subplots(2, 2, figsize=(6, 6))
@@ -589,7 +593,7 @@ def plot_output_multi(
                     rasterized=True,
                     zorder=0,
                 )
-                color_list = all_the_labels[i * step]
+                color_list = all_the_labels[i * step] + 1
                 ax[a_0][a_1].scatter(
                     mol.T[d_0],
                     mol.T[d_1],
@@ -601,7 +605,7 @@ def plot_output_multi(
                     rasterized=True,
                 )
 
-                color_list = all_the_labels[id_min]
+                color_list = all_the_labels[id_min] + 1
                 ax[a_0][a_1].plot(
                     m_resized[id_min].T[d_0],
                     m_resized[id_min].T[d_1],
@@ -620,7 +624,7 @@ def plot_output_multi(
                     s=0.5,
                     rasterized=True,
                 )
-                color_list = all_the_labels[id_max]
+                color_list = all_the_labels[id_max] + 1
                 ax[a_0][a_1].plot(
                     m_resized[id_max].T[d_0],
                     m_resized[id_max].T[d_1],
@@ -685,7 +689,7 @@ def plot_output_multi(
                 rasterized=True,
                 zorder=0,
             )
-            color_list = all_the_labels[i * step]
+            color_list = all_the_labels[i * step] + 1
             ax.scatter(
                 mol.T[0],
                 mol.T[1],
@@ -697,7 +701,7 @@ def plot_output_multi(
                 rasterized=True,
             )
 
-        color_list = all_the_labels[id_min]
+        color_list = all_the_labels[id_min] + 1
         ax.plot(
             m_resized[id_min].T[0],
             m_resized[id_min].T[1],
@@ -716,7 +720,7 @@ def plot_output_multi(
             s=0.5,
             rasterized=True,
         )
-        color_list = all_the_labels[id_max]
+        color_list = all_the_labels[id_max] + 1
         ax.plot(
             m_resized[id_max].T[0],
             m_resized[id_max].T[1],
@@ -762,9 +766,10 @@ def plot_one_trj_multi(
     labels: np.ndarray,
 ):
     """Plots the colored trajectory of an example particle."""
-
     m_clean = input_data.transpose(1, 2, 0)
-    all_the_labels = np.repeat(labels, tau_window, axis=1)
+    n_windows = int(m_clean.shape[1] / tau_window)
+    tmp_labels = labels.reshape((m_clean.shape[0], n_windows))
+    all_the_labels = np.repeat(tmp_labels, tau_window, axis=1)
 
     # Get the signal of the example particle
     sig_x = m_clean[example_id].T[0][: all_the_labels.shape[1]]

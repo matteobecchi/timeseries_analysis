@@ -25,7 +25,6 @@ OUTPUT_FILE = "onion_clustering_log.txt"
 
 def all_the_input_stuff(
     matrix: np.ndarray,
-    n_windows: int,
     ndims: int,
     bins: Union[int, str],
     number_of_sigmas: float,
@@ -35,7 +34,6 @@ def all_the_input_stuff(
 
     Parameters
     ----------
-
     matrix : ndarray of shape (n_particles * n_windows, tau_window * dims)
         The values of the signal for each particle at each frame.
 
@@ -70,10 +68,7 @@ def all_the_input_stuff(
     - Creates and returns the ClusteringObject2D for the analysis
     """
     tau_window = int(matrix.shape[1] / ndims)
-    n_particles = int(matrix.shape[0] / n_windows)
-    reshaped_matrix = np.reshape(
-        matrix, (ndims, n_particles, n_windows * tau_window)
-    )
+    reshaped_matrix = np.reshape(matrix, (ndims, -1, tau_window))
 
     par = Parameters(tau_window, bins, number_of_sigmas)
     data = MultiData(reshaped_matrix)
@@ -277,24 +272,27 @@ def find_stable_trj(
     - Sets the value of env_0 to signal still unclassified data points
     """
 
-    number_of_windows = tmp_labels.shape[1]
     m_clean = cl_ob.data.matrix
-    tau_window = cl_ob.par.tau_w
 
     mask_unclassified = tmp_labels < 0.5
-    m_reshaped = m_clean[:, : number_of_windows * tau_window].reshape(
-        m_clean.shape[0], number_of_windows, tau_window, m_clean.shape[2]
-    )
-    shifted = m_reshaped - state.mean
+    shifted = m_clean - state.mean
     rescaled = shifted / state.axis
-    squared_distances = np.sum(rescaled**2, axis=3)
-    mask_dist = np.max(squared_distances, axis=2) <= 1.0
+    squared_distances = np.sum(rescaled**2, axis=2)
+    mask_dist = np.max(squared_distances, axis=1) <= 1.0
     mask = mask_unclassified & mask_dist
 
     tmp_labels[mask] = lim + 1
-
     counter = np.sum(mask)
-    window_fraction = counter / (tmp_labels.size)
+
+    mask_remaining = mask_unclassified & ~mask
+    remaning_data = m_clean[mask_remaining]
+    m2_array = np.array(remaning_data)
+
+    if tmp_labels.size == 0:
+        return m2_array, 0.0, False
+    else:
+        window_fraction = counter / tmp_labels.size
+
     with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
         print(
             f"\tFraction of windows in state {lim + 1}"
@@ -302,18 +300,11 @@ def find_stable_trj(
             file=dump,
         )
 
-    remaning_data = []
-    mask_remaining = mask_unclassified & ~mask
-    for i, window in np.argwhere(mask_remaining):
-        r_w = m_clean[i, window * tau_window : (window + 1) * tau_window]
-        remaning_data.append(r_w)
-    m2_arr = np.array(remaning_data)
-
     env_0 = True
-    if len(m2_arr) == 0:
+    if len(m2_array) == 0:
         env_0 = False
 
-    return m2_arr, window_fraction, env_0
+    return m2_array, window_fraction, env_0
 
 
 def iterative_search(
@@ -352,10 +343,7 @@ def iterative_search(
         the clustering object
     """
     bins = cl_ob.par.bins
-    num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
-    tmp_labels = np.zeros((cl_ob.data.num_of_particles, num_windows)).astype(
-        int
-    )
+    tmp_labels = np.zeros((cl_ob.data.matrix.shape[0],)).astype(int)
 
     states_list = []
     m_copy = cl_ob.data.matrix
@@ -406,7 +394,7 @@ def iterative_search(
     cl_ob.iterations = len(states_list)
 
     all_the_labels, list_of_states = relabel_states_2d(tmp_labels, states_list)
-    cl_ob.data.labels = np.reshape(all_the_labels, (all_the_labels.size,))
+    cl_ob.data.labels = np.reshape(all_the_labels, (all_the_labels.size,)) - 1
     cl_ob.state_list = list_of_states
 
     return cl_ob, env_0
@@ -443,7 +431,6 @@ def full_output_analysis(cl_ob: ClusteringObject2D):
 
 def main(
     matrix: np.ndarray,
-    n_windows: int,
     ndims: int,
     bins: Union[int, str],
     number_of_sigmas: float,
@@ -453,12 +440,8 @@ def main(
 
     Parameters
     ----------
-
     matrix : ndarray of shape (dims, n_particles, n_frames)
         The values of the signal for each particle at each frame.
-
-    n_windows : int
-        The number of windows in which the signal is divided for the analysis.
 
     n_dims : int
         Number of components. Must be 2 or 3.
@@ -490,7 +473,6 @@ def main(
     """
     clustering_object = all_the_input_stuff(
         matrix,
-        n_windows,
         ndims,
         bins,
         number_of_sigmas,

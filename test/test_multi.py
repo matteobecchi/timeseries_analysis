@@ -30,15 +30,11 @@ def test_output_files(setup_test_environment):
     reshaped_data = np.reshape(input_data, (2 * N_WINDOWS, 2 * 10))
 
     # Call your code to generate the output files
-    tmp = OnionMulti(
-        n_windows=N_WINDOWS,
-        bins=BINS,
-    )
+    tmp = OnionMulti(bins=BINS)
     tmp.fit_predict(reshaped_data)
 
     _, labels = onion_multi(
         reshaped_data,
-        n_windows=N_WINDOWS,
         bins=BINS,
     )
 
