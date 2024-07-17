@@ -38,7 +38,7 @@ state_list, labels = onion_multi(reshaped_data, bins=BINS)
 ### These functions are examples of how to visualize the results
 plot_output_multi("Fig1.png", input_data, state_list, labels, TAU_WINDOW)
 plot_one_trj_multi("Fig2.png", 0, TAU_WINDOW, input_data, labels)
-plot_medoids_multi("Fig3.png", TAU_WINDOW, reshaped_data, labels)
+plot_medoids_multi("Fig3.png", TAU_WINDOW, input_data, labels)
 plot_state_populations("Fig4.png", n_windows, labels)
 plot_sankey("Fig5.png", labels, n_windows, [100, 200, 300, 400])
 

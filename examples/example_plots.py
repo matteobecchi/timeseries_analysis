@@ -313,7 +313,10 @@ def plot_medoids_uni(
 
 
 def plot_sankey(
-    title: str, labels: np.ndarray, n_windows: int, tmp_frame_list: list[int]
+    title: str,
+    labels: np.ndarray,
+    n_windows: int,
+    tmp_frame_list: list[int],
 ):
     """
     Plots the Sankey diagram at the desired frames.
@@ -406,7 +409,10 @@ def plot_sankey(
     fig.write_image(title, scale=5.0)
 
 
-def plot_time_res_analysis(title: str, tra: np.ndarray):
+def plot_time_res_analysis(
+    title: str,
+    tra: np.ndarray,
+):
     """
     Plots the results of clustering at different time resolutions.
 
@@ -426,7 +432,10 @@ def plot_time_res_analysis(title: str, tra: np.ndarray):
     fig.savefig(title, dpi=600)
 
 
-def plot_pop_fractions(title: str, list_of_pop: List[List[float]]):
+def plot_pop_fractions(
+    title: str,
+    list_of_pop: List[List[float]],
+):
     """
     Plot, for every time resolution, the populations of the ENVs.
 
@@ -458,7 +467,10 @@ def plot_pop_fractions(title: str, list_of_pop: List[List[float]]):
 
 
 def plot_medoids_multi(
-    title: str, tau_window: int, input_data: np.ndarray, labels: np.ndarray
+    title: str,
+    tau_window: int,
+    input_data: np.ndarray,
+    labels: np.ndarray,
 ):
     """
     Compute and plot the average signal sequence inside each state.
@@ -469,11 +481,10 @@ def plot_medoids_multi(
     - For each state, stores all the signal windows in that state, and
     - Computes mean of the signals in that state
     - Prints the output to file
-    - Plots the results to Fig4.png
-
+    - Plots the results
     """
-    ndims = int(input_data.shape[1] / tau_window)
-    if ndims > 2:
+    ndims = input_data.shape[0]
+    if ndims != 2:
         print("plot_medoids_multi() does not work with 3D data.")
         return
 
@@ -484,21 +495,26 @@ def plot_medoids_multi(
     center_list = []
     env0 = []
 
+    reshaped_data = input_data.transpose(1, 2, 0)
+    labels = np.repeat(labels, tau_window)
+    reshaped_labels = np.reshape(
+        labels, (input_data.shape[1], input_data.shape[2]))
+
     for ref_label in list_of_labels:
         tmp = []
-        for i, label in enumerate(labels):
-            if label == ref_label:
-                print(input_data[i].reshape((ndims, tau_window)))
-                print("\n")
-                tmp.append(input_data[i].reshape((ndims, tau_window)))
+        for i, mol in enumerate(reshaped_labels):
+            for window, label in enumerate(mol[::tau_window]):
+                if label == ref_label:
+                    time_0 = window * tau_window
+                    time_1 = (window + 1) * tau_window
+                    tmp.append(reshaped_data[i][time_0:time_1])
 
         if len(tmp) > 0 and ref_label > -1:
-            center_list.append(np.mean(tmp, axis=1))
+            center_list.append(np.mean(tmp, axis=0))
         elif len(tmp) > 0:
             env0 = tmp
 
     center_arr = np.array(center_list)
-    print(center_arr)
     np.save(
         "medoid_center.npy",
         center_arr,
