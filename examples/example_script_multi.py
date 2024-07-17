@@ -60,7 +60,8 @@ for i, tau_window in enumerate(TAU_WINDOWS_LIST):
 
     if excess_frames > 0:
         reshaped_data = np.reshape(
-            input_data[:, :, :-excess_frames], (n_particles * n_windows, -1))
+            input_data[:, :, :-excess_frames], (n_particles * n_windows, -1)
+        )
     else:
         reshaped_data = np.reshape(input_data, (n_particles * n_windows, -1))
 

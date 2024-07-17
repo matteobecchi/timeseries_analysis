@@ -83,29 +83,29 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
     return result
 
 
-def param_grid(trj_len: int) -> List[int]:
-    """
-    Generates tau_window_list.
+# def param_grid(trj_len: int) -> List[int]:
+#     """
+#     Generates tau_window_list.
 
-    Parameters
-    ----------
+#     Parameters
+#     ----------
 
-    trj_len : int
-        Number of frames in the data.
+#     trj_len : int
+#         Number of frames in the data.
 
-    Returns
-    -------
+#     Returns
+#     -------
 
-    tau_window_list : List[int]
-        A list of tau_window values.
-    """
-    tmp = np.geomspace(2, trj_len, num=20, dtype=int)
-    tau_window_list = []
-    for tau_w in tmp:
-        if tau_w not in tau_window_list:
-            tau_window_list.append(tau_w)
+#     tau_window_list : List[int]
+#         A list of tau_window values.
+#     """
+#     tmp = np.geomspace(2, trj_len, num=20, dtype=int)
+#     tau_window_list = []
+#     for tau_w in tmp:
+#         if tau_w not in tau_window_list:
+#             tau_window_list.append(tau_w)
 
-    return tau_window_list
+#     return tau_window_list
 
 
 def gaussian(
@@ -780,8 +780,6 @@ def max_prob_assignment(
     updated_states : List[StateUni]
         List of the identified states, with updated percetages.
     """
-    # N, T = all_the_labels.shape
-    # reshaped_matrix = matrix[:, : T * tau_window].reshape(N, T, tau_window)
     s_ranges = np.array(
         [number_of_sigmas * state.sigma for state in list_of_states]
     )
@@ -809,7 +807,7 @@ def max_prob_assignment(
         num_of_points = np.sum(final_labels == i + 1)
         state.perc = num_of_points / final_labels.size
 
-    ### To conform to scikit convention, noise has to be labelled "-1"
+    # To conform to scikit convention, noise has to be labelled "-1"
     final_labels -= 1
 
     states_to_remove = []

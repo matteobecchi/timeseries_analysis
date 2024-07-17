@@ -43,4 +43,5 @@ def test_output_files(setup_test_environment):
 
     # Compare the contents of the expected and actual output
     expected_output = np.load(expected_output_path)
+    print(np.sum(expected_output != labels) / labels.size)
     assert np.allclose(expected_output, labels)

@@ -17,7 +17,6 @@ from onion_clustering._internal.first_classes import (
 from onion_clustering._internal.functions import (
     gaussian,
     max_prob_assignment,
-    # param_grid,
     relabel_states,
     set_final_states,
 )
@@ -331,7 +330,6 @@ def find_stable_trj(
     - Creates a np.ndarray to store still unclassified windows
     - Sets the value of env_0 to signal still unclassified data points
     """
-
     m_clean = cl_ob.data.matrix
 
     mask_unclassified = tmp_labels < 0.5
@@ -487,8 +485,8 @@ def fit_local_maxima(
 
         if tmp_labels.size == 0:
             return None, None, None, None
-
-        window_fraction = counter / tmp_labels.size
+        else:
+            window_fraction = counter / tmp_labels.size
 
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
             print(
@@ -544,7 +542,6 @@ def iterative_search(
     - Calls "relable_states" to sort and clean the state list, and updates
     the clustering object
     """
-    # num_windows = int(cl_ob.data.num_of_steps / cl_ob.par.tau_w)
     tmp_labels = np.zeros((cl_ob.data.matrix.shape[0],)).astype(int)
 
     states_list = []
@@ -552,10 +549,6 @@ def iterative_search(
     iteration_id = 1
     states_counter = 0
     env_0 = False
-
-    # if m_copy.shape[1] < cl_ob.par.tau_w:
-    #     cl_ob.state_list = []
-    #     return cl_ob, tmp_labels, env_0
 
     while True:
         with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:

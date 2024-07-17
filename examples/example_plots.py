@@ -498,7 +498,8 @@ def plot_medoids_multi(
     reshaped_data = input_data.transpose(1, 2, 0)
     labels = np.repeat(labels, tau_window)
     reshaped_labels = np.reshape(
-        labels, (input_data.shape[1], input_data.shape[2]))
+        labels, (input_data.shape[1], input_data.shape[2])
+    )
 
     for ref_label in list_of_labels:
         tmp = []
@@ -538,10 +539,10 @@ def plot_medoids_multi(
             marker="o",
             c=palette[id_c + 1],
         )
-    for window in env0:
+    for win in env0:
         axes.plot(
-            window.T[0],
-            window.T[1],
+            win.T[0],
+            win.T[1],
             lw=0.1,
             c=palette[0],
             zorder=0,
