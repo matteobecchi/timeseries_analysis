@@ -61,5 +61,6 @@ module = [
     'scipy.*',
     'plotly.*',
     'mpl_toolkits.mplot3d',
+    'sklearn.utils.estimator_checks',
 ]
 ignore_missing_imports = true
