@@ -213,6 +213,9 @@ def gauss_fit_max(
     """
     print("* Gaussian fit...")
     flat_m = m_clean.flatten()
+    if flat_m.size < 2:
+        print("\tWARNING: this fit is not converging.")
+        return None
 
     ### 1. Histogram ###
     kde = gaussian_kde(flat_m)
