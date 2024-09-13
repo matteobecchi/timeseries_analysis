@@ -1,5 +1,5 @@
 # timeseries_analysis
-Code for unsupervised clustering of time-series data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
+Code for unsupervised clustering of time-series data. Reference to https://doi.org/10.1073/pnas.2403771121 for further details. 
 
 ## Input data
 A one-dimensional time-series, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported, with the fifth column containing the data values. 
