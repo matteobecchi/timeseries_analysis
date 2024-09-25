@@ -1,21 +1,20 @@
 onion\_clustering package
 =========================
 
-Submodules
-----------
+The code provides functions for performing Onion Clustering on time-series. For uni-dimensional time-series, use "onion_uni", for bi- or three-dimensional time-series use "onion_multi".
 
-onion\_clustering.onion\_multi module
--------------------------------------
+onion\_clustering.onion\_uni
+----------------------------
 
-.. automodule:: onion_clustering.onion_multi
+.. automodule:: onion_clustering.onion_uni
    :members:
    :undoc-members:
    :show-inheritance:
 
-onion\_clustering.onion\_uni module
------------------------------------
+onion\_clustering.onion\_multi
+------------------------------
 
-.. automodule:: onion_clustering.onion_uni
+.. automodule:: onion_clustering.onion_multi
    :members:
    :undoc-members:
    :show-inheritance:

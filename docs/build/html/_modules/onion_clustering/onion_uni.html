@@ -160,7 +160,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../onion_clustering.html">onion_clustering package</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../onion_clustering.html">onion_clustering</a></li>
 </ul>
 
 </div>
@@ -214,10 +213,12 @@
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform onion clustering from data array.</span>
 
-<span class="sd">    Arguments:</span>
+<span class="sd">    References:</span>
+<span class="sd">        https://www.pnas.org/doi/abs/10.1073/pnas.2403771121</span>
+
+<span class="sd">    Parameters:</span>
 <span class="sd">        matrix:</span>
-<span class="sd">            Shape (n_particles * n_windows, tau_window)</span>
-<span class="sd">            The values of the signal for each particle at each frame.</span>
+<span class="sd">            Shape (n_particles * n_windows, tau_window). The values of the signal for each particle at each frame.</span>
 
 <span class="sd">        bins (default = &quot;auto&quot;):</span>
 <span class="sd">            The number of bins used for the construction of the histograms.</span>
@@ -226,21 +227,14 @@
 <span class="sd">            (see https://numpy.org/doc/stable/reference/generated/</span>
 <span class="sd">            numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).</span>
 
-<span class="sd">        number_of_sigma (default = 2.0):</span>
+<span class="sd">        number_of_sigmas (default = 2.0):</span>
 <span class="sd">            Sets the thresholds for classifing a signal window inside a state:</span>
 <span class="sd">            the window is contained in the state if it is entirely contained</span>
 <span class="sd">            inside number_of_sigma * state.sigms times from state.mean.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        state_list:</span>
-<span class="sd">            List of the identified states.</span>
-
-<span class="sd">        labels:</span>
-<span class="sd">            Shape (n_particles, n_frames). Cluster labels for each point.</span>
-<span class="sd">            Unclassified points are given the label -1.</span>
-
-<span class="sd">    References:</span>
-<span class="sd">        https://www.pnas.org/doi/abs/10.1073/pnas.2403771121</span>
+<span class="sd">        - List of the identified states.</span>
+<span class="sd">        - np.ndarray of shape (n_particles, n_frames). Cluster labels for each point. Unclassified points are given the label -1.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">est</span> <span class="o">=</span> <span class="n">OnionUni</span><span class="p">(</span>
@@ -258,10 +252,12 @@
 <span class="k">class</span> <span class="nc">OnionUni</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform onion clustering from data array.</span>
 
-<span class="sd">    Arguments:</span>
+<span class="sd">    References:</span>
+<span class="sd">        https://www.pnas.org/doi/abs/10.1073/pnas.2403771121</span>
+
+<span class="sd">    Parameters:</span>
 <span class="sd">        bins (default = &quot;auto&quot;):</span>
-<span class="sd">            The number of bins used for the construction of the histograms.</span>
-<span class="sd">            Can be an integer value, or &quot;auto&quot;.</span>
+<span class="sd">            The number of bins used for the construction of the histograms. Can be an integer value, or &quot;auto&quot;.</span>
 <span class="sd">            If &quot;auto&quot;, the default of numpy.histogram_bin_edges is used</span>
 <span class="sd">            (see https://numpy.org/doc/stable/reference/generated/</span>
 <span class="sd">            numpy.histogram_bin_edges.html#numpy.histogram_bin_edges).</span>
@@ -276,11 +272,8 @@
 <span class="sd">            List of the identified states.</span>
 
 <span class="sd">        labels_:</span>
-<span class="sd">            Shape (n_particles, n_frames). Cluster labels for each point.</span>
-<span class="sd">            Unclassified points are given the label -1.</span>
-
-<span class="sd">    References:</span>
-<span class="sd">        https://www.pnas.org/doi/abs/10.1073/pnas.2403771121</span>
+<span class="sd">            np.ndarray of shape (n_particles, n_frames). Cluster labels</span>
+<span class="sd">            for each point. Unclassified points are given the label -1.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -296,14 +289,13 @@
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform onion clustering from data array.</span>
 
-<span class="sd">        Arguments:</span>
+<span class="sd">        Parameters:</span>
 <span class="sd">            X:</span>
-<span class="sd">            Shape (n_particles * n_windows, tau_window)</span>
-<span class="sd">            The values of the signal for each particle at each frame.</span>
+<span class="sd">                np.ndarray of shape (n_particles * n_windows, tau_window).</span>
+<span class="sd">                The values of the signal for each particle at each frame.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            self</span>
-<span class="sd">                Returns a fitted instance of self.</span>
+<span class="sd">            A fitted instance of self.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -342,15 +334,13 @@
     <span class="k">def</span> <span class="nf">fit_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute clusters from a data matrix and predict labels.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        X : ndarray of shape (n_particles * n_windows, tau_window)</span>
-<span class="sd">            The values of the signal for each particle at each frame.</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">            X:</span>
+<span class="sd">                np.ndarray of shape (n_particles * n_windows, tau_window).</span>
+<span class="sd">                The values of the signal for each particle at each frame.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        labels_ : ndarray of shape (n_particles * n_windows,)</span>
-<span class="sd">            Cluster labels. Unclassified points are given the label -1.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray of shape (n_particles * n_windows,). Cluster labels. Unclassified points are given the label -1.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">labels_</span></div>
 
