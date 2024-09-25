@@ -130,39 +130,34 @@ def perform_gauss_fit(
     mu0 = bins[max_ind]
     sigma0 = (bins[id0] - bins[id1]) / 6
     area0 = counts[max_ind] * np.sqrt(np.pi) * sigma0
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        try:
-            with warnings.catch_warnings():
-                warnings.filterwarnings("error")
-                popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
-                    gaussian,
-                    selected_bins,
-                    selected_counts,
-                    p0=[mu0, sigma0, area0],
-                    full_output=True,
-                )
-                if popt[1] < 0:
-                    popt[1] = -popt[1]
-                    popt[2] = -popt[2]
-                popt[2] *= n_data
-                perr = np.array(
-                    [np.sqrt(pcov[i][i]) for i in range(popt.size)]
-                )
-                perr[2] *= n_data
-                ss_res = np.sum(infodict["fvec"] ** 2)
-                ss_tot = np.sum(
-                    (selected_counts - np.mean(selected_counts)) ** 2
-                )
-                coeff_det_r2 = 1 - ss_res / ss_tot
-                flag = True
-        except OptimizeWarning:
-            print(f"\t{int_type} fit: Optimize warning.", file=dump)
-        except RuntimeError:
-            print(f"\t{int_type} fit: Runtime error.", file=dump)
-        except TypeError:
-            print(f"\t{int_type} fit: TypeError.", file=dump)
-        except ValueError:
-            print(f"\t{int_type} fit: ValueError.", file=dump)
+    try:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
+            popt, pcov, infodict, _, _ = scipy.optimize.curve_fit(
+                gaussian,
+                selected_bins,
+                selected_counts,
+                p0=[mu0, sigma0, area0],
+                full_output=True,
+            )
+            if popt[1] < 0:
+                popt[1] = -popt[1]
+                popt[2] = -popt[2]
+            popt[2] *= n_data
+            perr = np.array([np.sqrt(pcov[i][i]) for i in range(popt.size)])
+            perr[2] *= n_data
+            ss_res = np.sum(infodict["fvec"] ** 2)
+            ss_tot = np.sum((selected_counts - np.mean(selected_counts)) ** 2)
+            coeff_det_r2 = 1 - ss_res / ss_tot
+            flag = True
+    except OptimizeWarning:
+        return flag, coeff_det_r2, popt, perr
+    except RuntimeError:
+        return flag, coeff_det_r2, popt, perr
+    except TypeError:
+        return flag, coeff_det_r2, popt, perr
+    except ValueError:
+        return flag, coeff_det_r2, popt, perr
 
     return flag, coeff_det_r2, popt, perr
 
@@ -207,9 +202,7 @@ def gauss_fit_max(
 
     try:
         kde = gaussian_kde(flat_m)
-    except ValueError as err_msg:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print(f"\tWARNING: {err_msg}.", file=dump)
+    except ValueError:
         return None
 
     if par.bins == "auto":
@@ -265,8 +258,6 @@ def gauss_fit_max(
             perr = perr_half
             r_2 = r_2_half
     else:
-        with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-            print("\tWARNING: this fit is not converging.", file=dump)
         return None
 
     state = StateUni(popt[0], popt[1], popt[2])

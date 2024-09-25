@@ -11,8 +11,6 @@ from onion_clustering._internal.first_classes import StateMulti, StateUni
 from scipy.integrate import quad
 from scipy.optimize import OptimizeWarning
 
-OUTPUT_FILE = "onion_clustering_log.txt"
-
 
 def moving_average(data: np.ndarray, window: int) -> np.ndarray:
     """
@@ -81,31 +79,6 @@ def moving_average_2d(data: np.ndarray, side: int) -> np.ndarray:
             result[index] = subarray.mean()
 
     return result
-
-
-# def param_grid(trj_len: int) -> List[int]:
-#     """
-#     Generates tau_window_list.
-
-#     Parameters
-#     ----------
-
-#     trj_len : int
-#         Number of frames in the data.
-
-#     Returns
-#     -------
-
-#     tau_window_list : List[int]
-#         A list of tau_window values.
-#     """
-#     tmp = np.geomspace(2, trj_len, num=20, dtype=int)
-#     tau_window_list = []
-#     for tau_w in tmp:
-#         if tau_w not in tau_window_list:
-#             tau_window_list.append(tau_w)
-
-#     return tau_window_list
 
 
 def gaussian(
@@ -318,46 +291,38 @@ def custom_fit(
     sigma0 = (edges[minima[2 * dim + 1]] - edges[minima[2 * dim]]) / 2
     area0 = max(counts_selection) * np.sqrt(np.pi) * sigma0
 
-    flag = 1
+    flag = 0
+    popt = np.empty((3,))
     coeff_det_r2 = 0.0
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as dump:
-        try:
-            popt, _, infodict, _, _ = scipy.optimize.curve_fit(
-                gaussian,
-                edges_selection,
-                counts_selection,
-                p0=[mu0, sigma0, area0],
-                bounds=(
-                    [m_limits[dim][0], 0.0, 0.0],
-                    [m_limits[dim][1], np.inf, np.inf],
-                ),
-                full_output=True,
-            )
+    try:
+        popt, _, infodict, _, _ = scipy.optimize.curve_fit(
+            gaussian,
+            edges_selection,
+            counts_selection,
+            p0=[mu0, sigma0, area0],
+            bounds=(
+                [m_limits[dim][0], 0.0, 0.0],
+                [m_limits[dim][1], np.inf, np.inf],
+            ),
+            full_output=True,
+        )
 
-            ss_res = np.sum(infodict["fvec"] ** 2)
-            ss_tot = np.sum(
-                (counts_selection - np.mean(counts_selection)) ** 2
-            )
-            if ss_tot > 0.0:
-                coeff_det_r2 = 1.0 - ss_res / ss_tot
-            else:
-                coeff_det_r2 = 0.0
-        except OptimizeWarning:
-            print("\tFit: Optimize warning.", file=dump)
-            flag = 0
-            popt = np.empty((3,))
-        except RuntimeError:
-            print("\tFit: Runtime error.", file=dump)
-            flag = 0
-            popt = np.empty((3,))
-        except TypeError:
-            print("\tFit: TypeError.", file=dump)
-            flag = 0
-            popt = np.empty((3,))
-        except ValueError:
-            print("\tFit: ValueError.", file=dump)
-            flag = 0
-            popt = np.empty((3,))
+        ss_res = np.sum(infodict["fvec"] ** 2)
+        ss_tot = np.sum((counts_selection - np.mean(counts_selection)) ** 2)
+        if ss_tot > 0.0:
+            coeff_det_r2 = 1.0 - ss_res / ss_tot
+        else:
+            coeff_det_r2 = 0.0
+        flag = 1
+    except OptimizeWarning:
+        raise OptimizeWarning
+    except RuntimeError:
+        raise RuntimeError
+    except TypeError:
+        raise TypeError
+    except ValueError:
+        raise ValueError
+
     return flag, coeff_det_r2, popt
 
 
