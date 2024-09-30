@@ -1,3 +1,4 @@
+src/onion_clustering.egg-info
 src/onion_clustering/_internal
 src/onion_clustering/__pycache__
 test/__pycache__

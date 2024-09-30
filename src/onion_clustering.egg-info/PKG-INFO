@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: onion_clustering
-Version: 0.3.2
+Version: 0.3.3
 Summary: Code for unsupervised clustering of time-correlated data.
 Maintainer-email: Matteo Becchi <bechmath@gmail.com>
 Project-URL: github, https://github.com/matteobecchi/timeseries_analysis/
@@ -13,7 +13,10 @@ Requires-Dist: plotly
 Requires-Dist: scipy
 
 # timeseries_analysis
-Code for unsupervised clustering of time-series data. Reference to https://arxiv.org/abs/2402.07786 for further details. 
+Code for unsupervised clustering of time-series data. Reference to https://doi.org/10.1073/pnas.2403771121 for further details. 
+
+## Development history
+This is the oldest, standalone version of onion-clustering. It was last updated on September, 2024 and is no longer supported or mantained. We recomand using the new version of the algorithm, tropea-clustering, which you can find at https://github.com/matteobecchi/onion_clustering. 
 
 ## Input data
 A one-dimensional time-series, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported, with the fifth column containing the data values. 
