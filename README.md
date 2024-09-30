@@ -1,6 +1,9 @@
 # timeseries_analysis
 Code for unsupervised clustering of time-series data. Reference to https://doi.org/10.1073/pnas.2403771121 for further details. 
 
+## Development history
+This is the oldest, standalone version of onion-clustering. It was last updated on September, 2024 and is no longer supported or mantained. We recomand using the new version of the algorithm, tropea-clustering, which you can find at https://github.com/matteobecchi/onion_clustering. 
+
 ## Input data
 A one-dimensional time-series, computed on *N* particles for *T* frames. The input files must contain an array with shape *(N, T)* Supported formats: .npy, .npz, .txt. Also .xyz trajectories are supported, with the fifth column containing the data values. 
 
