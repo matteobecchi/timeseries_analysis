@@ -746,7 +746,7 @@ def max_prob_assignment(
         List of the identified states, with updated percetages.
     """
     s_ranges = np.array(
-        [number_of_sigmas * state.sigma for state in list_of_states]
+        [2 * number_of_sigmas * state.sigma for state in list_of_states]
     )
     final_labels = np.zeros(all_the_labels.shape, dtype=int)
     mask = all_the_labels > 0
