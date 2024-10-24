@@ -568,8 +568,15 @@ def shared_area_between_gaussians(
     x_max = int(np.max([mean1 + 3 * sigma1, mean2 + 3 * sigma2])) + 1
     shared_area, _ = quad(min_of_gaussians, x_min, x_max)
 
-    shared_fraction_1 = shared_area / area_gaussian_1
-    shared_fraction_2 = shared_area / area_gaussian_2
+    if area_gaussian_1 > 0.0:
+        shared_fraction_1 = shared_area / area_gaussian_1
+    else:
+        shared_fraction_1 = 0.0
+
+    if area_gaussian_2 > 0.0:
+        shared_fraction_2 = shared_area / area_gaussian_2
+    else:
+        shared_fraction_2 = 0.0
 
     return shared_fraction_1, shared_fraction_2
 
